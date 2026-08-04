@@ -7,6 +7,7 @@ import viteReact from "@vitejs/plugin-react";
 import tsConfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 import { nitro } from "nitro/vite";
+import { fileURLToPath } from "node:url";
 
 export default defineConfig({
   plugins: [
@@ -19,7 +20,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      "@": new URL("./src", import.meta.url).pathname,
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
 });
