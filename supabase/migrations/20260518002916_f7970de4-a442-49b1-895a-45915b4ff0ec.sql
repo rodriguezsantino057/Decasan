@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS profiles_dni_unique ON public.profiles (dni) WHERE dni IS NOT NULL;
