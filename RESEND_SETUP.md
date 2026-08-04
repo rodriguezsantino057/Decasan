@@ -39,7 +39,7 @@ wrangler secret put ORDER_EMAIL_REPLY_TO
 Tambien asegurate de configurar `PUBLIC_BASE_URL` sin errores, por ejemplo:
 
 ```env
-PUBLIC_BASE_URL="https://decasan.lovable.app"
+PUBLIC_BASE_URL="https://decasan.vercel.app"
 ```
 
 ## Comprobacion

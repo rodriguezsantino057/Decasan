@@ -9,8 +9,8 @@ const WHATSAPP = "543548592127";
 const WA_URL = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(
   "Hola Decasan, tengo una consulta a realizar.",
 )}`;
-const SITE_URL = "https://decasan.lovable.app";
-const SAFE_LINK_HOSTS = new Set(["decasan.lovable.app", "wa.me", "www.instagram.com", "web.facebook.com"]);
+const SITE_URL = "https://decasan.vercel.app";
+const SAFE_LINK_HOSTS = new Set(["decasan.vercel.app", "decasan.lovable.app", "decasan.com.ar", "wa.me", "www.instagram.com", "web.facebook.com"]);
 
 type Msg = { role: "user" | "assistant"; content: string };
 

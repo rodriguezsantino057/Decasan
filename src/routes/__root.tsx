@@ -82,7 +82,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Decasan Herramientas | La Falda, Córdoba" },
       { property: "og:description", content: "+60 años acompañando tus proyectos. Herramientas, maquinaria y materiales profesionales con envíos a todo el país desde La Falda, Córdoba." },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: process.env.PUBLIC_BASE_URL ?? "https://decasan.com.ar" },
+      { property: "og:url", content: process.env.PUBLIC_BASE_URL ?? "https://decasan.vercel.app" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Decasan Herramientas | La Falda, Córdoba" },
       { name: "twitter:description", content: "+60 años acompañando tus proyectos. Herramientas, maquinaria y materiales profesionales con envíos a todo el país desde La Falda, Córdoba." },

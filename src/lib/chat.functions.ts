@@ -27,9 +27,9 @@ type CatalogProduct = {
   stock: number | null;
 };
 
-const BASE_URL = (process.env.PUBLIC_BASE_URL || process.env.VITE_PUBLIC_BASE_URL || "https://decasan.com.ar").replace(/\/+$/, "");
+const BASE_URL = (process.env.PUBLIC_BASE_URL || process.env.VITE_PUBLIC_BASE_URL || "https://decasan.vercel.app").replace(/\/+$/, "");
 const WHATSAPP_URL = "https://wa.me/5493548403666";
-const ALLOWED_LINK_HOSTS = new Set(["decasan.com.ar", "decasan.lovable.app", "wa.me", "www.instagram.com", "web.facebook.com"]);
+const ALLOWED_LINK_HOSTS = new Set(["decasan.vercel.app", "decasan.com.ar", "decasan.lovable.app", "wa.me", "www.instagram.com", "web.facebook.com"]);
 
 const SYSTEM_PROMPT = `Sos "Decabot", el asistente virtual de Decasan Herramientas, una ferreteria de La Falda, Cordoba con mas de 60 anos de trayectoria. Atendes a clientes con tono amable, cercano y profesional, en espanol rioplatense (usa "vos").
 
@@ -234,7 +234,7 @@ function buildFallbackReply(context: { products: CatalogProduct[] }) {
 function sanitizeReplyLinks(reply: string): string {
   return reply.replace(/\]\((https?:\/\/[^)\s]+|\/[^)\s]+)\)/g, (full, href: string) => {
     const safe = sanitizeHref(href);
-    return safe ? full.replace(href, safe) : "](https://decasan.lovable.app/productos)";
+    return safe ? full.replace(href, safe) : `](${BASE_URL}/productos)`;
   });
 }
 
@@ -248,7 +248,7 @@ function sanitizeHref(href: string): string | null {
   try {
     const url = new URL(href);
     if (!ALLOWED_LINK_HOSTS.has(url.hostname)) return null;
-    if (url.hostname === "decasan.lovable.app") {
+    if (url.hostname === "decasan.lovable.app" || url.hostname === "decasan.vercel.app" || url.hostname === "decasan.com.ar") {
       if (url.pathname === "/productos" || url.pathname === "/productos/") return `${BASE_URL}/productos`;
       if (/^\/productos\/\d+$/.test(url.pathname)) return `${BASE_URL}${url.pathname}`;
       return null;
