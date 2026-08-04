@@ -58,83 +58,188 @@ export const chatWithBot = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const lastUserMessage = [...data.messages].reverse().find((m) => m.role === "user")?.content ?? "";
     const catalogContext = await buildCatalogContext(lastUserMessage);
+    const fullSystemPrompt = `${SYSTEM_PROMPT}\n\n${catalogContext.prompt}`;
 
-    const apiKey =
-      process.env.GROQ_API_KEY ||
-      process.env.GEMINI_API_KEY ||
-      process.env.OPENAI_API_KEY ||
-      process.env.LOVABLE_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY?.trim();
+    const groqKey = process.env.GROQ_API_KEY?.trim();
+    const openAiKey = process.env.OPENAI_API_KEY?.trim();
+    const lovableKey = process.env.LOVABLE_API_KEY?.trim();
 
-    if (!apiKey) {
-      return {
-        reply: buildFallbackReply(catalogContext),
-        products: catalogContext.products.slice(0, 4),
-      };
+    let rawReply: string | null = null;
+
+    if (geminiKey) {
+      rawReply = await callGemini(geminiKey, fullSystemPrompt, data.messages);
+    } else if (groqKey) {
+      rawReply = await callGroq(groqKey, fullSystemPrompt, data.messages);
+    } else if (openAiKey) {
+      rawReply = await callOpenAI(openAiKey, fullSystemPrompt, data.messages);
+    } else if (lovableKey) {
+      rawReply = await callLovableGateway(lovableKey, fullSystemPrompt, data.messages);
     }
 
-    let url = "https://ai.gateway.lovable.dev/v1/chat/completions";
-    let model = "google/gemini-3-flash-preview";
-
-    if (process.env.GROQ_API_KEY) {
-      url = "https://api.groq.com/openai/v1/chat/completions";
-      model = "llama-3.3-70b-versatile";
-    } else if (process.env.GEMINI_API_KEY) {
-      url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-      model = "gemini-2.0-flash";
-    } else if (process.env.OPENAI_API_KEY) {
-      url = "https://api.openai.com/v1/chat/completions";
-      model = "gpt-4o-mini";
+    if (!rawReply) {
+      rawReply = buildFallbackReply(catalogContext);
     }
 
-    try {
-      const res = await fetch(url, {
+    return {
+      reply: sanitizeReplyLinks(rawReply),
+      products: catalogContext.products.slice(0, 4),
+    };
+  });
+
+async function callGemini(apiKey: string, systemPrompt: string, messages: { role: string; content: string }[]): Promise<string | null> {
+  try {
+    const contents: { role: "user" | "model"; parts: { text: string }[] }[] = [];
+
+    for (const m of messages) {
+      if (m.role === "system") continue;
+      const role: "user" | "model" = m.role === "user" ? "user" : "model";
+      const text = m.content?.trim();
+      if (!text) continue;
+
+      const last = contents[contents.length - 1];
+      if (last && last.role === role) {
+        last.parts[0].text += `\n${text}`;
+      } else {
+        contents.push({
+          role,
+          parts: [{ text }],
+        });
+      }
+    }
+
+    if (contents.length > 0 && contents[0].role !== "user") {
+      contents.shift();
+    }
+
+    const payload = {
+      systemInstruction: {
+        parts: [{ text: systemPrompt }],
+      },
+      contents: contents.length > 0 ? contents : [{ role: "user" as const, parts: [{ text: "Hola" }] }],
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 900,
+      },
+    };
+
+    // Try Gemini 2.0 Flash, then fallback to 1.5 Flash if needed
+    for (const model of ["gemini-2.0-flash", "gemini-1.5-flash"]) {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const res = await fetch(endpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "system", content: catalogContext.prompt },
-            ...data.messages,
-          ],
-          temperature: 0.3,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        if (res.status === 429) {
-          return {
-            reply: `Estoy recibiendo muchas consultas en este momento. Podés probar de nuevo en unos segundos o escribirnos directamente a nuestro [WhatsApp](${WHATSAPP_URL}).`,
-            products: catalogContext.products.slice(0, 4),
-          };
-        }
-        console.warn(`[chat] AI provider ${res.status}: fallback to catalog matcher`);
-        return {
-          reply: buildFallbackReply(catalogContext),
-          products: catalogContext.products.slice(0, 4),
-        };
+      if (res.ok) {
+        const json = await res.json();
+        const output = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (output) return output;
+      } else {
+        const errText = await res.text().catch(() => "");
+        console.warn(`[chat] Gemini (${model}) HTTP ${res.status}:`, errText.slice(0, 300));
       }
-
-      const json = await res.json();
-      const rawReply: string =
-        json?.choices?.[0]?.message?.content ??
-        buildFallbackReply(catalogContext);
-
-      return {
-        reply: sanitizeReplyLinks(rawReply),
-        products: catalogContext.products.slice(0, 4),
-      };
-    } catch (err: any) {
-      console.error("[chat] AI call failed", err?.message);
-      return {
-        reply: buildFallbackReply(catalogContext),
-        products: catalogContext.products.slice(0, 4),
-      };
     }
-  });
+
+    return null;
+  } catch (err: any) {
+    console.error("[chat] Gemini call exception:", err?.message);
+    return null;
+  }
+}
+
+async function callGroq(apiKey: string, systemPrompt: string, messages: { role: string; content: string }[]): Promise<string | null> {
+  try {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...messages.filter((m) => m.role !== "system"),
+        ],
+        temperature: 0.3,
+        max_tokens: 900,
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      console.warn(`[chat] Groq HTTP ${res.status}:`, errText.slice(0, 300));
+      return null;
+    }
+
+    const json = await res.json();
+    return json?.choices?.[0]?.message?.content ?? null;
+  } catch (err: any) {
+    console.error("[chat] Groq call exception:", err?.message);
+    return null;
+  }
+}
+
+async function callOpenAI(apiKey: string, systemPrompt: string, messages: { role: string; content: string }[]): Promise<string | null> {
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...messages.filter((m) => m.role !== "system"),
+        ],
+        temperature: 0.3,
+        max_tokens: 900,
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      console.warn(`[chat] OpenAI HTTP ${res.status}:`, errText.slice(0, 300));
+      return null;
+    }
+
+    const json = await res.json();
+    return json?.choices?.[0]?.message?.content ?? null;
+  } catch (err: any) {
+    console.error("[chat] OpenAI call exception:", err?.message);
+    return null;
+  }
+}
+
+async function callLovableGateway(apiKey: string, systemPrompt: string, messages: { role: string; content: string }[]): Promise<string | null> {
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.0-flash",
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...messages.filter((m) => m.role !== "system"),
+        ],
+        temperature: 0.3,
+      }),
+    });
+
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json?.choices?.[0]?.message?.content ?? null;
+  } catch {
+    return null;
+  }
+}
 
 async function buildCatalogContext(query: string) {
   const terms = extractSearchTerms(query);
@@ -190,7 +295,6 @@ async function searchCatalogProducts(terms: string[], category: string | null): 
         query = query.or(searchClauses.join(","));
       }
     } else if (!category) {
-      // Default: show featured/in-stock items
       query = query.order("stock", { ascending: false, nullsFirst: false }).limit(8);
     }
 
@@ -203,7 +307,6 @@ async function searchCatalogProducts(terms: string[], category: string | null): 
     const rows = (data ?? []) as CatalogProduct[];
     if (terms.length === 0) return rows.slice(0, 8);
 
-    // Rank results based on relevance to terms
     const ranked = rows
       .map((item) => ({ item, score: scoreProductMatch(item, terms) }))
       .filter((entry) => entry.score > 0)
