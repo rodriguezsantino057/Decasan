@@ -29,14 +29,19 @@ export type CatalogProduct = {
   image_webp?: string | null;
 };
 
-const BASE_URL = (process.env.PUBLIC_BASE_URL || process.env.VITE_PUBLIC_BASE_URL || "https://decasan.vercel.app").replace(/\/+$/, "");
+function cleanEnv(val?: string | null): string {
+  if (!val) return "";
+  return val.trim().replace(/^['"]|['"]$/g, "");
+}
+
+const BASE_URL = cleanEnv(process.env.PUBLIC_BASE_URL || process.env.VITE_PUBLIC_BASE_URL || "https://decasan.vercel.app").replace(/\/+$/, "");
 const WHATSAPP_PHONE = "5493548403666";
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_PHONE}`;
 const ALLOWED_LINK_HOSTS = new Set(["decasan.vercel.app", "decasan.com.ar", "decasan.lovable.app", "wa.me", "www.instagram.com", "web.facebook.com"]);
 
 const SYSTEM_PROMPT = `Sos "Decabot", el asistente virtual inteligente de Decasan Herramientas, una ferretería y distribuidora de herramientas de La Falda, Córdoba con más de 60 años de trayectoria. Atendés con tono amable, cálido, profesional y bien argentino (usá "vos").
 
-Información del negocio:
+Información del local:
 - Ubicación: Av. Pres. Kennedy 270, La Falda, Córdoba, Argentina.
 - Horarios de atención: Lunes a viernes de 08:30 a 13:00 y de 16:30 a 20:30 hs. Sábados de 08:30 a 13:00 y de 17:00 a 20:30 hs. Domingos cerrado.
 - WhatsApp de asesoramiento directo: +54 9 3548 40-3666 (${WHATSAPP_URL}).
@@ -44,14 +49,11 @@ Información del negocio:
 - Envíos: Envíos a todo el país a través de Correo Argentino y transportes expresos. Retiro gratis en el local en La Falda.
 - Web oficial: ${BASE_URL}.
 
-Reglas de atención al cliente y catálogo:
-1. Usá la información de "CONTEXTO DE CATALOGO ACTUAL" adjunta en el prompt para responder con precisión.
-2. Al recomendar productos, usá ÚNICAMENTE los productos listados en el contexto con sus precios, nombres y marcas reales. No inventes precios ni stock.
-3. Para colocar links a productos usa siempre el formato [Nombre del producto](${BASE_URL}/productos/{id}).
-4. Si el cliente busca una categoría o variedad general, invitalo a ver el catálogo completo: [Ver catálogo](${BASE_URL}/productos).
-5. Si no hay productos que coincidan exactamente con lo que busca, sé sincero, explicale amablemente y recomendale consultar por WhatsApp (${WHATSAPP_URL}) porque en el local físico suele haber más variedad y repuestos.
-6. Asesoramiento técnico: Ayudá al cliente diferenciando uso hogareño/hobby vs. profesional/industrial. Recordá sugerir elementos de protección personal (EPP) cuando corresponda (guantes, antiparras, protección auditiva).
-7. Mantené las respuestas concisas (máximo 4 a 6 líneas), claras y con viñetas si hay varias opciones.`;
+Reglas de respuesta:
+1. Usá el contexto de catálogo para responder con nombres, precios y marcas exactas.
+2. Al citar productos usá links: [Nombre del producto](${BASE_URL}/productos/{id}).
+3. Si el cliente busca asesoramiento, recomendá según el tipo de uso (hogar vs profesional) y recordá elementos de protección personal (guantes, antiparras).
+4. Respuestas claras, concisas (máximo 4 a 6 líneas).`;
 
 export const chatWithBot = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
@@ -60,10 +62,10 @@ export const chatWithBot = createServerFn({ method: "POST" })
     const catalogContext = await buildCatalogContext(lastUserMessage);
     const fullSystemPrompt = `${SYSTEM_PROMPT}\n\n${catalogContext.prompt}`;
 
-    const geminiKey = process.env.GEMINI_API_KEY?.trim();
-    const groqKey = process.env.GROQ_API_KEY?.trim();
-    const openAiKey = process.env.OPENAI_API_KEY?.trim();
-    const lovableKey = process.env.LOVABLE_API_KEY?.trim();
+    const geminiKey = cleanEnv(process.env.GEMINI_API_KEY);
+    const groqKey = cleanEnv(process.env.GROQ_API_KEY);
+    const openAiKey = cleanEnv(process.env.OPENAI_API_KEY);
+    const lovableKey = cleanEnv(process.env.LOVABLE_API_KEY);
 
     let rawReply: string | null = null;
 
@@ -78,7 +80,7 @@ export const chatWithBot = createServerFn({ method: "POST" })
     }
 
     if (!rawReply) {
-      rawReply = buildFallbackReply(catalogContext);
+      rawReply = buildFallbackReply(lastUserMessage, catalogContext);
     }
 
     return {
@@ -89,62 +91,54 @@ export const chatWithBot = createServerFn({ method: "POST" })
 
 async function callGemini(apiKey: string, systemPrompt: string, messages: { role: string; content: string }[]): Promise<string | null> {
   try {
-    const contents: { role: "user" | "model"; parts: { text: string }[] }[] = [];
+    const history = messages
+      .filter((m) => m.role !== "system" && m.content?.trim())
+      .map((m) => `${m.role === "user" ? "Cliente" : "Decabot"}: ${m.content}`)
+      .join("\n\n");
 
-    for (const m of messages) {
-      if (m.role === "system") continue;
-      const role: "user" | "model" = m.role === "user" ? "user" : "model";
-      const text = m.content?.trim();
-      if (!text) continue;
-
-      const last = contents[contents.length - 1];
-      if (last && last.role === role) {
-        last.parts[0].text += `\n${text}`;
-      } else {
-        contents.push({
-          role,
-          parts: [{ text }],
-        });
-      }
-    }
-
-    if (contents.length > 0 && contents[0].role !== "user") {
-      contents.shift();
-    }
+    const promptText = `${systemPrompt}\n\n--- HISTORIAL DE CONVERSACIÓN ---\n${history}\n\nDecabot:`;
 
     const payload = {
-      systemInstruction: {
-        parts: [{ text: systemPrompt }],
-      },
-      contents: contents.length > 0 ? contents : [{ role: "user" as const, parts: [{ text: "Hola" }] }],
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: promptText }],
+        },
+      ],
       generationConfig: {
         temperature: 0.3,
-        maxOutputTokens: 900,
+        maxOutputTokens: 800,
       },
     };
 
-    // Try Gemini 2.0 Flash, then fallback to 1.5 Flash if needed
-    for (const model of ["gemini-2.0-flash", "gemini-1.5-flash"]) {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    for (const model of ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]) {
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          body: JSON.stringify(payload),
+        });
 
-      if (res.ok) {
-        const json = await res.json();
-        const output = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (output) return output;
-      } else {
-        const errText = await res.text().catch(() => "");
-        console.warn(`[chat] Gemini (${model}) HTTP ${res.status}:`, errText.slice(0, 300));
+        if (res.ok) {
+          const json = await res.json();
+          const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) return text.trim();
+        } else {
+          const errText = await res.text().catch(() => "");
+          console.warn(`[chat] Gemini ${model} HTTP ${res.status}:`, errText.slice(0, 200));
+        }
+      } catch (e: any) {
+        console.warn(`[chat] Gemini ${model} fetch failed:`, e?.message);
       }
     }
 
     return null;
   } catch (err: any) {
-    console.error("[chat] Gemini call exception:", err?.message);
+    console.error("[chat] callGemini exception:", err?.message);
     return null;
   }
 }
@@ -164,20 +158,20 @@ async function callGroq(apiKey: string, systemPrompt: string, messages: { role: 
           ...messages.filter((m) => m.role !== "system"),
         ],
         temperature: 0.3,
-        max_tokens: 900,
+        max_tokens: 800,
       }),
     });
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "");
-      console.warn(`[chat] Groq HTTP ${res.status}:`, errText.slice(0, 300));
+      const err = await res.text().catch(() => "");
+      console.warn(`[chat] Groq HTTP ${res.status}:`, err.slice(0, 200));
       return null;
     }
 
     const json = await res.json();
     return json?.choices?.[0]?.message?.content ?? null;
   } catch (err: any) {
-    console.error("[chat] Groq call exception:", err?.message);
+    console.error("[chat] callGroq exception:", err?.message);
     return null;
   }
 }
@@ -197,20 +191,20 @@ async function callOpenAI(apiKey: string, systemPrompt: string, messages: { role
           ...messages.filter((m) => m.role !== "system"),
         ],
         temperature: 0.3,
-        max_tokens: 900,
+        max_tokens: 800,
       }),
     });
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "");
-      console.warn(`[chat] OpenAI HTTP ${res.status}:`, errText.slice(0, 300));
+      const err = await res.text().catch(() => "");
+      console.warn(`[chat] OpenAI HTTP ${res.status}:`, err.slice(0, 200));
       return null;
     }
 
     const json = await res.json();
     return json?.choices?.[0]?.message?.content ?? null;
   } catch (err: any) {
-    console.error("[chat] OpenAI call exception:", err?.message);
+    console.error("[chat] callOpenAI exception:", err?.message);
     return null;
   }
 }
@@ -359,9 +353,9 @@ function normalizeText(value?: string | null): string {
 
 function extractSearchTerms(input: string): string[] {
   const stopwords = new Set([
-    "hola", "buenas", "quiero", "necesito", "busco", "tenes", "tienen", "para", "con", "una",
-    "uno", "los", "las", "del", "que", "cual", "cuanto", "precio", "producto", "catalogo",
-    "donde", "estan", "cuanto", "sale", "venden", "favor", "gracias", "decasan",
+    "hola", "buenas", "buen", "dia", "tarde", "noche", "quiero", "necesito", "busco", "tenes",
+    "tienen", "para", "con", "una", "uno", "los", "las", "del", "que", "cual", "cuanto", "precio",
+    "producto", "catalogo", "donde", "estan", "cuanto", "sale", "venden", "favor", "gracias", "decasan",
   ]);
 
   return normalizeText(input)
@@ -384,18 +378,47 @@ function detectCategory(input: string): string | null {
   return normalizeCategoryName(input);
 }
 
-function buildFallbackReply(context: { products: CatalogProduct[] }): string {
-  if (context.products.length === 0) {
-    return `¡Hola! No encontré productos exactos en el catálogo para esa búsqueda.\n\nPodés contarme qué trabajo necesitás realizar o ver todo nuestro [Catálogo online](${BASE_URL}/productos). También podés consultarnos directo por [WhatsApp](${WHATSAPP_URL}) para verificar stock en el local.`;
+function buildFallbackReply(userQuery: string, context: { products: CatalogProduct[] }): string {
+  const norm = normalizeText(userQuery);
+
+  // 1. Saludos
+  if (/^(hola|buenas|buen dia|buenas tardes|que tal|hola decabot)/.test(norm)) {
+    return `¡Hola 👋! Soy **Decabot**, el asistente virtual de Decasan Herramientas.\n\n¿En qué te puedo ayudar hoy? Podés consultarme por máquinas, herramientas, medios de pago o envíos.`;
   }
 
-  const lines = context.products.slice(0, 3).map((p) => {
-    const price = formatARS(getPrecioEfectivo(p));
-    const saleTag = tieneOferta(p) ? " 🔥 *Oferta*" : "";
-    return `• [${p.nombre ?? `Producto ${p.id}`}](${BASE_URL}/productos/${p.id}) — **${price}**${saleTag}`;
-  });
+  // 2. Horarios
+  if (/\b(horario|horarios|atienden|abierto|hora|abren|cierran)\b/.test(norm)) {
+    return `🕒 **Nuestros Horarios de Atención en el local:**\n• **Lunes a Viernes:** 08:30 a 13:00 y 16:30 a 20:30 hs.\n• **Sábados:** 08:30 a 13:00 y 17:00 a 20:30 hs.\n• **Domingos:** Cerrado.\n\n¡La tienda online está abierta las 24 hs para hacer tus compras!`;
+  }
 
-  return `¡Hola! Encontré estas opciones destacadas en nuestro catálogo:\n\n${lines.join("\n")}\n\nSi necesitás asesoramiento sobre cuál se adapta mejor a tu trabajo o presupuesto, ¡decime y te ayudo!`;
+  // 3. Ubicación / Local
+  if (/\b(donde|estan|ubicacion|direccion|queda|local|sucursal|calle|mapa)\b/.test(norm)) {
+    return `📍 **Estamos en La Falda, Córdoba:**\nAv. Pres. Kennedy 270, La Falda.\n\nPodés retirar tus compras online gratis por nuestro local o solicitar envío a cualquier punto del país.`;
+  }
+
+  // 4. Medios de pago / Cuotas
+  if (/\b(pago|pagos|tarjeta|tarjetas|cuotas|transferencia|efectivo|mercadopago|mercado pago|interes)\b/.test(norm)) {
+    return `💳 **Medios de Pago Disponibles:**\n• **Mercado Pago:** Tarjetas de crédito, débito y dinero en cuenta.\n• **Transferencia bancaria** con confirmación inmediata.\n• **Efectivo** al retirar en nuestro local.\n\nTodos los pagos se procesan de forma 100% segura.`;
+  }
+
+  // 5. Envíos
+  if (/\b(envio|envios|despacho|correo|argentino|costo de envio|domicilio)\b/.test(norm)) {
+    return `🚚 **Envíos a todo el país:**\n• Realizamos envíos a toda la Argentina mediante **Correo Argentino** y empresas de transporte.\n• **Retiro gratis** en nuestro local de La Falda.\n\nPodés calcular el costo exacto de envío ingresando tu código postal al ver cualquier producto o en el carrito.`;
+  }
+
+  // 6. Si hay productos en el contexto
+  if (context.products.length > 0) {
+    const lines = context.products.slice(0, 3).map((p) => {
+      const price = formatARS(getPrecioEfectivo(p));
+      const saleTag = tieneOferta(p) ? " 🔥 *Oferta*" : "";
+      return `• [${p.nombre ?? `Producto ${p.id}`}](${BASE_URL}/productos/${p.id}) — **${price}**${saleTag}`;
+    });
+
+    return `¡Encontré estas opciones destacadas en nuestro catálogo!\n\n${lines.join("\n")}\n\nSi necesitás asesoramiento técnico o consultar stock en el local, también podés escribirnos por [WhatsApp](${WHATSAPP_URL}).`;
+  }
+
+  // 7. Búsqueda sin coincidencias
+  return `¡Hola! No encontré productos exactos en el catálogo online para esa búsqueda específica.\n\nPodés explorar todo el [Catálogo online](${BASE_URL}/productos) o consultarnos directo por [WhatsApp](${WHATSAPP_URL}) porque en el local físico disponemos de repuestos y variedad adicional.`;
 }
 
 function sanitizeReplyLinks(reply: string): string {
