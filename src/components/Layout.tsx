@@ -29,8 +29,8 @@ export function Layout({ children }: { children: ReactNode }) {
 
       <header className="sticky top-0 z-40 border-b border-border bg-surface-elevated/90 backdrop-blur">
         <div className="container-x grid grid-cols-[auto_1fr_auto] items-center gap-2 py-3 sm:flex sm:gap-4 sm:py-4">
-          <Link to="/" className="shrink-0" >
-              <img src="/logo.png" alt="Decasan" className="h-14 w-auto sm:h-20" />
+          <Link to="/" className="shrink-0 flex items-center">
+            <img src="/logo.png" alt="Decasan Home Center" className="h-7 sm:h-8 md:h-9 w-auto object-contain transition-opacity hover:opacity-90" />
           </Link>
 
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium ml-6">
@@ -58,7 +58,7 @@ export function Layout({ children }: { children: ReactNode }) {
               </button>
             </>
           ) : (
-            <Link to="/login" className="p-2 hover:text-primary text-sm font-medium">
+            <Link to="/login" search={{ redirect: "/cuenta", mode: "login" } as never} className="p-2 hover:text-primary text-sm font-medium">
               Ingresar
             </Link>
           )}

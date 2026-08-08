@@ -8,10 +8,10 @@ export function Footer() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
           <div>
             <a href="/" className="shrink-0 mb-4 inline-block">
-              <img src="/logo.png" alt="Decasan" className="h-12 w-auto" />
+              <img src="/logo-white.png" alt="Decasan Home Center" className="h-8 md:h-9 w-auto" />
             </a>
             <p className="text-sm text-secondary-foreground/70 leading-relaxed mb-4">
-              Ferretería, herramientas y materiales en La Falda. +60 años acompañando proyectos.
+              Home Center, herramientas, materiales y equipamiento para tu hogar y proyectos en La Falda. +60 años de trayectoria.
             </p>
             <div className="flex gap-2">
               <a href="https://web.facebook.com/p/Decasan-Herramientas-100036108051965/?locale=es_LA&_rdc=1&_rdr" aria-label="Facebook" className="size-9 rounded-lg bg-secondary-foreground/10 flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
@@ -53,7 +53,7 @@ export function Footer() {
         </div>
 
         <div className="pt-6 border-t border-secondary-foreground/10 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-secondary-foreground/60">
-          <div>© {new Date().getFullYear()} Decasan Herramientas. Todos los derechos reservados.</div>
+          <div>© {new Date().getFullYear()} Decasan Home Center. Todos los derechos reservados.</div>
           <div>La Falda · Córdoba · Argentina</div>
         </div>
       </div>

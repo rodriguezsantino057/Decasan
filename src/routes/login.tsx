@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Eye, EyeOff, Check, X } from "lucide-react";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { Layout } from "@/components/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -172,25 +173,10 @@ function LoginPage() {
   }
 
   async function handleGoogleLogin() {
-    if (loading) return;
-    setLoading(true);
-    setNeedsConfirm(null);
-    const redirectTo = `${window.location.origin}/login?redirect=${encodeURIComponent(search.redirect)}`;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo,
-        queryParams: {
-          access_type: "offline",
-          prompt: "select_account",
-        },
-      },
-    });
-    if (error) {
-      setLoading(false);
-      toast.error(translateAuthError(error.message));
-    }
+    // Legacy OAuth redirect function (not used anymore)
   }
+
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
   const inputCls =
     "w-full mt-1 border border-border bg-background px-3 py-2.5 outline-none focus:border-primary";
@@ -224,14 +210,43 @@ function LoginPage() {
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          disabled={loading}
-          className="mb-5 w-full border border-border bg-background py-3 font-medium hover:border-primary hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Continuar con Google
-        </button>
+        {googleClientId ? (
+          <GoogleOAuthProvider clientId={googleClientId}>
+            <div className="mb-5 flex justify-center w-full">
+              <GoogleLogin
+                onSuccess={async (res) => {
+                  if (!res.credential) return;
+                  setLoading(true);
+                  const { error } = await supabase.auth.signInWithIdToken({
+                    provider: 'google',
+                    token: res.credential,
+                  });
+                  if (error) {
+                    setLoading(false);
+                    toast.error(translateAuthError(error.message));
+                  } else {
+                    toast.success("¡Sesión iniciada con éxito!");
+                    setTimeout(() => navigate({ to: search.redirect }), 500);
+                  }
+                }}
+                onError={() => {
+                  toast.error("Error al iniciar sesión con Google");
+                }}
+                useOneTap
+                text="continue_with"
+                width="400"
+              />
+            </div>
+          </GoogleOAuthProvider>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="mb-5 w-full border border-border bg-background py-3 font-medium opacity-50 cursor-not-allowed"
+          >
+            Configurar Google ID en .env
+          </button>
+        )}
 
         <div className="mb-5 flex items-center gap-3 text-xs uppercase text-muted-foreground">
           <span className="h-px flex-1 bg-border" />
