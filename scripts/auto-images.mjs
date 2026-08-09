@@ -71,37 +71,40 @@ async function main() {
       const result = await response.json();
       
       if (result.images && result.images.length > 0) {
-        const bestImage = result.images.find(img => img.imageUrl.startsWith("http"));
+        const validImages = result.images.filter(img => img.imageUrl.startsWith("http")).slice(0, 3);
         
-        if (bestImage) {
-          console.log(`  -> ¡Encontrada! URL: ${bestImage.imageUrl}`);
+        if (validImages.length > 0) {
+          const firstImage = validImages[0];
+          console.log(`  -> ¡Encontradas ${validImages.length} imágenes! Principal: ${firstImage.imageUrl}`);
           
           const { error: updateError } = await supabase
             .from("productos")
             .update({ 
-              image_url: bestImage.imageUrl,
-              image_webp: bestImage.imageUrl
+              image_url: firstImage.imageUrl,
+              image_webp: firstImage.imageUrl
             })
             .eq("id", p.id);
 
-          // Agregar también a la galería (product_images)
+          // Agregar a la galería (product_images)
+          const galleryInserts = validImages.map((img, idx) => ({
+            producto_id: p.id,
+            url: img.imageUrl,
+            url_webp: img.imageUrl,
+            alt: p.nombre,
+            orden: idx
+          }));
+
           const { error: galleryError } = await supabase
             .from("product_images")
-            .insert({
-              producto_id: p.id,
-              url: bestImage.imageUrl,
-              url_webp: bestImage.imageUrl,
-              alt: p.nombre,
-              orden: 0
-            });
+            .insert(galleryInserts);
 
-          if (updateError) {
-            console.error(`  -> Error al guardar:`, updateError.message);
+          if (updateError || galleryError) {
+            console.error(`  -> Error al guardar:`, (updateError || galleryError).message);
           } else {
             count++;
           }
         } else {
-          console.log(`  -> No se encontró URL válida.`);
+          console.log(`  -> No se encontraron URLs válidas.`);
         }
       } else {
         console.log(`  -> No se encontraron imágenes.`);

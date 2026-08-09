@@ -192,6 +192,7 @@ const bulkSchema = z.discriminatedUnion("action", [
     oferta_hasta: z.string().nullable(),
   }),
   z.object({ action: z.literal("delete"), ids: z.array(z.number().int()).min(1).max(500) }),
+  z.object({ action: z.literal("delete_photos"), ids: z.array(z.number().int()).min(1).max(500) }),
 ]);
 
 export const adminBulkProductos = createServerFn({ method: "POST" })
@@ -252,6 +253,13 @@ export const adminBulkProductos = createServerFn({ method: "POST" })
       case "delete": {
         const { error } = await sb.from("productos").delete().in("id", data.ids);
         if (error) throw new Error(error.message);
+        return { ok: true, updated: data.ids.length };
+      }
+      case "delete_photos": {
+        const { error: e1 } = await sb.from("productos").update({ image_url: null, image_webp: null }).in("id", data.ids);
+        if (e1) throw new Error(e1.message);
+        const { error: e2 } = await sb.from("product_images").delete().in("producto_id", data.ids);
+        if (e2) throw new Error(e2.message);
         return { ok: true, updated: data.ids.length };
       }
     }

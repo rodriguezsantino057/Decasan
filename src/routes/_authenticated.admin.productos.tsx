@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Search, X, Tag, Layers, Power, Percent, Package, BadgePercent, Upload, Download, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown } from "lucide-react";
+import { Plus, Edit, Trash2, Search, X, Tag, Layers, Power, Percent, Package, BadgePercent, Upload, Download, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ImageOff } from "lucide-react";
 import {
   adminListProductos, adminUpsertProducto, adminDeleteProducto,
   adminListCategorias, adminListGrupos, adminBulkProductos, adminImportProductosErp, adminPreviewImportProductosErp,
@@ -394,6 +394,7 @@ function AdminProductos() {
           <BulkBtn icon={<Percent className="size-3.5" />} label="Precio %" onClick={() => setBulkOpen("precio")} />
           <BulkBtn icon={<Package className="size-3.5" />} label="Stock" onClick={() => setBulkOpen("stock")} />
           <BulkBtn icon={<BadgePercent className="size-3.5" />} label="Oferta" onClick={() => setBulkOpen("oferta")} />
+          <BulkBtn icon={<ImageOff className="size-3.5" />} label="Borrar fotos" danger onClick={() => setBulkOpen("delete_photos")} />
           <BulkBtn icon={<Trash2 className="size-3.5" />} label="Eliminar" danger onClick={() => setBulkOpen("delete")} />
           <button onClick={clearSelection} className="ml-2 p-1 hover:text-primary" aria-label="Limpiar selección">
             <X className="size-4" />
@@ -871,7 +872,7 @@ function formatImportValue(field: string, value: unknown) {
 
 // === BULK DIALOG ===
 
-type BulkKind = "categoria" | "grupo" | "activo" | "precio" | "stock" | "oferta" | "delete";
+type BulkKind = "categoria" | "grupo" | "activo" | "precio" | "stock" | "oferta" | "delete" | "delete_photos";
 
 function BulkDialog({ kind, count, categorias, grupos, onClose, onConfirm }: {
   kind: BulkKind; count: number;
@@ -887,13 +888,14 @@ function BulkDialog({ kind, count, categorias, grupos, onClose, onConfirm }: {
   const [precioOferta, setPrecioOferta] = useState<number | "">("");
   const [ofertaHasta, setOfertaHasta] = useState("");
   const [busy, setBusy] = useState(false);
-  const [confirm, setConfirm] = useState(kind === "delete" || kind === "precio");
+  const [confirm, setConfirm] = useState(kind === "delete" || kind === "precio" || kind === "delete_photos");
   const [acked, setAcked] = useState(false);
 
   const titles: Record<BulkKind, string> = {
     categoria: "Cambiar categoría", grupo: "Cambiar marca / grupo", activo: "Activar / desactivar",
     precio: "Ajuste de precio por porcentaje", stock: "Establecer stock",
     oferta: "Crear / quitar oferta", delete: "Eliminar productos",
+    delete_photos: "Borrar fotos",
   };
 
   async function go() {
@@ -916,6 +918,7 @@ function BulkDialog({ kind, count, categorias, grupos, onClose, onConfirm }: {
           };
           break;
         case "delete": payload = { action: "delete" }; break;
+        case "delete_photos": payload = { action: "delete_photos" }; break;
       }
       await onConfirm(payload);
     } finally { setBusy(false); }
@@ -979,8 +982,13 @@ function BulkDialog({ kind, count, categorias, grupos, onClose, onConfirm }: {
             Esta acción <strong>elimina</strong> {count} productos y no se puede deshacer.
           </div>
         )}
+        {kind === "delete_photos" && (
+          <div className="mb-4 p-3 border border-destructive/50 bg-destructive/10 text-sm">
+            Esta acción <strong>elimina todas las fotos</strong> de {count} productos y no se puede deshacer.
+          </div>
+        )}
 
-        {(kind === "delete" || kind === "precio") && (
+        {(kind === "delete" || kind === "precio" || kind === "delete_photos") && (
           <label className="flex items-start gap-2 mb-4 text-xs">
             <input type="checkbox" checked={acked} onChange={(e) => { setAcked(e.target.checked); setConfirm(e.target.checked); }} className="mt-0.5" />
             <span>Confirmo aplicar este cambio a {count} producto{count === 1 ? "" : "s"}.</span>
@@ -991,8 +999,8 @@ function BulkDialog({ kind, count, categorias, grupos, onClose, onConfirm }: {
           <button onClick={onClose} className="px-4 py-2 text-sm">Cancelar</button>
           <button
             onClick={go}
-            disabled={busy || ((kind === "delete" || kind === "precio") && !confirm)}
-            className={`px-4 py-2 text-sm font-medium ${kind === "delete" ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"} disabled:opacity-50`}
+            disabled={busy || ((kind === "delete" || kind === "precio" || kind === "delete_photos") && !confirm)}
+            className={`px-4 py-2 text-sm font-medium ${kind === "delete" || kind === "delete_photos" ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"} disabled:opacity-50`}
           >
             {busy ? "Aplicando..." : "Aplicar"}
           </button>
