@@ -13,6 +13,7 @@ import heroImg from "@/assets/hero.jpg";
 import heroHome from "@/assets/hero-home.png";
 import heroConstruction from "@/assets/hero-construction.png";
 import heroGarden from "@/assets/hero-garden.png";
+import heroPlumbing from "@/assets/hero-plumbing.png";
 export const Route = createFileRoute("/")({
   component: Index,
 });
@@ -41,6 +42,13 @@ function Index() {
       title: "Construcción y Materiales",
       desc: "Todo lo necesario para proyectos sólidos desde los cimientos.",
       btn1: { text: "Materiales", cat: "Materiales" },
+      btn2: { text: "Herramientas", cat: "Accesorios y Herramientas" },
+    },
+    {
+      src: heroPlumbing,
+      title: "Sanitarios e Instalaciones",
+      desc: "Grifería, loza sanitaria y todo tipo de caños para tu proyecto.",
+      btn1: { text: "Ver Sanitarios", cat: "Sanitarios e instalaciones" },
       btn2: { text: "Herramientas", cat: "Accesorios y Herramientas" },
     },
     {
