@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Search, X, Tag, Layers, Power, Percent, Package, BadgePercent, Upload, Download, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ImageOff } from "lucide-react";
+import { Plus, Edit, Trash2, Search, X, Tag, Layers, Power, Percent, Package, BadgePercent, Upload, Download, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ImageOff, ExternalLink } from "lucide-react";
 import {
   adminListProductos, adminUpsertProducto, adminDeleteProducto,
   adminListCategorias, adminListGrupos, adminBulkProductos, adminImportProductosErp, adminPreviewImportProductosErp,
@@ -327,6 +327,7 @@ function AdminProductos() {
                       : <span className="text-[10px] uppercase bg-success/15 text-success px-2 py-0.5">Activo</span>}
                   </td>
                   <td className="px-3 py-2 flex gap-1 justify-end">
+                    <a href={`/productos/${p.id}`} target="_blank" rel="noopener noreferrer" className="p-1.5 hover:text-primary" title="Ver producto en la tienda"><ExternalLink className="size-4" /></a>
                     <button onClick={() => setEditing({
                       id: p.id, nombre: p.nombre ?? "", descripcion: p.descripcion ?? "", categoria: p.categoria ?? "",
                       grupo: p.grupo ?? "", sku: p.sku ?? "", precio: Number(p.precio ?? 0), stock: p.stock ?? 0,
@@ -577,6 +578,9 @@ function ProductAdminCard({ product: p, selected, enOferta, onToggle, onEdit, on
         </div>
       </div>
       <div className="mt-3 flex justify-end gap-2 border-t border-border pt-3">
+        <a href={`/productos/${p.id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 border border-border px-3 py-1.5 text-xs font-medium hover:border-primary hover:text-primary">
+          <ExternalLink className="size-3.5" /> Ver
+        </a>
         <button onClick={onEdit} className="inline-flex items-center gap-1.5 border border-border px-3 py-1.5 text-xs font-medium hover:border-primary hover:text-primary">
           <Edit className="size-3.5" /> Editar
         </button>
