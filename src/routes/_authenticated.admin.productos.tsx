@@ -271,13 +271,13 @@ function AdminProductos() {
                 />
               </th>
               <th className="text-left px-3 py-2 w-12"></th>
-              <th className="text-left px-3 py-2">
+              <th className="text-left px-3 py-2 w-[30%]">
                 <SortHeader label="Nombre" active={sortBy === "nombre"} dir={sortDir} onClick={() => changeSort("nombre")} />
               </th>
-              <th className="text-left px-3 py-2 hidden md:table-cell">SKU</th>
-              <th className="text-left px-3 py-2 hidden xl:table-cell">Cód. fabricante</th>
-              <th className="text-left px-3 py-2 hidden lg:table-cell">Categoría</th>
-              <th className="text-left px-3 py-2 hidden xl:table-cell">Grupo</th>
+              <th className="text-left px-3 py-2 w-[12%] hidden md:table-cell">SKU</th>
+              <th className="text-left px-3 py-2 w-[12%] hidden xl:table-cell">Cód. fabricante</th>
+              <th className="text-left px-3 py-2 w-[15%] hidden lg:table-cell">Categoría</th>
+              <th className="text-left px-3 py-2 w-[15%] hidden xl:table-cell">Grupo</th>
               <th className="text-right px-3 py-2 hidden xl:table-cell">Sin IVA</th>
               <th className="text-right px-3 py-2">
                 <SortHeader label="Precio" active={sortBy === "precio"} dir={sortDir} align="right" onClick={() => changeSort("precio")} />
