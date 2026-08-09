@@ -7,6 +7,7 @@ import { Brands } from "@/components/Brands";
 import { InstagramReels } from "@/components/InstagramReels";
 import { LocationSection } from "@/components/LocationSection";
 import { fetchProductos, fetchCategorias } from "@/lib/products";
+import { useSession, useIsAdmin } from "@/lib/auth";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import heroImg from "@/assets/hero.jpg";
@@ -38,15 +39,18 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const { user } = useSession();
+  const { data: isAdmin } = useIsAdmin(user);
+
   const [emblaRef] = useEmblaCarousel({ loop: true, duration: 40 }, [
     Autoplay({ delay: 5000, stopOnInteraction: false }),
   ]);
 
   const featured = useQuery({
-    queryKey: ["featured"],
-    queryFn: () => fetchProductos({ limit: 8 }),
+    queryKey: ["featured", isAdmin],
+    queryFn: () => fetchProductos({ limit: 8, isAdmin }),
   });
-  const cats = useQuery({ queryKey: ["cats"], queryFn: fetchCategorias });
+  const cats = useQuery({ queryKey: ["cats", isAdmin], queryFn: () => fetchCategorias(isAdmin) });
 
   const slides = [
     {

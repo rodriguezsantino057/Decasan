@@ -55,8 +55,10 @@ export async function fetchProductos(opts: {
   sort?: SortKey;
   limit?: number;
   offset?: number;
+  isAdmin?: boolean;
 }): Promise<{ items: Producto[]; count: number }> {
-  let query = supabase.from("productos").select("*", { count: "exact" }).or("activo.eq.true,activo.is.null");
+  let query = supabase.from("productos").select("*", { count: "exact" });
+  if (!opts.isAdmin) query = query.or("activo.eq.true,activo.is.null");
   const searchTokens = tokenizeSearch(opts.q);
 
   const normalizedCat = normalizeCategoryName(opts.cat);
@@ -189,8 +191,10 @@ function scoreProductSearch(product: Producto, tokens: string[]) {
   return total;
 }
 
-export async function fetchProducto(id: number): Promise<Producto | null> {
-  const { data, error } = await supabase.from("productos").select("*").eq("id", id).or("activo.eq.true,activo.is.null").maybeSingle();
+export async function fetchProducto(id: number, isAdmin?: boolean): Promise<Producto | null> {
+  let query = supabase.from("productos").select("*").eq("id", id);
+  if (!isAdmin) query = query.or("activo.eq.true,activo.is.null");
+  const { data, error } = await query.maybeSingle();
   if (error) throw error;
   return data as Producto | null;
 }
@@ -206,7 +210,7 @@ export async function fetchProductoImagenes(productoId: number): Promise<Product
   return (data ?? []) as ProductImageRow[];
 }
 
-export async function fetchCategorias(): Promise<string[]> {
+export async function fetchCategorias(isAdmin?: boolean): Promise<string[]> {
   const { data, error } = await (supabase as any)
     .from("categorias")
     .select("nombre")
@@ -216,22 +220,26 @@ export async function fetchCategorias(): Promise<string[]> {
 
   if (!error) return uniqueSortedCategories((data ?? []).map((c: { nombre: string | null }) => c.nombre));
 
-  const fallback = await supabase.from("productos").select("categoria");
+  let fallbackQuery = supabase.from("productos").select("categoria");
+  if (!isAdmin) fallbackQuery = fallbackQuery.or("activo.eq.true,activo.is.null");
+  const fallback = await fallbackQuery;
   if (fallback.error) throw fallback.error;
   return uniqueSortedCategories((fallback.data ?? []).map((r: { categoria: string | null }) => r.categoria));
 }
 
-export async function fetchGrupos(): Promise<string[]> {
+export async function fetchGrupos(isAdmin?: boolean): Promise<string[]> {
   const allGrupos: string[] = [];
   let from = 0;
   const pageSize = 1000;
   while (true) {
-    const { data, error } = await supabase
+    let q = supabase
       .from("productos")
       .select("grupo")
       .not("grupo", "is", null)
-      .not("grupo", "eq", "")
-      .or("activo.eq.true,activo.is.null")
+      .not("grupo", "eq", "");
+    if (!isAdmin) q = q.or("activo.eq.true,activo.is.null");
+    
+    const { data, error } = await q
       .order("grupo")
       .range(from, from + pageSize - 1);
     if (error) throw error;
@@ -244,10 +252,16 @@ export async function fetchGrupos(): Promise<string[]> {
   );
 }
 
-export async function fetchPriceRange(): Promise<{ min: number; max: number }> {
+export async function fetchPriceRange(isAdmin?: boolean): Promise<{ min: number; max: number }> {
+  let q1 = supabase.from("productos").select("precio");
+  let q2 = supabase.from("productos").select("precio");
+  if (!isAdmin) {
+    q1 = q1.or("activo.eq.true,activo.is.null");
+    q2 = q2.or("activo.eq.true,activo.is.null");
+  }
   const [{ data: lo }, { data: hi }] = await Promise.all([
-    supabase.from("productos").select("precio").or("activo.eq.true,activo.is.null").order("precio", { ascending: true, nullsFirst: false }).limit(1).maybeSingle(),
-    supabase.from("productos").select("precio").or("activo.eq.true,activo.is.null").order("precio", { ascending: false, nullsFirst: false }).limit(1).maybeSingle(),
+    q1.order("precio", { ascending: true, nullsFirst: false }).limit(1).maybeSingle(),
+    q2.order("precio", { ascending: false, nullsFirst: false }).limit(1).maybeSingle(),
   ]);
   return {
     min: Math.floor(Number(lo?.precio ?? 0)),

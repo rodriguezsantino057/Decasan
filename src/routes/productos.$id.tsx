@@ -22,6 +22,7 @@ import { ProductGallery } from "@/components/ProductGallery";
 import { fetchProducto, fetchProductoImagenes, fetchProductos, getPrecioEfectivo, tieneOferta, type Producto } from "@/lib/products";
 import { formatARS } from "@/lib/format";
 import { useCart } from "@/lib/cart";
+import { useSession, useIsAdmin } from "@/lib/auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/productos/$id")({
@@ -44,9 +45,12 @@ function ProductDetail() {
   const add = useCart((s) => s.add);
   const [qty, setQty] = useState(1);
 
+  const { user } = useSession();
+  const { data: isAdmin } = useIsAdmin(user);
+
   const product = useQuery({
-    queryKey: ["product", productId],
-    queryFn: () => fetchProducto(productId),
+    queryKey: ["product", productId, isAdmin],
+    queryFn: () => fetchProducto(productId, isAdmin),
   });
 
   const gallery = useQuery({
@@ -56,13 +60,14 @@ function ProductDetail() {
   });
 
   const related = useQuery({
-    queryKey: ["related", product.data?.grupo, product.data?.categoria],
+    queryKey: ["related", product.data?.grupo, product.data?.categoria, isAdmin],
     enabled: !!product.data,
     queryFn: () =>
       fetchProductos({
         grupo: product.data?.grupo ?? undefined,
         cat: product.data?.grupo ? undefined : product.data?.categoria ?? undefined,
         limit: 12,
+        isAdmin,
       }),
   });
 
@@ -84,6 +89,11 @@ function ProductDetail() {
 
   if (!product.data) throw notFound();
   const p = product.data;
+  
+  // Si no es admin y el producto es inactivo, forzamos 404
+  if (!isAdmin && p.activo === false) {
+    throw notFound();
+  }
   const inStock = (p.stock ?? 0) > 0;
   const lowStock = inStock && (p.stock ?? 0) <= 3;
 

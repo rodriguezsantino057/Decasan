@@ -5,6 +5,7 @@ import { Search, X, SlidersHorizontal } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { ProductCard } from "@/components/ProductCard";
 import { fetchProductos, fetchCategorias, fetchGrupos, type SortKey } from "@/lib/products";
+import { useSession, useIsAdmin } from "@/lib/auth";
 
 type SearchParams = {
   q?: string;
@@ -41,6 +42,9 @@ export const Route = createFileRoute("/productos/")({
 const PAGE_SIZE = 24;
 
 function Catalog() {
+  const { user } = useSession();
+  const { data: isAdmin } = useIsAdmin(user);
+  
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const [qLocal, setQLocal] = useState(search.q ?? "");
@@ -65,11 +69,11 @@ function Catalog() {
     setQLocal(search.q ?? "");
   }, [search.q]);
 
-  const cats = useQuery({ queryKey: ["cats"], queryFn: fetchCategorias });
-  const grupos = useQuery({ queryKey: ["grupos"], queryFn: fetchGrupos });
+  const cats = useQuery({ queryKey: ["cats", isAdmin], queryFn: () => fetchCategorias(isAdmin) });
+  const grupos = useQuery({ queryKey: ["grupos", isAdmin], queryFn: () => fetchGrupos(isAdmin) });
 
   const products = useQuery({
-    queryKey: ["products", search.q, search.cat, search.grupo, search.min, search.max, sort, page],
+    queryKey: ["products", search.q, search.cat, search.grupo, search.min, search.max, sort, page, isAdmin],
     queryFn: () =>
       fetchProductos({
         q: search.q,
@@ -80,6 +84,7 @@ function Catalog() {
         sort,
         limit: PAGE_SIZE,
         offset: (page - 1) * PAGE_SIZE,
+        isAdmin,
       }),
   });
 

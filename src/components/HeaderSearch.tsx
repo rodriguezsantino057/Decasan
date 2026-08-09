@@ -3,6 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Search, Loader2, X } from "lucide-react";
 import { fetchProductos, type Producto } from "@/lib/products";
 import { formatARS } from "@/lib/format";
+import { useSession, useIsAdmin } from "@/lib/auth";
 import { ProductImage } from "@/components/ProductImage";
 
 export function HeaderSearch({ compact = false }: { compact?: boolean }) {
@@ -12,6 +13,9 @@ export function HeaderSearch({ compact = false }: { compact?: boolean }) {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const wrapRef = useRef<HTMLDivElement>(null);
+
+  const { user } = useSession();
+  const { data: isAdmin } = useIsAdmin(user);
 
   useEffect(() => {
     const term = q.trim();
@@ -23,14 +27,14 @@ export function HeaderSearch({ compact = false }: { compact?: boolean }) {
     setLoading(true);
     const id = setTimeout(async () => {
       try {
-        const { items } = await fetchProductos({ q: term, limit: 8 });
+        const { items } = await fetchProductos({ q: term, limit: 8, isAdmin });
         setItems(items);
       } finally {
         setLoading(false);
       }
     }, 220);
     return () => clearTimeout(id);
-  }, [q]);
+  }, [q, isAdmin]);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
