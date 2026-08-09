@@ -13,7 +13,7 @@ export function ProductCard({ p }: { p: Producto }) {
       params={{ id: String(p.id) }}
       className="group bg-card border border-border hover:border-primary/60 transition flex flex-col"
     >
-      <div className="aspect-square bg-muted relative overflow-hidden">
+      <div className="aspect-square bg-white relative overflow-hidden">
         <ProductImage
           webp={p.image_webp}
           src={p.image_url}

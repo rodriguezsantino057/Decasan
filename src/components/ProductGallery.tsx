@@ -21,7 +21,7 @@ export function ProductGallery({ imagenes, fallbackWebp, fallbackSrc, alt }: Pro
 
   return (
     <div className="space-y-3">
-      <div className="relative aspect-square bg-muted border border-border overflow-hidden group">
+      <div className="relative aspect-square bg-white border border-border overflow-hidden group">
         <ProductImage
           webp={current.webp}
           src={current.src}
@@ -60,7 +60,7 @@ export function ProductGallery({ imagenes, fallbackWebp, fallbackSrc, alt }: Pro
             <button
               key={i}
               onClick={() => setIdx(i)}
-              className={`aspect-square overflow-hidden border bg-muted/40 transition ${
+              className={`aspect-square overflow-hidden border bg-white transition ${
                 i === idx ? "border-primary ring-1 ring-primary" : "border-border hover:border-foreground/40"
               }`}
               aria-label={`Ver imagen ${i + 1}`}
