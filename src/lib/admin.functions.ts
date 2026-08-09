@@ -104,7 +104,7 @@ export const adminListProductos = createServerFn({ method: "GET" })
     cat: z.string().max(100).optional().nullable(),
     grupo: z.string().max(100).optional().nullable(),
     activo: z.enum(["all", "yes", "no"]).optional(),
-    sortBy: z.enum(["id", "nombre", "precio", "stock"]).optional(),
+    sortBy: z.enum(["id", "nombre", "precio", "stock", "erp_updated_at"]).optional(),
     sortDir: z.enum(["asc", "desc"]).optional(),
   }).parse(d ?? {}))
   .handler(async ({ data, context }) => {

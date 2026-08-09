@@ -23,7 +23,7 @@ type ProductoForm = {
   image_url: string; image_webp: string;
   activo: boolean; precio_oferta: number | null; oferta_hasta: string | null;
 };
-type ProductSortBy = "id" | "nombre" | "precio" | "stock";
+type ProductSortBy = "id" | "nombre" | "precio" | "stock" | "erp_updated_at";
 type SortDir = "asc" | "desc";
 
 const empty: ProductoForm = {
@@ -241,6 +241,18 @@ function AdminProductos() {
           <option value="all">Activos e inactivos</option>
           <option value="yes">Solo activos</option>
           <option value="no">Solo inactivos</option>
+        </select>
+        <select value={`${sortBy}-${sortDir}`} onChange={(e) => { 
+          const [by, dir] = e.target.value.split('-'); 
+          setSortBy(by as any); 
+          setSortDir(dir as any); 
+          setPage(1); 
+        }} className="w-full border border-border bg-background px-3 py-2 text-sm">
+          <option value="nombre-asc">Nombre A-Z</option>
+          <option value="id-desc">Últimos Agregados</option>
+          <option value="erp_updated_at-desc">Últimos Modificados</option>
+          <option value="precio-desc">Mayor Precio</option>
+          <option value="precio-asc">Menor Precio</option>
         </select>
         <button onClick={() => setEditing({ ...empty })} className="w-full justify-center bg-primary text-primary-foreground px-4 py-2 text-sm font-medium flex items-center gap-2">
           <Plus className="size-4" /> Nuevo

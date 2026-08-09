@@ -81,7 +81,8 @@ async function main() {
             .from("productos")
             .update({ 
               image_url: firstImage.imageUrl,
-              image_webp: firstImage.imageUrl
+              image_webp: firstImage.imageUrl,
+              erp_updated_at: new Date().toISOString()
             })
             .eq("id", p.id);
 
