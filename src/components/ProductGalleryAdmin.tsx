@@ -182,6 +182,7 @@ function SortableThumb({ item, isPrincipal, onDelete, onEdit }: {
         </span>
       )}
       <button
+        type="button"
         {...attributes}
         {...listeners}
         className="absolute top-1 right-1 size-7 sm:size-6 grid place-items-center bg-background/90 border border-border opacity-100 sm:opacity-0 sm:group-hover:opacity-100 cursor-grab active:cursor-grabbing"
@@ -190,10 +191,10 @@ function SortableThumb({ item, isPrincipal, onDelete, onEdit }: {
         <GripVertical className="size-3.5" />
       </button>
       <div className="absolute bottom-1 right-1 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
-        <button onClick={onEdit} className="size-7 sm:size-6 grid place-items-center bg-background/90 border border-border hover:text-primary" aria-label="Editar recorte">
+        <button type="button" onClick={onEdit} className="size-7 sm:size-6 grid place-items-center bg-background/90 border border-border hover:text-primary" aria-label="Editar recorte">
           <Edit3 className="size-3" />
         </button>
-        <button onClick={onDelete} className="size-7 sm:size-6 grid place-items-center bg-background/90 border border-border hover:text-destructive" aria-label="Eliminar">
+        <button type="button" onClick={onDelete} className="size-7 sm:size-6 grid place-items-center bg-background/90 border border-border hover:text-destructive" aria-label="Eliminar">
           <Trash2 className="size-3" />
         </button>
       </div>
