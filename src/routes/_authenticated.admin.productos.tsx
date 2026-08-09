@@ -258,7 +258,7 @@ function AdminProductos() {
       </div>
 
       <div className="hidden border border-border overflow-x-auto lg:block">
-        <table className="w-full table-fixed text-sm">
+        <table className="w-full text-sm">
           <thead className="bg-secondary text-secondary-foreground">
             <tr>
               <th className="px-3 py-2 w-10">
@@ -271,22 +271,22 @@ function AdminProductos() {
                 />
               </th>
               <th className="text-left px-3 py-2 w-12"></th>
-              <th className="text-left px-3 py-2 w-[30%]">
+              <th className="text-left px-3 py-2 w-1/3">
                 <SortHeader label="Nombre" active={sortBy === "nombre"} dir={sortDir} onClick={() => changeSort("nombre")} />
               </th>
-              <th className="text-left px-3 py-2 w-[12%] hidden md:table-cell">SKU</th>
-              <th className="text-left px-3 py-2 w-[12%] hidden xl:table-cell">Cód. fabricante</th>
-              <th className="text-left px-3 py-2 w-[15%] hidden lg:table-cell">Categoría</th>
-              <th className="text-left px-3 py-2 w-[15%] hidden xl:table-cell">Grupo</th>
-              <th className="text-right px-3 py-2 hidden xl:table-cell">Sin IVA</th>
-              <th className="text-right px-3 py-2">
+              <th className="text-left px-3 py-2 hidden md:table-cell whitespace-nowrap">SKU</th>
+              <th className="text-left px-3 py-2 hidden xl:table-cell whitespace-nowrap">Cód. fabricante</th>
+              <th className="text-left px-3 py-2 hidden lg:table-cell whitespace-nowrap">Categoría</th>
+              <th className="text-left px-3 py-2 hidden xl:table-cell whitespace-nowrap">Grupo</th>
+              <th className="text-right px-3 py-2 hidden xl:table-cell whitespace-nowrap">Sin IVA</th>
+              <th className="text-right px-3 py-2 whitespace-nowrap">
                 <SortHeader label="Precio" active={sortBy === "precio"} dir={sortDir} align="right" onClick={() => changeSort("precio")} />
               </th>
-              <th className="text-right px-3 py-2">
+              <th className="text-right px-3 py-2 whitespace-nowrap">
                 <SortHeader label="Stock" active={sortBy === "stock"} dir={sortDir} align="right" onClick={() => changeSort("stock")} />
               </th>
-              <th className="px-3 py-2 hidden md:table-cell">Estado</th>
-              <th className="px-3 py-2 w-[140px]"></th>
+              <th className="px-3 py-2 hidden md:table-cell whitespace-nowrap">Estado</th>
+              <th className="px-3 py-2 min-w-[140px]"></th>
             </tr>
           </thead>
           <tbody>
