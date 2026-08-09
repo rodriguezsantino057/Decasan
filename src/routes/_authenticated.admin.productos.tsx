@@ -258,7 +258,7 @@ function AdminProductos() {
       </div>
 
       <div className="hidden border border-border overflow-x-auto lg:block">
-        <table className="w-full text-sm">
+        <table className="w-full table-fixed text-sm">
           <thead className="bg-secondary text-secondary-foreground">
             <tr>
               <th className="px-3 py-2 w-10">
@@ -286,7 +286,7 @@ function AdminProductos() {
                 <SortHeader label="Stock" active={sortBy === "stock"} dir={sortDir} align="right" onClick={() => changeSort("stock")} />
               </th>
               <th className="px-3 py-2 hidden md:table-cell">Estado</th>
-              <th className="px-3 py-2 min-w-[140px]"></th>
+              <th className="px-3 py-2 w-[140px]"></th>
             </tr>
           </thead>
           <tbody>
