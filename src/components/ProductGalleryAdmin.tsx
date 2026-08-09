@@ -6,7 +6,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Plus, Trash2, GripVertical, Edit3 } from "lucide-react";
-import { adminListProductImages, adminAddProductImage, adminReorderProductImages, adminDeleteProductImage } from "@/lib/admin.functions";
+import { adminListProductImages, adminAddProductImage, adminUpdateProductImage, adminReorderProductImages, adminDeleteProductImage } from "@/lib/admin.functions";
 import { ProductImage } from "./ProductImage";
 import { ImageCropper } from "./ImageCropper";
 import { uploadProductImage, fileToDataUrl } from "@/lib/image-upload";
@@ -19,12 +19,15 @@ export function ProductGalleryAdmin({ productoId }: Props) {
   const qc = useQueryClient();
   const list = useServerFn(adminListProductImages);
   const add = useServerFn(adminAddProductImage);
+  const update = useServerFn(adminUpdateProductImage);
   const reorder = useServerFn(adminReorderProductImages);
   const remove = useServerFn(adminDeleteProductImage);
 
   const [items, setItems] = useState<Row[]>([]);
   const [queue, setQueue] = useState<{ src: string; name: string }[]>([]);
   const [busy, setBusy] = useState(false);
+  /** ID de la imagen que se está editando (null = es imagen nueva) */
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const { data } = useQuery({
     queryKey: ["product-images", productoId],
@@ -51,7 +54,6 @@ export function ProductGalleryAdmin({ productoId }: Props) {
     try {
       await reorder({ data: { producto_id: productoId, items: next.map(({ id, orden }) => ({ id, orden })) } });
       qc.invalidateQueries({ queryKey: ["product-images", productoId] });
-      qc.invalidateQueries({ queryKey: ["admin-productos"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Error al reordenar");
     }
@@ -65,6 +67,8 @@ export function ProductGalleryAdmin({ productoId }: Props) {
       const src = await fileToDataUrl(f);
       arr.push({ src, name: f.name });
     }
+    // Imágenes nuevas → limpiar editingId
+    setEditingId(null);
     setQueue(arr);
   }
 
@@ -72,15 +76,28 @@ export function ProductGalleryAdmin({ productoId }: Props) {
     setBusy(true);
     try {
       const { url, isWebp } = await uploadProductImage(blob, ext, productoId);
-      await add({ data: {
-        producto_id: productoId,
-        url: isWebp ? null : url,
-        url_webp: isWebp ? url : null,
-      } });
-      toast.success("Imagen agregada");
+
+      if (editingId) {
+        // Estamos editando una imagen existente → actualizar en vez de agregar
+        await update({ data: {
+          id: editingId,
+          url: isWebp ? null : url,
+          url_webp: isWebp ? url : null,
+        } });
+        toast.success("Imagen actualizada");
+        setEditingId(null);
+      } else {
+        // Imagen nueva → agregar
+        await add({ data: {
+          producto_id: productoId,
+          url: isWebp ? null : url,
+          url_webp: isWebp ? url : null,
+        } });
+        toast.success("Imagen agregada");
+      }
+
       setQueue((q) => q.slice(1));
       qc.invalidateQueries({ queryKey: ["product-images", productoId] });
-      qc.invalidateQueries({ queryKey: ["admin-productos"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Error al subir");
     } finally {
@@ -94,16 +111,22 @@ export function ProductGalleryAdmin({ productoId }: Props) {
       await remove({ data: { id } });
       toast.success("Eliminada");
       qc.invalidateQueries({ queryKey: ["product-images", productoId] });
-      qc.invalidateQueries({ queryKey: ["admin-productos"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Error");
     }
   }
 
-  async function onEditCrop(item: Row) {
+  function onEditCrop(item: Row) {
     const src = item.url_webp || item.url;
     if (!src) return;
+    // Guardar el ID de la imagen que se edita
+    setEditingId(item.id);
     setQueue([{ src, name: item.id }]);
+  }
+
+  function onCancelCrop() {
+    setEditingId(null);
+    setQueue((q) => q.slice(1));
   }
 
   return (
@@ -156,7 +179,7 @@ export function ProductGalleryAdmin({ productoId }: Props) {
           key={queue[0].src}
           src={queue[0].src}
           aspect={1}
-          onCancel={() => setQueue((q) => q.slice(1))}
+          onCancel={onCancelCrop}
           onConfirm={onConfirmCrop}
         />
       )}
@@ -191,10 +214,20 @@ function SortableThumb({ item, isPrincipal, onDelete, onEdit }: {
         <GripVertical className="size-3.5" />
       </button>
       <div className="absolute bottom-1 right-1 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
-        <button type="button" onClick={onEdit} className="size-7 sm:size-6 grid place-items-center bg-background/90 border border-border hover:text-primary" aria-label="Editar recorte">
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onEdit(); }}
+          className="size-7 sm:size-6 grid place-items-center bg-background/90 border border-border hover:text-primary"
+          aria-label="Editar recorte"
+        >
           <Edit3 className="size-3" />
         </button>
-        <button type="button" onClick={onDelete} className="size-7 sm:size-6 grid place-items-center bg-background/90 border border-border hover:text-destructive" aria-label="Eliminar">
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="size-7 sm:size-6 grid place-items-center bg-background/90 border border-border hover:text-destructive"
+          aria-label="Eliminar"
+        >
           <Trash2 className="size-3" />
         </button>
       </div>

@@ -571,6 +571,36 @@ export const adminDeleteProductImage = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const adminUpdateProductImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    id: z.string().uuid(),
+    url: z.string().max(500).nullable().optional(),
+    url_webp: z.string().max(500).nullable().optional(),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context.supabase, context.userId);
+    // Leer la fila vieja para limpiar archivos del bucket
+    const { data: old } = await context.supabase
+      .from("product_images")
+      .select("url, url_webp, producto_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!old) throw new Error("Imagen no encontrada");
+    // Limpiar archivos viejos del storage (best-effort)
+    const oldKeys = [extractStorageKey(old.url), extractStorageKey(old.url_webp)].filter(Boolean) as string[];
+    if (oldKeys.length) {
+      await context.supabase.storage.from("product-images").remove(oldKeys).catch(() => {});
+    }
+    // Actualizar la fila con las nuevas URLs
+    const { error } = await context.supabase
+      .from("product_images")
+      .update({ url: data.url ?? null, url_webp: data.url_webp ?? null })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const adminListCategorias = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

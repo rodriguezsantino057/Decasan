@@ -1021,9 +1021,8 @@ function ProductoModal({ value, categorias, grupos, onClose, onSave }: {
   const [tab, setTab] = useState<"info" | "galeria" | "oferta">("info");
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 grid place-items-end sm:place-items-center p-2 sm:p-4 overflow-auto" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/50 grid place-items-end sm:place-items-center p-2 sm:p-4 overflow-auto" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <form
-        onClick={(e) => e.stopPropagation()}
         onSubmit={async (e) => { e.preventDefault(); setBusy(true); try { await onSave(v); } finally { setBusy(false); } }}
         className="bg-background border border-border max-w-3xl w-full max-h-[92vh] overflow-auto p-4 sm:p-6 sm:my-8"
       >
