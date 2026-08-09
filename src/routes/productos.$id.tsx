@@ -45,8 +45,8 @@ function ProductDetail() {
   const add = useCart((s) => s.add);
   const [qty, setQty] = useState(1);
 
-  const { user } = useSession();
-  const { data: isAdmin } = useIsAdmin(user);
+  const { user, loading: userLoading } = useSession();
+  const { data: isAdmin, isLoading: isAdminLoading } = useIsAdmin(user);
 
   const product = useQuery({
     queryKey: ["product", productId, isAdmin],
@@ -71,7 +71,7 @@ function ProductDetail() {
       }),
   });
 
-  if (product.isLoading) {
+  if (product.isLoading || userLoading || isAdminLoading) {
     return (
       <Layout>
         <div className="container-x py-16 grid md:grid-cols-2 gap-10">
