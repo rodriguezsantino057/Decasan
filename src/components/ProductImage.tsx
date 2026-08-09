@@ -41,7 +41,7 @@ export function ProductImage({
         decoding="async"
         sizes={sizes}
         onError={() => setFailed(true)}
-        className="size-full object-cover"
+        className="size-full object-contain"
       />
     </picture>
   );

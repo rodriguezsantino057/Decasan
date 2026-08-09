@@ -84,6 +84,17 @@ async function main() {
             })
             .eq("id", p.id);
 
+          // Agregar también a la galería (product_images)
+          const { error: galleryError } = await supabase
+            .from("product_images")
+            .insert({
+              producto_id: p.id,
+              url: bestImage.imageUrl,
+              url_webp: bestImage.imageUrl,
+              alt: p.nombre,
+              orden: 0
+            });
+
           if (updateError) {
             console.error(`  -> Error al guardar:`, updateError.message);
           } else {

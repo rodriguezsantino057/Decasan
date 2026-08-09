@@ -48,7 +48,7 @@ export function ImageCropper({ src, aspect = 1, maxSize = 1200, quality = 0.85, 
       <div className="bg-background border border-border w-full max-w-2xl flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h3 className="font-display text-lg">Encuadrar imagen</h3>
-          <button onClick={onCancel} className="p-1 hover:text-primary"><X className="size-5" /></button>
+          <button type="button" onClick={onCancel} className="p-1 hover:text-primary"><X className="size-5" /></button>
         </div>
         <div className="relative w-full aspect-square bg-black/60">
           <Cropper
@@ -70,8 +70,9 @@ export function ImageCropper({ src, aspect = 1, maxSize = 1200, quality = 0.85, 
             className="flex-1 accent-primary"
             aria-label="Zoom"
           />
-          <button onClick={onCancel} className="px-3 py-2 text-sm">Cancelar</button>
+          <button type="button" onClick={onCancel} className="px-3 py-2 text-sm">Cancelar</button>
           <button
+            type="button"
             onClick={confirm}
             disabled={busy || !area}
             className="bg-primary text-primary-foreground px-4 py-2 text-sm font-medium inline-flex items-center gap-2 disabled:opacity-50"
