@@ -258,7 +258,7 @@ function AdminProductos() {
       </div>
 
       <div className="hidden border border-border overflow-x-auto lg:block">
-        <table className="w-full min-w-[1300px] text-sm">
+        <table className="w-full text-sm">
           <thead className="bg-secondary text-secondary-foreground">
             <tr>
               <th className="px-3 py-2 w-10">
