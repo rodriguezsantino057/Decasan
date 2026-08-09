@@ -136,7 +136,7 @@ function CuentaPage() {
                       Retirá tu pedido en el local y pagá al recibirlo.
                     </div>
                     <a
-                      href={`https://wa.me/5493548403666?text=${encodeURIComponent(
+                      href={`https://wa.me/5493548592127?text=${encodeURIComponent(
                         `¡Hola! Acabo de hacer el pedido #${p.id.slice(0, 8)} con retiro en local y pago en efectivo. Quería coordinar para retirar.`
                       )}`}
                       target="_blank"

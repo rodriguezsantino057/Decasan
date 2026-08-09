@@ -61,7 +61,7 @@ function FaqPage() {
                 Ver catalogo <ArrowRight className="size-4" />
               </Link>
               <a
-                href="https://wa.me/54 3548 59-2127"
+                href="https://wa.me/5493548592127"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 border border-white/20 px-6 py-3 font-display tracking-wide hover:border-primary hover:text-primary transition"
@@ -89,7 +89,7 @@ function FaqPage() {
               </p>
               <p className="flex gap-2">
                 <MessageCircle className="size-4 text-primary shrink-0 mt-0.5" />
-                WhatsApp: +54 3548 40-3666
+                WhatsApp: +54 3548 59-2127
               </p>
             </div>
           </aside>

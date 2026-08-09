@@ -7,7 +7,7 @@ import { HeaderSearch } from "@/components/HeaderSearch";
 import { Footer } from "@/components/Footer";
 import type { ReactNode } from "react";
 
-const WHATSAPP = "5493548403666";
+const WHATSAPP = "5493548592127";
 const WA_URL = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(
   "Hola Decasan, quiero hacer una consulta.",
 )}`;

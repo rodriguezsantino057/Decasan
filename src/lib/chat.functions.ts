@@ -35,7 +35,7 @@ function cleanEnv(val?: string | null): string {
 }
 
 const BASE_URL = cleanEnv(process.env.PUBLIC_BASE_URL || process.env.VITE_PUBLIC_BASE_URL || "https://decasan.vercel.app").replace(/\/+$/, "");
-const WHATSAPP_PHONE = "5493548403666";
+const WHATSAPP_PHONE = "5493548592127";
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_PHONE}`;
 const ALLOWED_LINK_HOSTS = new Set(["decasan.vercel.app", "decasan.com.ar", "decasan.lovable.app", "wa.me", "www.instagram.com", "web.facebook.com"]);
 
@@ -44,7 +44,7 @@ const SYSTEM_PROMPT = `Sos "Decabot", el asistente virtual inteligente de Decasa
 Información del local:
 - Ubicación: Av. Pres. Kennedy 270, La Falda, Córdoba, Argentina.
 - Horarios de atención: Lunes a viernes de 08:30 a 13:00 y de 16:30 a 20:30 hs. Sábados de 08:30 a 13:00 y de 17:00 a 20:30 hs. Domingos cerrado.
-- WhatsApp de asesoramiento directo: +54 9 3548 40-3666 (${WHATSAPP_URL}).
+- WhatsApp de asesoramiento directo: +54 9 3548 59-2127 (${WHATSAPP_URL}).
 - Medios de pago: Mercado Pago (tarjetas de crédito, débito, dinero en cuenta), Transferencia bancaria, y efectivo en el local.
 - Envíos: Envíos a todo el país a través de Correo Argentino y transportes expresos. Retiro gratis en el local en La Falda.
 - Web oficial: ${BASE_URL}.

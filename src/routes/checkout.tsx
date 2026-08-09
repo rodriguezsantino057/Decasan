@@ -255,7 +255,7 @@ function CheckoutPage() {
                 ? "El servidor valida precios, retiro y total antes de crear el pedido."
                 : "El servidor valida precios, envio y total antes de redirigirte a Mercado Pago."}
             </p>
-            <a href="https://wa.me/5493548403666" target="_blank" rel="noreferrer" className="text-xs text-muted-foreground hover:text-primary text-center flex items-center justify-center gap-1">
+            <a href="https://wa.me/5493548592127" target="_blank" rel="noreferrer" className="text-xs text-muted-foreground hover:text-primary text-center flex items-center justify-center gap-1">
               <MessageCircle className="size-3" /> Pagar por transferencia / consultar
             </a>
           </aside>

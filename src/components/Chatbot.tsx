@@ -8,7 +8,7 @@ import { ProductImage } from "@/components/ProductImage";
 import { formatARS } from "@/lib/format";
 import { getPrecioEfectivo, tieneOferta } from "@/lib/products";
 
-const WHATSAPP_PHONE = "5493548403666";
+const WHATSAPP_PHONE = "5493548592127";
 const WA_URL = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(
   "Hola Decasan, tengo una consulta a realizar.",
 )}`;

@@ -277,7 +277,7 @@ function ProductDetail() {
             </div>
 
             <a
-              href={`https://wa.me/5493548000000?text=${encodeURIComponent(`Hola Decasan, consulto por: ${p.nombre} (SKU ${p.sku ?? p.id})`)}`}
+              href={`https://wa.me/5493548592127?text=${encodeURIComponent(`Hola Decasan, consulto por: ${p.nombre} (SKU ${p.sku ?? p.id})`)}`}
               target="_blank"
               rel="noreferrer"
               className="mt-3 w-full inline-flex items-center justify-center gap-2 border border-border px-6 py-3 font-medium text-sm hover:border-primary hover:text-primary transition"
