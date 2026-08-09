@@ -14,6 +14,25 @@ import heroHome from "@/assets/hero-home.png";
 import heroConstruction from "@/assets/hero-construction.png";
 import heroGarden from "@/assets/hero-garden.png";
 import heroPlumbing from "@/assets/hero-plumbing.png";
+import catAccesorios from "@/assets/cat-accesorios.png";
+import catAutomotor from "@/assets/cat-automotor.png";
+import catBateria from "@/assets/cat-bateria.png";
+import catElectricas from "@/assets/cat-electricas.png";
+import catSanitarios from "@/assets/cat-sanitarios.png";
+import catJardin from "@/assets/cat-jardin.png";
+import catMateriales from "@/assets/cat-materiales.png";
+import catElectricos from "@/assets/cat-materiales-electricos.png";
+
+const CATEGORY_IMAGES: Record<string, string> = {
+  "accesorios y herramientas": catAccesorios,
+  "automotor": catAutomotor,
+  "bateria": catBateria,
+  "h. eléctricas": catElectricas,
+  "sanitarios e instalaciones": catSanitarios,
+  "jardín": catJardin,
+  "materiales": catMateriales,
+  "materiales eléctricos": catElectricos,
+};
 export const Route = createFileRoute("/")({
   component: Index,
 });
@@ -140,19 +159,30 @@ function Index() {
           </Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {(cats.data ?? []).map((c, idx) => (
-            <Link
-              key={c}
-              to="/productos"
-              search={{ cat: c } as never}
-              className={`group relative bg-secondary text-secondary-foreground p-6 h-32 flex items-end overflow-hidden border-l-2 border-primary hover:bg-primary hover:text-primary-foreground transition animate-fade-in-up animate-delay-${(idx + 5) * 100}`}
-            >
-              <div className="font-display text-lg leading-tight relative z-10">{c}</div>
-              <div className="absolute top-3 right-3 text-[10px] uppercase tracking-wider opacity-50 group-hover:opacity-100">
-                Ver →
-              </div>
-            </Link>
-          ))}
+          {(cats.data ?? []).map((c, idx) => {
+            const bgImg = CATEGORY_IMAGES[c.toLowerCase()];
+            return (
+              <Link
+                key={c}
+                to="/productos"
+                search={{ cat: c } as never}
+                className={`group relative bg-secondary text-white p-6 h-36 flex items-end overflow-hidden border-l-2 border-primary transition animate-fade-in-up animate-delay-${(idx + 5) * 100}`}
+              >
+                {bgImg ? (
+                  <>
+                    <img src={bgImg} alt={c} className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10 group-hover:from-black/80 transition-colors duration-300" />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 bg-secondary group-hover:bg-primary transition-colors duration-300" />
+                )}
+                <div className="font-display text-lg leading-tight relative z-10">{c}</div>
+                <div className="absolute top-3 right-3 text-[10px] uppercase tracking-wider opacity-50 group-hover:opacity-100 z-10">
+                  Ver →
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
