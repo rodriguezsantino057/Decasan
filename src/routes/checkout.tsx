@@ -174,8 +174,8 @@ function CheckoutPage() {
       <div className="container-x py-10 max-w-5xl">
         <h1 className="font-display text-3xl mb-8">Finalizar compra</h1>
 
-        <form onSubmit={submit} className="grid lg:grid-cols-[1fr_360px] gap-8">
-          <div className="space-y-6">
+        <form onSubmit={submit} className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
+          <div className="space-y-6 min-w-0">
             <Section title="Datos de contacto">
               <Grid>
                 <Field label="Nombre completo" value={form.nombre} onChange={(v) => setForm({ ...form, nombre: v })} required />
@@ -275,7 +275,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function Grid({ children }: { children: React.ReactNode }) {
-  return <div className="grid sm:grid-cols-2 gap-3">{children}</div>;
+  return <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{children}</div>;
 }
 
 function Field({

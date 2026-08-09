@@ -154,9 +154,9 @@ function ProductDetail() {
           <ArrowLeft className="size-3.5" /> Volver al catálogo
         </Link>
 
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] gap-8 lg:gap-14">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] gap-8 lg:gap-14">
           {/* Gallery */}
-          <div className="space-y-3 relative">
+          <div className="space-y-3 relative min-w-0">
             <ProductGallery
               imagenes={gallery.data ?? []}
               fallbackWebp={p.image_webp}

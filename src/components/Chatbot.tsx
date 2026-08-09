@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { MessageCircle, X, Send, Loader2, Sparkles, ExternalLink, ShoppingBag, PhoneCall } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { chatWithBot, type CatalogProduct } from "@/lib/chat.functions";
 import { ProductImage } from "@/components/ProductImage";
 import { formatARS } from "@/lib/format";
@@ -45,6 +45,8 @@ export function Chatbot() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const sendFn = useServerFn(chatWithBot);
+  const location = useLocation();
+  const isHome = location.pathname === "/";
 
   useEffect(() => {
     if (open) {
@@ -99,7 +101,7 @@ export function Chatbot() {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Cerrar chat" : "Abrir chat"}
-        className="fixed bottom-5 right-5 z-50 group"
+        className={`fixed bottom-5 right-5 z-50 group ${!isHome ? "hidden sm:block" : ""}`}
       >
         <span className="relative flex items-center justify-center">
           <span className="absolute inset-0 rounded-full bg-primary/40 animate-ping opacity-60" />
