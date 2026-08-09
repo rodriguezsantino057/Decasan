@@ -56,7 +56,7 @@ export async function fetchProductos(opts: {
   limit?: number;
   offset?: number;
 }): Promise<{ items: Producto[]; count: number }> {
-  let query = supabase.from("productos").select("*", { count: "exact" });
+  let query = supabase.from("productos").select("*", { count: "exact" }).or("activo.eq.true,activo.is.null");
   const searchTokens = tokenizeSearch(opts.q);
 
   const normalizedCat = normalizeCategoryName(opts.cat);
@@ -190,7 +190,7 @@ function scoreProductSearch(product: Producto, tokens: string[]) {
 }
 
 export async function fetchProducto(id: number): Promise<Producto | null> {
-  const { data, error } = await supabase.from("productos").select("*").eq("id", id).maybeSingle();
+  const { data, error } = await supabase.from("productos").select("*").eq("id", id).or("activo.eq.true,activo.is.null").maybeSingle();
   if (error) throw error;
   return data as Producto | null;
 }
@@ -231,6 +231,7 @@ export async function fetchGrupos(): Promise<string[]> {
       .select("grupo")
       .not("grupo", "is", null)
       .not("grupo", "eq", "")
+      .or("activo.eq.true,activo.is.null")
       .order("grupo")
       .range(from, from + pageSize - 1);
     if (error) throw error;
@@ -245,8 +246,8 @@ export async function fetchGrupos(): Promise<string[]> {
 
 export async function fetchPriceRange(): Promise<{ min: number; max: number }> {
   const [{ data: lo }, { data: hi }] = await Promise.all([
-    supabase.from("productos").select("precio").order("precio", { ascending: true, nullsFirst: false }).limit(1).maybeSingle(),
-    supabase.from("productos").select("precio").order("precio", { ascending: false, nullsFirst: false }).limit(1).maybeSingle(),
+    supabase.from("productos").select("precio").or("activo.eq.true,activo.is.null").order("precio", { ascending: true, nullsFirst: false }).limit(1).maybeSingle(),
+    supabase.from("productos").select("precio").or("activo.eq.true,activo.is.null").order("precio", { ascending: false, nullsFirst: false }).limit(1).maybeSingle(),
   ]);
   return {
     min: Math.floor(Number(lo?.precio ?? 0)),

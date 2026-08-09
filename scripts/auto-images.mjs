@@ -35,7 +35,7 @@ async function main() {
   // 1. Obtener productos sin imagen del rubro o grupo
   const { data: productos, error } = await supabase
     .from("productos")
-    .select("id, nombre, sku")
+    .select("id, nombre, sku, codigo_fabricante")
     .or(`categoria.ilike.%${rubro}%,grupo.ilike.%${rubro}%`)
     .is("image_url", null)
     .limit(50); // Límite de 50 por vez para no saturar
@@ -55,7 +55,7 @@ async function main() {
   let count = 0;
 
   for (const p of productos) {
-    const query = `${p.nombre} ${p.sku || ""} herramientas`.trim();
+    const query = `${p.nombre} ${p.codigo_fabricante || ""} herramientas`.trim();
     console.log(`[${count + 1}/${productos.length}] Buscando: ${query}...`);
 
     try {
