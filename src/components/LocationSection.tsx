@@ -21,7 +21,7 @@ export function LocationSection() {
         <div className="grid lg:grid-cols-5 gap-6">
           <div className="lg:col-span-3 rounded-2xl overflow-hidden shadow-lg border border-border h-[420px] lg:h-auto animate-fade-in-left animate-delay-400">
             <iframe
-              title="Ubicación Decasan Herramientas"
+              title="Ubicación Decasan Home Center"
               src="https://www.google.com/maps?q=Av.+Pres.+Kennedy+270,+La+Falda,+C%C3%B3rdoba&output=embed"
               className="w-full h-full min-h-[420px] border-0"
               loading="lazy"

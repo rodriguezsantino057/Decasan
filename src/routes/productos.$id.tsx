@@ -28,7 +28,7 @@ export const Route = createFileRoute("/productos/$id")({
   component: ProductDetail,
   head: ({ params }) => ({
     meta: [
-      { title: `Producto #${params.id} — Decasan Herramientas` },
+      { title: `Producto #${params.id} — Decasan Home Center` },
       {
         name: "description",
         content:

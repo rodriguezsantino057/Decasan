@@ -129,7 +129,7 @@ function authEmailShell({
       <p style="margin:0 0 18px">Hola ${escapeHtml(greetingName || "cliente")},</p>
       ${body}
       <div style="border-top:1px solid #e5e7eb;margin-top:22px;padding-top:14px;font-size:13px;color:#64748b">
-        Decasan Herramientas - Av. Pres. Kennedy 270, La Falda, Cordoba<br />
+        Decasan Home Center - Av. Pres. Kennedy 270, La Falda, Cordoba<br />
         WhatsApp: +54 9 3548 40-3666
       </div>
     </div>

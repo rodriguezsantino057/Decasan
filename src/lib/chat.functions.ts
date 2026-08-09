@@ -39,7 +39,7 @@ const WHATSAPP_PHONE = "5493548403666";
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_PHONE}`;
 const ALLOWED_LINK_HOSTS = new Set(["decasan.vercel.app", "decasan.com.ar", "decasan.lovable.app", "wa.me", "www.instagram.com", "web.facebook.com"]);
 
-const SYSTEM_PROMPT = `Sos "Decabot", el asistente virtual inteligente de Decasan Herramientas, una ferretería y distribuidora de herramientas de La Falda, Córdoba con más de 60 años de trayectoria. Atendés con tono amable, cálido, profesional y bien argentino (usá "vos").
+const SYSTEM_PROMPT = `Sos "Decabot", el asistente virtual inteligente de Decasan Home Center, un centro integral de hogar, construcción y ferretería de La Falda, Córdoba con más de 60 años de trayectoria. Atendés con tono amable, cálido, profesional y bien argentino (usá "vos").
 
 Información del local:
 - Ubicación: Av. Pres. Kennedy 270, La Falda, Córdoba, Argentina.
@@ -383,7 +383,7 @@ function buildFallbackReply(userQuery: string, context: { products: CatalogProdu
 
   // 1. Saludos
   if (/^(hola|buenas|buen dia|buenas tardes|que tal|hola decabot)/.test(norm)) {
-    return `¡Hola 👋! Soy **Decabot**, el asistente virtual de Decasan Herramientas.\n\n¿En qué te puedo ayudar hoy? Podés consultarme por máquinas, herramientas, medios de pago o envíos.`;
+    return `¡Hola 👋! Soy **Decabot**, el asistente virtual de Decasan Home Center.\n\n¿En qué te puedo ayudar hoy? Podés consultarme por máquinas, herramientas, medios de pago o envíos.`;
   }
 
   // 2. Horarios

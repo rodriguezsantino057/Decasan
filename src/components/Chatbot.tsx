@@ -33,7 +33,7 @@ const QUICK_REPLIES = [
 const WELCOME: Msg = {
   role: "assistant",
   content:
-    "¡Hola 👋! Soy **Decabot**, el asesor virtual de Decasan Herramientas.\n\n¿Buscás alguna máquina, herramienta o presupuesto? Decime qué necesitás y te ayudo a encontrar la mejor opción.",
+    "¡Hola 👋! Soy **Decabot**, el asesor virtual de Decasan Home Center.\n\n¿Buscás alguna máquina, herramienta o presupuesto? Decime qué necesitás y te ayudo a encontrar la mejor opción.",
 };
 
 export function Chatbot() {

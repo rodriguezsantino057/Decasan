@@ -73,18 +73,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Decasan Herramientas | La Falda, Córdoba" },
+      { title: "Decasan Home Center | La Falda, Córdoba" },
       {
         name: "description",
         content:
           "+60 años acompañando tus proyectos. Herramientas, maquinaria y materiales con envíos a todo el país desde La Falda, Córdoba.",
       },
-      { property: "og:title", content: "Decasan Herramientas | La Falda, Córdoba" },
+      { property: "og:title", content: "Decasan Home Center | La Falda, Córdoba" },
       { property: "og:description", content: "+60 años acompañando tus proyectos. Herramientas, maquinaria y materiales profesionales con envíos a todo el país desde La Falda, Córdoba." },
       { property: "og:type", content: "website" },
       { property: "og:url", content: process.env.PUBLIC_BASE_URL ?? "https://decasan.vercel.app" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Decasan Herramientas | La Falda, Córdoba" },
+      { name: "twitter:title", content: "Decasan Home Center | La Falda, Córdoba" },
       { name: "twitter:description", content: "+60 años acompañando tus proyectos. Herramientas, maquinaria y materiales profesionales con envíos a todo el país desde La Falda, Córdoba." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/653eb62e-fbb8-42ed-b39c-bcbcae81d948/id-preview-a15bf05d--7df8648d-d26c-445f-a7ce-dbb4dc3050de.lovable.app-1778721885492.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/653eb62e-fbb8-42ed-b39c-bcbcae81d948/id-preview-a15bf05d--7df8648d-d26c-445f-a7ce-dbb4dc3050de.lovable.app-1778721885492.png" },

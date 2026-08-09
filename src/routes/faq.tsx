@@ -50,7 +50,7 @@ function FaqPage() {
               Preguntas frecuentes
             </h1>
             <p className="mt-5 text-secondary-foreground/80 leading-relaxed max-w-2xl">
-              Somos Decasan Herramientas, una ferreteria de La Falda con atencion personal,
+              Somos Decasan Home Center, una ferreteria de La Falda con atencion personal,
               catalogo online y envios a todo el pais.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
