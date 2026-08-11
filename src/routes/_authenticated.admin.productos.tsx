@@ -201,14 +201,16 @@ function AdminProductos() {
     const chunks = chunkRows(rows, IMPORT_CHUNK_SIZE);
     let updated = 0;
     let created = 0;
+    let unchanged = 0;
     for (let i = 0; i < chunks.length; i++) {
       toast.info(`Importando lote ${i + 1} de ${chunks.length}`);
       const chunk = chunks[i];
       const res = await importErp({ data: { rows: chunk } });
       updated += res.updated;
       created += res.created;
+      unchanged += res.unchanged || 0;
     }
-    toast.success(`ERP importado: ${updated} actualizados, ${created} nuevos`);
+    toast.success(`ERP importado: ${updated} actualizados, ${created} nuevos, ${unchanged} sin cambios.`);
     setImportOpen(false);
     qc.invalidateQueries({ queryKey: ["admin-productos"] });
   }

@@ -32,11 +32,11 @@ async function main() {
 
   console.log(`Buscando productos sin imagen en el rubro: "${rubro}"...`);
 
-  // 1. Obtener productos sin imagen del rubro o grupo
+  // 1. Obtener productos sin imagen del grupo especificado
   const { data: productos, error } = await supabase
     .from("productos")
     .select("id, nombre, sku, codigo_fabricante")
-    .or(`categoria.ilike.%${rubro}%,grupo.ilike.%${rubro}%`)
+    .ilike("grupo", `%${rubro}%`)
     .is("image_url", null)
     .limit(50); // Límite de 50 por vez para no saturar
 

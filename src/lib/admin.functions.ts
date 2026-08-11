@@ -291,17 +291,33 @@ export const adminImportProductosErp = createServerFn({ method: "POST" })
     const importId = crypto.randomUUID();
     const now = new Date().toISOString();
     const skus = data.rows.map((row) => row.sku);
+    
+    // Fetch all necessary fields to compare
     const { data: existing, error: readError } = await sb
       .from("productos")
-      .select("id, sku")
+      .select("id, sku, nombre, codigo_fabricante, precio_vta_sin_iva, precio, categoria, grupo, stock, descripcion, activo, precio_oferta, oferta_hasta")
       .in("sku", skus);
     if (readError) throw new Error(readError.message);
 
-    const bySku = new Map((existing ?? []).map((row: any) => [row.sku, row.id]));
+    const bySku = new Map((existing ?? []).map((row: any) => [row.sku, row]));
+    
     let created = 0;
     let updated = 0;
+    let unchanged = 0;
+
+    function sameNumber(a: unknown, b: unknown) {
+      if (a == null && b == null) return true;
+      const na = Number(a);
+      const nb = Number(b);
+      return Number.isFinite(na) && Number.isFinite(nb) && Math.abs(na - nb) < 0.001;
+    }
+
+    const inserts: any[] = [];
+    const updates: any[] = [];
 
     for (const row of data.rows) {
+      const current = bySku.get(row.sku);
+      
       const payload: any = {
         sku: row.sku,
         nombre: row.nombre,
@@ -320,24 +336,64 @@ export const adminImportProductosErp = createServerFn({ method: "POST" })
       if (row.precio_oferta !== undefined) payload.precio_oferta = row.precio_oferta;
       if (row.oferta_hasta !== undefined) payload.oferta_hasta = row.oferta_hasta;
 
-      const id = bySku.get(row.sku);
-      if (id) {
-        const { error } = await sb.from("productos").update(payload).eq("id", id);
-        if (error) throw new Error(error.message);
-        updated++;
-      } else {
-        const insertPayload = {
+      if (!current) {
+        // Insert
+        inserts.push({
           ...payload,
           stock: row.stock ?? 0,
           activo: row.activo ?? false,
-        };
-        const { error } = await sb.from("productos").insert(insertPayload);
-        if (error) throw new Error(error.message);
+        });
         created++;
+      } else {
+        // Check if anything changed
+        let hasChanges = false;
+        if (String(current.nombre ?? "") !== row.nombre) hasChanges = true;
+        if (String(current.codigo_fabricante ?? "") !== String(row.codigo_fabricante ?? "")) hasChanges = true;
+        if (!sameNumber(current.precio_vta_sin_iva, row.precio_vta_sin_iva)) hasChanges = true;
+        if (!sameNumber(current.precio, row.precio)) hasChanges = true;
+        
+        if (row.categoria !== undefined && String(current.categoria ?? "") !== String(row.categoria ?? "")) hasChanges = true;
+        if (row.grupo !== undefined && String(current.grupo ?? "") !== String(row.grupo ?? "")) hasChanges = true;
+        if (row.stock !== undefined && row.stock !== null && Number(current.stock ?? 0) !== Number(row.stock ?? 0)) hasChanges = true;
+        if (row.descripcion !== undefined && String(current.descripcion ?? "") !== String(row.descripcion ?? "")) hasChanges = true;
+        if (row.activo !== undefined && row.activo !== null && Boolean(current.activo) !== Boolean(row.activo)) hasChanges = true;
+        if (row.precio_oferta !== undefined && !sameNumber(current.precio_oferta, row.precio_oferta)) hasChanges = true;
+        if (row.oferta_hasta !== undefined && String(current.oferta_hasta ?? "") !== String(row.oferta_hasta ?? "")) hasChanges = true;
+
+        if (hasChanges) {
+          payload.id = current.id;
+          // to use upsert safely without nulling other fields, we need to merge the payload with the current state
+          // However, since we might miss some required fields for an insert-on-conflict, doing bulk update via upsert can be tricky.
+          // Since we know the id, doing multiple updates in parallel chunks is safer and doesn't overwrite unrelated fields.
+          updates.push(payload);
+          updated++;
+        } else {
+          unchanged++;
+        }
       }
     }
 
-    return { ok: true, importId, processed: data.rows.length, created, updated };
+    // Process inserts in chunks of 500
+    for (let i = 0; i < inserts.length; i += 500) {
+      const chunk = inserts.slice(i, i + 500);
+      const { error } = await sb.from("productos").insert(chunk);
+      if (error) throw new Error(`Error en insert masivo: ${error.message}`);
+    }
+
+    // Process updates
+    // Supabase JS doesn't have a bulk update by ID without upsert.
+    // We will run updates in parallel with a concurrency limit.
+    const chunkSize = 20;
+    for (let i = 0; i < updates.length; i += chunkSize) {
+      const chunk = updates.slice(i, i + chunkSize);
+      await Promise.all(chunk.map(async (u) => {
+        const { id, ...updatePayload } = u;
+        const { error } = await sb.from("productos").update(updatePayload).eq("id", id);
+        if (error) throw new Error(`Error actualizando SKU ${u.sku}: ${error.message}`);
+      }));
+    }
+
+    return { ok: true, importId, processed: data.rows.length, created, updated, unchanged };
   });
 
 export const adminPreviewImportProductosErp = createServerFn({ method: "POST" })
