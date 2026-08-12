@@ -32,7 +32,7 @@ export const Route = createFileRoute("/productos/$id")({
     if (isNaN(productId)) return { product: null, images: [] };
     
     const [product, images] = await Promise.all([
-      fetchProducto(productId).catch(() => null),
+      fetchProducto(productId).catch((e) => ({ nombre: "ERR: " + (e instanceof Error ? e.message : JSON.stringify(e)) } as Producto)),
       fetchProductoImagenes(productId).catch(() => [])
     ]);
     
