@@ -27,16 +27,47 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/productos/$id")({
   component: ProductDetail,
-  head: ({ params }) => ({
-    meta: [
-      { title: `Producto #${params.id} — Decasan Home Center` },
-      {
-        name: "description",
-        content:
-          "Comprá herramientas, maquinaria y productos industriales con asesoramiento profesional y envíos a todo el país.",
-      },
-    ],
-  }),
+  loader: async ({ params }) => {
+    const productId = Number(params.id);
+    if (isNaN(productId)) return { product: null, images: [] };
+    const [product, images] = await Promise.all([
+      fetchProducto(productId).catch(() => null),
+      fetchProductoImagenes(productId).catch(() => [])
+    ]);
+    return { product, images };
+  },
+  head: ({ loaderData, params }) => {
+    const product = loaderData?.product;
+    const images = loaderData?.images;
+    const title = product?.nombre ? `${product.nombre} — Decasan Home Center` : `Producto #${params.id} — Decasan Home Center`;
+    const defaultDesc = "Comprá herramientas, maquinaria y productos industriales con asesoramiento profesional y envíos a todo el país.";
+    
+    // We remove HTML tags if any, and truncate to ~155 chars for SEO description
+    let desc = defaultDesc;
+    if (product?.descripcion) {
+      const cleanDesc = product.descripcion.replace(/<[^>]*>?/gm, '').trim();
+      desc = cleanDesc.length > 155 ? cleanDesc.slice(0, 155) + "..." : cleanDesc;
+    }
+      
+    // Find the best image
+    const imageUrl = images?.[0]?.url_webp || images?.[0]?.url || product?.image_webp || product?.image_url;
+
+    const meta = [
+      { title },
+      { name: "description", content: desc },
+      { property: "og:title", content: title },
+      { property: "og:description", content: desc },
+      { property: "og:type", content: "product" },
+    ];
+    
+    if (imageUrl) {
+      meta.push({ property: "og:image", content: imageUrl });
+      meta.push({ name: "twitter:card", content: "summary_large_image" });
+      meta.push({ name: "twitter:image", content: imageUrl });
+    }
+
+    return { meta };
+  },
 });
 
 function ProductDetail() {
