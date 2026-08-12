@@ -31,10 +31,16 @@ export const Route = createFileRoute("/productos/$id")({
     const productId = Number(params.id);
     if (isNaN(productId)) return { product: null, images: [] };
     
+    const urlCheck = import.meta.env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'unknown';
+    
     const [product, images] = await Promise.all([
       fetchProducto(productId).catch((e) => ({ nombre: "ERR: " + (e instanceof Error ? e.message : JSON.stringify(e)) } as Producto)),
       fetchProductoImagenes(productId).catch(() => [])
     ]);
+    
+    if (!product) {
+      return { product: { nombre: "DB_URL: " + urlCheck } as Producto, images: [] };
+    }
     
     return { product, images };
   },
