@@ -55,17 +55,17 @@ export const Route = createFileRoute("/productos/$id")({
     const imageUrl = images?.[0]?.url_webp || images?.[0]?.url || product?.image_webp || product?.image_url;
 
     const meta = [
-      { title },
-      { name: "description", content: desc },
-      { property: "og:title", content: title },
-      { property: "og:description", content: desc },
-      { property: "og:type", content: "product" },
+      { key: "title", title },
+      { key: "description", name: "description", content: desc },
+      { key: "og:title", property: "og:title", content: title },
+      { key: "og:description", property: "og:description", content: desc },
+      { key: "og:type", property: "og:type", content: "product" },
     ];
     
     if (imageUrl) {
-      meta.push({ property: "og:image", content: imageUrl });
-      meta.push({ name: "twitter:card", content: "summary_large_image" });
-      meta.push({ name: "twitter:image", content: imageUrl });
+      meta.push({ key: "og:image", property: "og:image", content: imageUrl });
+      meta.push({ key: "twitter:card", name: "twitter:card", content: "summary_large_image" });
+      meta.push({ key: "twitter:image", name: "twitter:image", content: imageUrl });
     }
 
     return { meta };
