@@ -28,7 +28,15 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/productos/$id")({
   component: ProductDetail,
   loader: async ({ params }) => {
-    return { product: { nombre: "TEST_LOADER_DATA_WORKS" } as Producto, images: [] };
+    const productId = Number(params.id);
+    if (isNaN(productId)) return { product: null, images: [] };
+    
+    const [product, images] = await Promise.all([
+      fetchProducto(productId).catch(() => null),
+      fetchProductoImagenes(productId).catch(() => [])
+    ]);
+    
+    return { product, images };
   },
   head: ({ loaderData, params }) => {
     const product = loaderData?.product;

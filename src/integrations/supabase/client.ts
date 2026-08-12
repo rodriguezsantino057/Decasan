@@ -6,8 +6,8 @@ function createSupabaseClient() {
   // Clean strings in case they were pasted with quotes in Vercel
   const cleanEnv = (val: string | undefined) => val ? val.trim().replace(/^["']|["']$/g, '') : undefined;
 
-  const SUPABASE_URL = cleanEnv(import.meta.env.VITE_SUPABASE_URL) || cleanEnv(process.env.VITE_SUPABASE_URL) || cleanEnv(process.env.SUPABASE_URL) || 'https://placeholder.supabase.co';
-  const SUPABASE_PUBLISHABLE_KEY = cleanEnv(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) || cleanEnv(process.env.VITE_SUPABASE_PUBLISHABLE_KEY) || cleanEnv(process.env.SUPABASE_PUBLISHABLE_KEY) || 'placeholder-key';
+  const SUPABASE_URL = cleanEnv(import.meta.env?.VITE_SUPABASE_URL) || cleanEnv(process.env.VITE_SUPABASE_URL) || cleanEnv(process.env.SUPABASE_URL) || 'https://placeholder.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = cleanEnv(import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY) || cleanEnv(process.env.VITE_SUPABASE_PUBLISHABLE_KEY) || cleanEnv(process.env.SUPABASE_PUBLISHABLE_KEY) || 'placeholder-key';
 
   if (!SUPABASE_URL || SUPABASE_URL === 'https://placeholder.supabase.co') {
     console.warn('[Supabase] Missing SUPABASE_URL / VITE_SUPABASE_URL environment variables. Please add them in Vercel settings.');
