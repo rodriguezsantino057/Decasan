@@ -41,7 +41,7 @@ export const Route = createFileRoute("/productos/$id")({
   head: ({ loaderData, params }) => {
     const product = loaderData?.product;
     const images = loaderData?.images;
-    const title = product?.nombre ? `${product.nombre} — Decasan Home Center` : `Producto #${params.id} — Decasan Home Center`;
+    const title = product?.nombre ? `${product.nombre} — Decasan Home Center` : `Producto #${params.id} — Decasan Home Center (${typeof loaderData})`;
     const defaultDesc = "Comprá herramientas, maquinaria y productos industriales con asesoramiento profesional y envíos a todo el país.";
     
     // We remove HTML tags if any, and truncate to ~155 chars for SEO description
