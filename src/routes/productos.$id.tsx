@@ -29,12 +29,16 @@ export const Route = createFileRoute("/productos/$id")({
   component: ProductDetail,
   loader: async ({ params }) => {
     const productId = Number(params.id);
-    if (isNaN(productId)) return { product: null, images: [] };
-    const [product, images] = await Promise.all([
-      fetchProducto(productId).catch(() => null),
-      fetchProductoImagenes(productId).catch(() => [])
-    ]);
-    return { product, images };
+    if (isNaN(productId)) return { product: null, images: [], debugError: 'NaN id' };
+    
+    let debugError = '';
+    const product = await fetchProducto(productId).catch((e) => {
+      debugError = e instanceof Error ? e.message : String(e);
+      return null;
+    });
+    const images = await fetchProductoImagenes(productId).catch(() => []);
+    
+    return { product, images, debugError };
   },
   head: ({ loaderData, params }) => {
     const product = loaderData?.product;
@@ -44,7 +48,9 @@ export const Route = createFileRoute("/productos/$id")({
     
     // We remove HTML tags if any, and truncate to ~155 chars for SEO description
     let desc = defaultDesc;
-    if (product?.descripcion) {
+    if (loaderData?.debugError) {
+      desc = "DEBUG ERROR: " + loaderData.debugError;
+    } else if (product?.descripcion) {
       const cleanDesc = product.descripcion.replace(/<[^>]*>?/gm, '').trim();
       desc = cleanDesc.length > 155 ? cleanDesc.slice(0, 155) + "..." : cleanDesc;
     }
