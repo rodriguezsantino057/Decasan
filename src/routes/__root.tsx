@@ -87,8 +87,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { key: "twitter:card", name: "twitter:card", content: "summary_large_image" },
       { key: "twitter:title", name: "twitter:title", content: "Decasan Home Center | La Falda, Córdoba" },
       { key: "twitter:description", name: "twitter:description", content: "+60 años acompañando tus proyectos. Herramientas, maquinaria y materiales profesionales con envíos a todo el país desde La Falda, Córdoba." },
-      { key: "og:image", property: "og:image", content: "/logo.png" },
-      { key: "twitter:image", name: "twitter:image", content: "/logo.png" },
+      { key: "og:image", property: "og:image", content: (process.env.PUBLIC_BASE_URL ?? "https://decasan.vercel.app") + "/logo.png" },
+      { key: "twitter:image", name: "twitter:image", content: (process.env.PUBLIC_BASE_URL ?? "https://decasan.vercel.app") + "/logo.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
