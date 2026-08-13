@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { LOCAL_PICKUP_CODE, TRANSPORTISTA_LABEL } from "@/lib/shipping.functions";
 import { assertValidPublicBaseUrl, getMercadoPagoAccessToken, getPublicBaseUrl } from "@/lib/mercadopago";
+import { getAndreaniQuote } from "@/lib/andreani";
 
 const itemSchema = z.object({
   id: z.number().int().positive(),
@@ -24,7 +25,7 @@ const createOrderSchema = z.object({
     codigo_postal: z.string().trim().max(8).optional().nullable(),
   }),
   envio: z.object({
-    shipping_option_id: z.string().uuid(),
+    shipping_option_id: z.string(),
   }),
   pago: z.object({
     metodo: z.enum(["transferencia_mp", "tarjeta", "efectivo"]),
@@ -65,15 +66,12 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
       paymentMethod: data.pago.metodo,
     });
 
-    const shipping = await getActiveShippingOption(data.envio.shipping_option_id);
+    const shipping = await getActiveShippingOption(data.envio.shipping_option_id, data.direccion.codigo_postal);
     const isLocalPickup = shipping.codigo_servicio === LOCAL_PICKUP_CODE;
     if (!isLocalPickup) validateShippingAddress(data.direccion);
     
     if (data.pago.metodo === "efectivo" && !isLocalPickup) {
       throw new Error("El pago en efectivo solo esta disponible con retiro en local");
-    }
-    if (shipping.provincia && normalizeProvince(shipping.provincia) !== normalizeProvince(data.direccion.provincia ?? "")) {
-      throw new Error("La opcion de envio no corresponde a la provincia indicada");
     }
 
     const ids = [...new Set(data.items.map((item) => item.id))];
@@ -280,37 +278,34 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
     };
   });
 
-async function getActiveShippingOption(id: string) {
-  const { data, error } = await supabaseAdmin
-    .from("shipping_options")
-    .select("id, transportista, provincia, costo, label, dias_estimados_min, dias_estimados_max, activo")
-    .eq("id", id)
-    .single();
-
-  if (error || !data || !data.activo) {
-    console.warn("[orders] invalid shipping option", { id, error: error?.message });
-    throw new Error("La opcion de envio seleccionada ya no esta disponible");
+async function getActiveShippingOption(id: string, codigoPostal?: string | null) {
+  if (id === LOCAL_PICKUP_CODE) {
+    return getLocalPickupOption();
   }
 
-  const transportista = data.transportista as keyof typeof TRANSPORTISTA_LABEL;
-  const costo = roundMoney(Number(data.costo));
-  const isLocalPickup = transportista === "retiro_local";
+  if (id === "andreani_envio" && codigoPostal) {
+    const quote = await getAndreaniQuote(codigoPostal);
+    if (!quote) {
+      throw new Error("No se pudo obtener la cotizacion de Andreani para este codigo postal");
+    }
+    return {
+      id: quote.id,
+      transportista: "andreani",
+      provincia: null,
+      costo: quote.costo,
+      label: quote.label,
+      dias_estimados_min: quote.diasEstimados,
+      dias_estimados_max: quote.diasEstimados + 2,
+      codigo_servicio: quote.id,
+      servicio: TRANSPORTISTA_LABEL["andreani"],
+      descripcion: quote.label,
+      dias_habiles: quote.diasEstimados + 2,
+      precio: quote.costo,
+      tipo: "domicilio",
+    };
+  }
 
-  return {
-    id: data.id,
-    transportista,
-    provincia: data.provincia,
-    costo,
-    label: data.label,
-    dias_estimados_min: data.dias_estimados_min,
-    dias_estimados_max: data.dias_estimados_max,
-    codigo_servicio: isLocalPickup ? LOCAL_PICKUP_CODE : data.id,
-    servicio: TRANSPORTISTA_LABEL[transportista],
-    descripcion: data.label,
-    dias_habiles: data.dias_estimados_max ?? data.dias_estimados_min ?? 0,
-    precio: costo,
-    tipo: isLocalPickup ? "local" : "domicilio",
-  };
+  throw new Error("La opcion de envio seleccionada no es valida");
 }
 
 function validateShippingAddress(direccion: z.infer<typeof createOrderSchema>["direccion"]) {

@@ -21,11 +21,12 @@ export function ShippingCalculator({
 }: ShippingCalculatorProps) {
   const shippingFn = useServerFn(getShippingOptions);
   const [localSelected, setLocalSelected] = useState<string>(selectedShipping || "");
-  const canShowProvinceRates = provincia.trim().length > 0;
+  const canShowRates = !!codigoPostal && codigoPostal.trim().length > 0;
 
   const { data: opciones, isLoading, error } = useQuery({
-    queryKey: ["shipping-options", provincia],
-    queryFn: () => shippingFn({ data: { provincia } }),
+    queryKey: ["shipping-options", provincia, codigoPostal],
+    queryFn: () => shippingFn({ data: { provincia, codigoPostal } }),
+    enabled: true,
   });
 
   const shippingOptions = useMemo(() => {
@@ -35,10 +36,10 @@ export function ShippingCalculator({
   useEffect(() => {
     setLocalSelected("");
     onShippingSelect?.(null);
-  }, [provincia]);
+  }, [codigoPostal, provincia]);
 
   useEffect(() => {
-    if (!localSelected && shippingOptions[0]) {
+    if (!localSelected && shippingOptions.length > 0) {
       setLocalSelected(shippingOptions[0].codigo_servicio);
       onShippingSelect?.(shippingOptions[0]);
     }
@@ -63,14 +64,14 @@ export function ShippingCalculator({
         <Truck className="size-4" />
         Entrega
       </h3>
-      {!canShowProvinceRates && (
+      {!canShowRates && (
         <p className="text-xs text-muted-foreground">
-          Elegi una provincia para ver las tarifas disponibles. Tambien podes retirar por el local.
+          Ingresa un código postal para cotizar tu envío, o retirá por el local.
         </p>
       )}
-      {canShowProvinceRates && shippingOptions.length === 0 && (
+      {canShowRates && shippingOptions.length === 1 && shippingOptions[0].id === LOCAL_PICKUP_CODE && (
         <p className="text-xs text-muted-foreground">
-          No hay tarifas activas para esa provincia. Probá con retiro en local o consultanos por WhatsApp.
+          No hay tarifas disponibles para ese código postal. Probá con retiro en local o consultanos por WhatsApp.
         </p>
       )}
       <div className="space-y-2">

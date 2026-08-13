@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
+import { getAndreaniQuote } from "./andreani";
 
 export type Transportista = "correo_argentino" | "andreani" | "cadete" | "retiro_local";
 
@@ -58,24 +58,36 @@ export const SHIPPING_PROVINCES = [
 
 const shippingOptionsSchema = z.object({
   provincia: z.string().trim().max(80).optional().nullable(),
+  codigoPostal: z.string().trim().max(8).optional().nullable(),
 });
 
 export const getShippingOptions = createServerFn({ method: "GET" })
   .inputValidator((d) => shippingOptionsSchema.parse(d ?? {}))
   .handler(async ({ data }): Promise<ShippingOption[]> => {
-    const { data: rows, error } = await supabase
-      .from("shipping_options")
-      .select("id, transportista, provincia, costo, label, dias_estimados_min, dias_estimados_max")
-      .eq("activo", true)
-      .order("costo", { ascending: true })
-      .order("label", { ascending: true });
+    const options: ShippingOption[] = [getLocalPickupOption()];
 
-    if (error) throw new Error(error.message);
+    if (data.codigoPostal) {
+      const andreaniQuote = await getAndreaniQuote(data.codigoPostal);
+      if (andreaniQuote) {
+        options.push({
+          id: andreaniQuote.id,
+          transportista: "andreani",
+          provincia: data.provincia ?? null,
+          costo: andreaniQuote.costo,
+          label: andreaniQuote.label,
+          dias_estimados_min: andreaniQuote.diasEstimados,
+          dias_estimados_max: andreaniQuote.diasEstimados + 2,
+          codigo_servicio: andreaniQuote.id,
+          servicio: TRANSPORTISTA_LABEL["andreani"],
+          descripcion: andreaniQuote.label,
+          dias_habiles: andreaniQuote.diasEstimados + 2,
+          precio: andreaniQuote.costo,
+          tipo: "domicilio",
+        });
+      }
+    }
 
-    const provincia = normalizeProvince(data.provincia ?? "");
-    return (rows ?? [])
-      .filter((row) => row.provincia === null || normalizeProvince(row.provincia) === provincia)
-      .map(toShippingOption);
+    return options.sort((a, b) => a.costo - b.costo);
   });
 
 export function formatDias(min: number | null, max: number | null): string {
@@ -104,31 +116,7 @@ export function getLocalPickupOption(): ShippingOption {
   };
 }
 
-function toShippingOption(row: {
-  id: string;
-  transportista: Transportista;
-  provincia: string | null;
-  costo: number;
-  label: string;
-  dias_estimados_min: number | null;
-  dias_estimados_max: number | null;
-}): ShippingOption {
-  const min = row.dias_estimados_min;
-  const max = row.dias_estimados_max;
-  const isLocalPickup = row.transportista === "retiro_local";
-  return {
-    ...row,
-    costo: Number(row.costo),
-    codigo_servicio: isLocalPickup ? LOCAL_PICKUP_CODE : row.id,
-    servicio: TRANSPORTISTA_LABEL[row.transportista],
-    descripcion: row.label,
-    dias_habiles: max ?? min ?? 0,
-    precio: Number(row.costo),
-    tipo: isLocalPickup ? "local" : "domicilio",
-  };
-}
-
-function normalizeProvince(value: string): string {
+export function normalizeProvince(value: string): string {
   return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")

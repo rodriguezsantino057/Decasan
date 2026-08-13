@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { sendOrderConfirmationEmail } from "@/lib/order-email";
+import { createAndreaniShipping } from "@/lib/andreani";
 
 export type MercadoPagoPayment = {
   id: number | string;
@@ -78,7 +79,7 @@ export async function applyMercadoPagoPayment(payment: MercadoPagoPayment) {
 
   const { data: pedido, error: readError } = await supabaseAdmin
     .from("pedidos")
-    .select("id,total,mp_preference_id,confirmation_email_sent_at")
+    .select("id,total,mp_preference_id,confirmation_email_sent_at,transportista,email,nombre,telefono,direccion,andreani_tracking_number")
     .eq("id", pedidoId)
     .single();
 
@@ -114,8 +115,22 @@ export async function applyMercadoPagoPayment(payment: MercadoPagoPayment) {
     return { ok: false, reason: "update_failed" };
   }
 
-  if (estado === "pagado" && !pedido.confirmation_email_sent_at) {
-    await sendPaidOrderEmail(pedidoId);
+  if (estado === "pagado") {
+    if (pedido.transportista === "andreani" && !pedido.andreani_tracking_number) {
+      try {
+        const tracking = await createAndreaniShipping(pedidoId, pedido);
+        if (tracking) {
+          await supabaseAdmin.from("pedidos").update({ andreani_tracking_number: tracking }).eq("id", pedidoId);
+          console.info("[andreani] envio creado via MP webhook", { pedidoId, tracking });
+        }
+      } catch (err) {
+        console.error("[andreani] Error creando el envio post-pago:", err);
+      }
+    }
+
+    if (!pedido.confirmation_email_sent_at) {
+      await sendPaidOrderEmail(pedidoId);
+    }
   }
 
   return { ok: true, estado };

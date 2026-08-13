@@ -167,6 +167,7 @@ export type Database = {
           telefono: string | null
           total: number
           transportista: string | null
+          andreani_tracking_number: string | null
           updated_at: string
           user_id: string | null
         }
@@ -184,11 +185,12 @@ export type Database = {
           mp_preference_id?: string | null
           nombre?: string | null
           notas?: string | null
-          shipping_option_id?: string | null
+          shipping_option_id: string | null
           subtotal_productos?: number
           telefono?: string | null
           total?: number
           transportista?: string | null
+          andreani_tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -206,11 +208,12 @@ export type Database = {
           mp_preference_id?: string | null
           nombre?: string | null
           notas?: string | null
-          shipping_option_id?: string | null
+          shipping_option_id: string | null
           subtotal_productos?: number
           telefono?: string | null
           total?: number
           transportista?: string | null
+          andreani_tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
         }

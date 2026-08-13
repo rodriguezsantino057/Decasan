@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { adminListPedidos, adminUpdatePedidoEstado } from "@/lib/admin.functions";
+import { adminListPedidos, adminUpdatePedidoEstado, adminGetAndreaniLabel } from "@/lib/admin.functions";
 import { formatARS } from "@/lib/format";
 import { LOCAL_PICKUP_CODE } from "@/lib/shipping.functions";
 
@@ -14,6 +14,7 @@ function AdminPedidos() {
   const qc = useQueryClient();
   const list = useServerFn(adminListPedidos);
   const update = useServerFn(adminUpdatePedidoEstado);
+  const getLabel = useServerFn(adminGetAndreaniLabel);
   const { data } = useQuery({ queryKey: ["admin-pedidos"], queryFn: () => list() });
 
   return (
@@ -78,7 +79,31 @@ function AdminPedidos() {
               {p.notas && (
                 <p className="whitespace-pre-line"><strong>Notas:</strong> {p.notas}</p>
               )}
-              {p.mp_payment_id && <p className="text-xs text-muted-foreground">MP: {p.mp_payment_id}</p>}
+              {p.andreani_tracking_number && (
+                <div className="flex items-center gap-2 mt-2">
+                  <p><strong>Tracking Andreani:</strong> {p.andreani_tracking_number}</p>
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        toast.loading("Obteniendo etiqueta...", { id: `label-${p.id}` });
+                        const base64 = await getLabel({ data: { trackingNumber: p.andreani_tracking_number as string } });
+                        const link = document.createElement("a");
+                        link.href = `data:application/pdf;base64,${base64}`;
+                        link.download = `Etiqueta_Andreani_${p.andreani_tracking_number}.pdf`;
+                        link.click();
+                        toast.success("Etiqueta descargada", { id: `label-${p.id}` });
+                      } catch (err: any) {
+                        toast.error(err.message || "Error al descargar etiqueta", { id: `label-${p.id}` });
+                      }
+                    }}
+                    className="border border-border bg-background px-2 py-1 text-xs hover:bg-muted"
+                  >
+                    Descargar PDF
+                  </button>
+                </div>
+              )}
+              {p.mp_payment_id && <p className="text-xs text-muted-foreground mt-2">MP: {p.mp_payment_id}</p>}
               <ul className="mt-2 space-y-1">
                 {p.pedido_items?.map((it: any) => (
                   <li key={it.id}>{it.cantidad}x {it.nombre} - {formatARS(Number(it.subtotal))}</li>

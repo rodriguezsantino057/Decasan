@@ -21,7 +21,7 @@ export const adminListPedidos = createServerFn({ method: "GET" })
     await ensureAdmin(context.supabase, context.userId);
     const { data, error } = await context.supabase
       .from("pedidos")
-      .select("id, estado, total, email, nombre, telefono, direccion, envio_total, costo_envio, envio_metodo, transportista, notas, created_at, mp_payment_id, pedido_items(id, nombre, cantidad, subtotal)")
+      .select("id, estado, total, email, nombre, telefono, direccion, envio_total, costo_envio, envio_metodo, transportista, andreani_tracking_number, notas, created_at, mp_payment_id, pedido_items(id, nombre, cantidad, subtotal)")
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
@@ -39,6 +39,17 @@ export const adminUpdatePedidoEstado = createServerFn({ method: "POST" })
     const { error } = await context.supabase.from("pedidos").update({ estado: data.estado }).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+import { getAndreaniLabelBase64 } from "@/lib/andreani";
+
+export const adminGetAndreaniLabel = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ trackingNumber: z.string().min(1) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context.supabase, context.userId);
+    const base64 = await getAndreaniLabelBase64(data.trackingNumber);
+    return base64;
   });
 
 export type AdminShippingRow = {
