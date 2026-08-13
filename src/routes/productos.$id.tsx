@@ -41,7 +41,14 @@ export const Route = createFileRoute("/productos/$id")({
   head: ({ loaderData, params }) => {
     const product = loaderData?.product;
     const images = loaderData?.images;
-    const title = product?.nombre ? `${product.nombre} — Decasan Home Center` : `Producto #${params.id} — Decasan Home Center (${typeof loaderData})`;
+    
+    // Si no tenemos el producto cargado aún (ej. pre-render), sacamos el nombre del slug de la URL
+    const slugParts = params.id.split('-');
+    const probableId = slugParts[0];
+    const rawSlugName = slugParts.length > 1 ? slugParts.slice(1).join(' ').replace(/-/g, ' ') : `Producto #${probableId}`;
+    const fallbackName = rawSlugName.charAt(0).toUpperCase() + rawSlugName.slice(1);
+    
+    const title = product?.nombre ? `${product.nombre} — Decasan Home Center` : `${fallbackName} — Decasan Home Center`;
     const defaultDesc = "Comprá herramientas, maquinaria y productos industriales con asesoramiento profesional y envíos a todo el país.";
     
     // We remove HTML tags if any, and truncate to ~155 chars for SEO description
