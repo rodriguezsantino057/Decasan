@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import { Link, useLocation } from "@tanstack/react-router";
 import { chatWithBot, type CatalogProduct } from "@/lib/chat.functions";
 import { ProductImage } from "@/components/ProductImage";
-import { formatARS } from "@/lib/format";
+import { formatARS, slugify } from "@/lib/format";
 import { getPrecioEfectivo, tieneOferta } from "@/lib/products";
 
 const WHATSAPP_PHONE = "5493548592127";
@@ -313,7 +313,7 @@ function MiniProductCard({ product }: { product: CatalogProduct }) {
           )}
           <Link
             to="/productos/$id"
-            params={{ id: String(product.id) }}
+            params={{ id: `${product.id}-${slugify(product.nombre ?? "")}` }}
             className="text-xs font-semibold hover:text-primary transition-colors line-clamp-1 text-foreground"
           >
             {product.nombre}
@@ -335,7 +335,7 @@ function MiniProductCard({ product }: { product: CatalogProduct }) {
           <div className="flex items-center gap-1">
             <Link
               to="/productos/$id"
-              params={{ id: String(product.id) }}
+              params={{ id: `${product.id}-${slugify(product.nombre ?? "")}` }}
               className="text-[11px] bg-primary/10 hover:bg-primary hover:text-secondary text-primary font-medium px-2 py-0.5 rounded-md transition-colors flex items-center gap-1"
             >
               Ver <ExternalLink className="size-2.5" />

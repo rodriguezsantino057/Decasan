@@ -3,7 +3,7 @@ import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { ProductImage } from "@/components/ProductImage";
 import { useCart } from "@/lib/cart";
-import { formatARS } from "@/lib/format";
+import { formatARS, slugify } from "@/lib/format";
 
 export const Route = createFileRoute("/carrito")({
   component: CartPage,
@@ -43,7 +43,7 @@ function CartPage() {
               <div key={i.id} className="p-4 flex gap-4 items-center">
                 <Link
                   to="/productos/$id"
-                  params={{ id: String(i.id) }}
+                  params={{ id: `${i.id}-${slugify(i.nombre ?? "")}` }}
                   className="size-16 bg-muted shrink-0 overflow-hidden border border-border"
                   aria-label={`Ver ${i.nombre}`}
                 >
@@ -59,7 +59,7 @@ function CartPage() {
                 <div className="flex-1 min-w-0">
                   <Link
                     to="/productos/$id"
-                    params={{ id: String(i.id) }}
+                    params={{ id: `${i.id}-${slugify(i.nombre ?? "")}` }}
                     className="font-medium text-sm line-clamp-2 hover:text-primary"
                   >
                     {i.nombre}

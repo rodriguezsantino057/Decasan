@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { formatARS } from "@/lib/format";
+import { formatARS, slugify } from "@/lib/format";
 import { getPrecioEfectivo, tieneOferta, type Producto } from "@/lib/products";
 import { ProductImage } from "@/components/ProductImage";
 
@@ -10,7 +10,7 @@ export function ProductCard({ p }: { p: Producto }) {
   return (
     <Link
       to="/productos/$id"
-      params={{ id: String(p.id) }}
+      params={{ id: `${p.id}-${slugify(p.nombre ?? "")}` }}
       className="group bg-card border border-border hover:border-primary/60 transition flex flex-col"
     >
       <div className="aspect-square bg-white relative overflow-hidden">

@@ -20,7 +20,7 @@ import { Layout } from "@/components/Layout";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductGallery } from "@/components/ProductGallery";
 import { fetchProducto, fetchProductoImagenes, fetchProductos, getPrecioEfectivo, tieneOferta, type Producto } from "@/lib/products";
-import { formatARS } from "@/lib/format";
+import { formatARS, slugify } from "@/lib/format";
 import { useCart } from "@/lib/cart";
 import { useSession, useIsAdmin } from "@/lib/auth";
 import { toast } from "sonner";
@@ -28,7 +28,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/productos/$id")({
   component: ProductDetail,
   loader: async ({ params }) => {
-    const productId = Number(params.id);
+    const productId = parseInt(params.id, 10);
     if (isNaN(productId)) return { product: null, images: [] };
     
     const [product, images] = await Promise.all([
@@ -74,7 +74,7 @@ export const Route = createFileRoute("/productos/$id")({
 
 function ProductDetail() {
   const { id } = Route.useParams();
-  const productId = Number(id);
+  const productId = parseInt(id, 10);
   const add = useCart((s) => s.add);
   const [qty, setQty] = useState(1);
 
@@ -277,7 +277,7 @@ function ProductDetail() {
                     <Link
                       key={v.id}
                       to="/productos/$id"
-                      params={{ id: String(v.id) }}
+                      params={{ id: `${v.id}-${slugify(v.nombre ?? "")}` }}
                       className="flex justify-between items-center border border-border px-3 py-2.5 hover:border-primary hover:bg-accent/30 text-sm transition"
                     >
                       <span className="truncate pr-3">{v.nombre}</span>

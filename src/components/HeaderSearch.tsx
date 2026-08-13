@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Search, Loader2, X } from "lucide-react";
 import { fetchProductos, type Producto } from "@/lib/products";
-import { formatARS } from "@/lib/format";
+import { formatARS, slugify } from "@/lib/format";
 import { useSession, useIsAdmin } from "@/lib/auth";
 import { ProductImage } from "@/components/ProductImage";
 
@@ -104,7 +104,7 @@ export function HeaderSearch({ compact = false }: { compact?: boolean }) {
             <Link
               key={p.id}
               to="/productos/$id"
-              params={{ id: String(p.id) }}
+              params={{ id: `${p.id}-${slugify(p.nombre ?? "")}` }}
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 px-3 py-2 hover:bg-accent border-b border-border last:border-0"
             >
