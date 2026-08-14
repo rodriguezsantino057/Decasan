@@ -16,6 +16,8 @@ interface ShippingCalculatorProps {
 
 export function ShippingCalculator({
   provincia,
+  codigoPostal,
+  ciudad,
   onShippingSelect,
   selectedShipping,
 }: ShippingCalculatorProps) {
