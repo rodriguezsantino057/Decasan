@@ -137,7 +137,7 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
         subtotal_productos: productsSubtotal,
         envio_total: shippingTotal,
         envio_metodo: shipping,
-        shipping_option_id: shipping.id,
+        shipping_option_id: null,
         costo_envio: shippingTotal,
         transportista: shipping.transportista,
         total,
