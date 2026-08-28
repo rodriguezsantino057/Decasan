@@ -92,6 +92,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { key: "twitter:image", name: "twitter:image", content: (process.env.PUBLIC_BASE_URL ? process.env.PUBLIC_BASE_URL.trim().replace(/^["']|["']$/g, '') : "https://decasan.vercel.app") + "/logo-og.jpg" },
     ],
     links: [
+      { rel: "icon", type: "image/png", href: "/logo_favicon.png" },
+      { rel: "apple-touch-icon", href: "/logo_favicon.png" },
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
