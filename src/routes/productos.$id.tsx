@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Package,
   ShoppingCart,
@@ -12,6 +12,7 @@ import {
   Plus,
   Check,
   ChevronRight,
+  ChevronLeft,
   Wrench,
   CreditCard,
   MessageCircle,
@@ -84,6 +85,13 @@ function ProductDetail() {
   const productId = parseInt(id, 10);
   const add = useCart((s) => s.add);
   const [qty, setQty] = useState(1);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (dir: "left" | "right") => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: dir === "left" ? -200 : 200, behavior: "smooth" });
+    }
+  };
 
   const { user, loading: userLoading } = useSession();
   const { data: isAdmin, isLoading: isAdminLoading } = useIsAdmin(user);
@@ -273,30 +281,8 @@ function ProductDetail() {
               </div>
             </div>
 
-            {/* Variants */}
-            {variantes.length > 0 && (
-              <div className="mt-6">
-                <div className="text-xs font-semibold uppercase tracking-wider mb-3">
-                  Otras variantes ({variantes.length})
-                </div>
-                <div className="grid gap-2">
-                  {variantes.slice(0, 5).map((v) => (
-                    <Link
-                      key={v.id}
-                      to="/productos/$id"
-                      params={{ id: `${v.id}-${slugify(v.nombre ?? "")}` }}
-                      className="flex justify-between items-center border border-border px-3 py-2.5 hover:border-primary hover:bg-accent/30 text-sm transition"
-                    >
-                      <span className="truncate pr-3">{v.nombre}</span>
-                      <span className="font-display text-base shrink-0">{formatARS(v.precio)}</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Quantity + CTA */}
-            <div className="mt-6 flex items-stretch gap-3">
+            <div className="mt-8 flex items-stretch gap-3">
               <div className="inline-flex items-stretch border border-border">
                 <button
                   onClick={() => setQty((q) => Math.max(1, q - 1))}
@@ -335,6 +321,51 @@ function ProductDetail() {
               <MessageCircle className="size-4" /> Consultar disponibilidad o stock mayorista
             </a>
 
+            {/* Variants -> Mini horizontal gallery (Moved below CTA to avoid 'required choice' confusion) */}
+            {variantes.length >= 3 && (
+              <div className="mt-8 pt-6 border-t border-border">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm font-bold uppercase tracking-wider text-foreground">
+                    Otras opciones de esta línea
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => scroll("left")} className="p-1 hover:bg-muted text-muted-foreground hover:text-primary rounded-full transition-colors" aria-label="Anterior">
+                      <ChevronLeft className="size-4" />
+                    </button>
+                    <button onClick={() => scroll("right")} className="p-1 hover:bg-muted text-muted-foreground hover:text-primary rounded-full transition-colors" aria-label="Siguiente">
+                      <ChevronRight className="size-4" />
+                    </button>
+                  </div>
+                </div>
+                <div ref={scrollRef} className="flex overflow-x-auto gap-4 pb-4 snap-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {variantes.map((v) => (
+                    <Link
+                      key={v.id}
+                      to="/productos/$id"
+                      params={{ id: `${v.id}-${slugify(v.nombre ?? "")}` }}
+                      className="group w-48 shrink-0 snap-start flex flex-col gap-3"
+                    >
+                      <div className="aspect-square bg-white border border-border flex items-center justify-center overflow-hidden p-3 group-hover:border-primary transition-colors">
+                        <img 
+                          src={v.image_webp || v.image_url || "/placeholder.png"} 
+                          alt={v.nombre ?? ""}
+                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" 
+                        />
+                      </div>
+                      <div>
+                        <div className="text-sm leading-tight text-muted-foreground group-hover:text-primary transition-colors line-clamp-2" title={v.nombre ?? ""}>
+                          {v.nombre}
+                        </div>
+                        <div className="font-display text-base text-foreground mt-1.5">
+                          {formatARS(getPrecioEfectivo(v))}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Trust strip */}
             <div className="mt-8 grid grid-cols-2 gap-px bg-border border border-border">
               {[
@@ -343,11 +374,11 @@ function ProductDetail() {
                 { i: CreditCard, t: "Pago seguro", s: "Mercado Pago" },
                 { i: ShieldCheck, t: "Garantía oficial", s: "Productos originales" },
               ].map(({ i: Icon, t, s }) => (
-                <div key={t} className="bg-surface-elevated p-3 flex items-start gap-2.5">
-                  <Icon className="size-4 text-primary mt-0.5 shrink-0" />
+                <div key={t} className="bg-surface-elevated p-4 md:p-5 flex flex-col items-center text-center gap-2">
+                  <Icon className="size-6 text-primary shrink-0" />
                   <div>
-                    <div className="text-xs font-semibold leading-tight">{t}</div>
-                    <div className="text-[11px] text-muted-foreground leading-tight mt-0.5">{s}</div>
+                    <div className="text-sm font-semibold leading-tight">{t}</div>
+                    <div className="text-xs text-muted-foreground leading-tight mt-1">{s}</div>
                   </div>
                 </div>
               ))}
