@@ -73,55 +73,37 @@ export async function fetchProductos(opts: {
     query = query.or(clauses.join(","));
   }
 
-  if (!searchTokens.length || opts.sort !== "relevance") {
-    switch (opts.sort) {
-      case "price-asc":
-        query = query.order("precio", { ascending: true, nullsFirst: false });
-        break;
-      case "price-desc":
-        query = query.order("precio", { ascending: false, nullsFirst: false });
-        break;
-      case "name-asc":
-        query = query.order("nombre", { ascending: true });
-        break;
-      default:
-        query = query.order("id", { ascending: true });
-    }
-  }
-
   const limit = opts.limit ?? 24;
   const offset = opts.offset ?? 0;
-  if (searchTokens.length) {
-    query = query.limit(Math.max(offset + limit, 120));
-  } else {
-    query = query.range(offset, offset + limit - 1);
-  }
+  
+  // Fetch up to 2000 items to allow in-memory grouping of in-stock vs out-of-stock
+  query = query.limit(2000);
 
   const { data, count, error } = await query;
   if (error) throw error;
   const rows = (data ?? []) as Producto[];
 
-  if (!searchTokens.length) {
-    return { items: rows, count: count ?? 0 };
+  let ranked = rows.map((item) => ({ item, score: searchTokens.length ? scoreProductSearch(item, searchTokens) : 1 }));
+  if (searchTokens.length) {
+    ranked = ranked.filter((entry) => entry.score > 0);
   }
 
-  const ranked = rows
-    .map((item) => ({ item, score: scoreProductSearch(item, searchTokens) }))
-    .filter((entry) => entry.score > 0);
+  const hasStock = (p: Producto) => ((p.stock ?? 0) > 0 ? 1 : 0);
 
   switch (opts.sort) {
     case "price-asc":
-      ranked.sort((a, b) => getPrecioEfectivo(a.item) - getPrecioEfectivo(b.item) || b.score - a.score);
+      ranked.sort((a, b) => hasStock(b.item) - hasStock(a.item) || getPrecioEfectivo(a.item) - getPrecioEfectivo(b.item) || b.score - a.score);
       break;
     case "price-desc":
-      ranked.sort((a, b) => getPrecioEfectivo(b.item) - getPrecioEfectivo(a.item) || b.score - a.score);
+      ranked.sort((a, b) => hasStock(b.item) - hasStock(a.item) || getPrecioEfectivo(b.item) - getPrecioEfectivo(a.item) || b.score - a.score);
       break;
     case "name-asc":
-      ranked.sort((a, b) => (a.item.nombre ?? "").localeCompare(b.item.nombre ?? "", "es"));
+      ranked.sort((a, b) => hasStock(b.item) - hasStock(a.item) || (a.item.nombre ?? "").localeCompare(b.item.nombre ?? "", "es"));
       break;
     default:
       ranked.sort(
         (a, b) =>
+          hasStock(b.item) - hasStock(a.item) ||
           b.score - a.score ||
           Number(b.item.stock ?? 0) - Number(a.item.stock ?? 0) ||
           (a.item.nombre ?? "").localeCompare(b.item.nombre ?? "", "es"),
@@ -130,7 +112,7 @@ export async function fetchProductos(opts: {
 
   return {
     items: ranked.slice(offset, offset + limit).map((entry) => entry.item),
-    count: ranked.length,
+    count: searchTokens.length ? ranked.length : (count ?? ranked.length),
   };
 }
 
