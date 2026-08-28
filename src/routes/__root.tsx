@@ -6,6 +6,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  ScrollRestoration,
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -125,6 +126,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ScrollRestoration />
       <Outlet />
       <Toaster position="top-right" richColors />
     </QueryClientProvider>

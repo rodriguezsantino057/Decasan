@@ -397,8 +397,8 @@ function buildFallbackReply(userQuery: string, context: { products: CatalogProdu
   }
 
   // 4. Medios de pago / Cuotas
-  if (/\b(pago|pagos|tarjeta|tarjetas|cuotas|transferencia|efectivo|mercadopago|mercado pago|interes)\b/.test(norm)) {
-    return `💳 **Medios de Pago Disponibles:**\n• **Mercado Pago:** Tarjetas de crédito, débito y dinero en cuenta.\n• **Transferencia bancaria** con confirmación inmediata.\n• **Efectivo** al retirar en nuestro local.\n\nTodos los pagos se procesan de forma 100% segura.`;
+  if (/\b(pago|pagos|tarjeta|tarjetas|cuotas|transferencia|efectivo|mercadopago|mercado pago|modo|interes)\b/.test(norm)) {
+    return `💳 **Medios de Pago Disponibles:**\n• **Mercado Pago:** Tarjetas de crédito, débito y dinero en cuenta.\n• **MODO:** Pagá escaneando un QR desde la app de tu banco, sin cargar datos de tarjeta.\n• **Efectivo** al retirar en nuestro local.\n\nTodos los pagos se procesan de forma 100% segura.`;
   }
 
   // 5. Envíos

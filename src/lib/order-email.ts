@@ -1,3 +1,4 @@
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { formatARS } from "@/lib/format";
 import { escapeHtml, sendTransactionalEmail } from "@/lib/email";
 
@@ -52,6 +53,29 @@ export async function sendOrderConfirmationEmail(order: OrderEmailData): Promise
     html,
     logContext: { kind: "order_confirmation", pedidoId: order.id },
   });
+}
+
+export async function sendPaidOrderEmail(pedidoId: string) {
+  const { data: pedido, error } = await supabaseAdmin
+    .from("pedidos")
+    .select("id,email,nombre,telefono,total,subtotal_productos,envio_total,envio_metodo,direccion,confirmation_email_sent_at,pedido_items(nombre,cantidad,precio_unitario,subtotal)")
+    .eq("id", pedidoId)
+    .single();
+
+  if (error || !pedido) {
+    console.error("[email] paid order lookup failed", { pedidoId, error: error?.message });
+    return;
+  }
+
+  if ((pedido as any).confirmation_email_sent_at) return;
+
+  const sent = await sendOrderConfirmationEmail(pedido as any);
+  if (sent) {
+    await supabaseAdmin
+      .from("pedidos")
+      .update({ confirmation_email_sent_at: new Date().toISOString() } as any)
+      .eq("id", pedidoId);
+  }
 }
 
 function buildOrderEmailHtml(order: OrderEmailData): string {

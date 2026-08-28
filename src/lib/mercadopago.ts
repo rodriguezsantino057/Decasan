@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { sendOrderConfirmationEmail } from "@/lib/order-email";
+import { sendPaidOrderEmail } from "@/lib/order-email";
 import { createAndreaniShipping } from "@/lib/andreani";
 
 export type MercadoPagoPayment = {
@@ -157,29 +157,6 @@ export async function verifyMercadoPagoWebhookSignature(request: Request, dataId
   const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
   const expected = await hmacSha256Hex(secret, manifest);
   return timingSafeHexEqual(expected, hash);
-}
-
-async function sendPaidOrderEmail(pedidoId: string) {
-  const { data: pedido, error } = await supabaseAdmin
-    .from("pedidos")
-    .select("id,email,nombre,telefono,total,subtotal_productos,envio_total,envio_metodo,direccion,confirmation_email_sent_at,pedido_items(nombre,cantidad,precio_unitario,subtotal)")
-    .eq("id", pedidoId)
-    .single();
-
-  if (error || !pedido) {
-    console.error("[mp] paid order lookup failed", { pedidoId, error: error?.message });
-    return;
-  }
-
-  if ((pedido as any).confirmation_email_sent_at) return;
-
-  const sent = await sendOrderConfirmationEmail(pedido as any);
-  if (sent) {
-    await supabaseAdmin
-      .from("pedidos")
-      .update({ confirmation_email_sent_at: new Date().toISOString() } as any)
-      .eq("id", pedidoId);
-  }
 }
 
 async function hmacSha256Hex(secret: string, message: string) {

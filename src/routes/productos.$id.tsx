@@ -182,13 +182,13 @@ function ProductDetail() {
           {p.categoria && (
             <>
               <ChevronRight className="size-3" />
-              <span className="hover:text-primary">{p.categoria}</span>
+              <Link to="/productos" search={{ cat: p.categoria } as never} className="hover:text-primary">{p.categoria}</Link>
             </>
           )}
           {p.grupo && (
             <>
               <ChevronRight className="size-3" />
-              <span>{p.grupo}</span>
+              <Link to="/productos" search={{ cat: p.categoria, grupo: p.grupo } as never} className="hover:text-primary">{p.grupo}</Link>
             </>
           )}
           <ChevronRight className="size-3" />
