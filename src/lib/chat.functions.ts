@@ -145,6 +145,12 @@ async function callGemini(apiKey: string, systemPrompt: string, messages: { role
 
 async function callGroq(apiKey: string, systemPrompt: string, messages: { role: string; content: string }[]): Promise<string | null> {
   try {
+    const modelsRes = await fetch("https://api.groq.com/openai/v1/models", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    const modelsData = await modelsRes.json();
+    const firstTextModel = modelsData.data.find((m: any) => m.id.includes("llama") || m.id.includes("mixtral") || m.id.includes("gemma") || m.id.includes("qwen") || m.id.includes("gpt"))?.id ?? "qwen-3.6-27b";
+
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -152,7 +158,7 @@ async function callGroq(apiKey: string, systemPrompt: string, messages: { role: 
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: firstTextModel,
         messages: [
           { role: "system", content: systemPrompt },
           ...messages.filter((m) => m.role !== "system"),

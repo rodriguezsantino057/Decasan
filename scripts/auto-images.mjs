@@ -32,13 +32,13 @@ async function main() {
 
   console.log(`Buscando productos sin imagen en el rubro: "${rubro}"...`);
 
-  // 1. Obtener productos sin imagen del grupo especificado
+  // 1. Obtener productos sin imagen del rubro especificado (buscando en categoria o grupo)
   const { data: productos, error } = await supabase
     .from("productos")
     .select("id, nombre, sku, codigo_fabricante")
-    .ilike("grupo", `%${rubro}%`)
+    .or(`categoria.ilike.%${rubro}%,grupo.ilike.%${rubro}%`)
     .is("image_url", null)
-    .limit(50); // Límite de 50 por vez para no saturar
+    .limit(300); // Ampliado a 300 por vez para que termine más rápido
 
   if (error) {
     console.error("Error al consultar productos:", error.message);
@@ -71,7 +71,24 @@ async function main() {
       const result = await response.json();
       
       if (result.images && result.images.length > 0) {
-        const validImages = result.images.filter(img => img.imageUrl.startsWith("http")).slice(0, 3);
+        // Filtrar imágenes que sean HTTP y que su título coincida en gran parte con el nombre del producto
+        const validImages = result.images.filter(img => {
+          if (!img.imageUrl.startsWith("http")) return false;
+          
+          if (!img.title) return true; // Si no tiene título, le damos el beneficio de la duda
+          
+          const titleWords = img.title.toLowerCase().split(/[\s-]/);
+          const nameWords = p.nombre.toLowerCase().split(/[\s-]/);
+          
+          // Contar cuántas palabras del nombre original están en el título de la foto
+          let matches = 0;
+          for (const w of nameWords) {
+             if (w.length > 2 && titleWords.includes(w)) matches++;
+          }
+          
+          // Si comparten al menos 2 palabras clave, o es un nombre corto y comparte 1, la consideramos segura
+          return matches >= 2 || (nameWords.length <= 2 && matches >= 1);
+        }).slice(0, 3);
         
         if (validImages.length > 0) {
           const firstImage = validImages[0];
