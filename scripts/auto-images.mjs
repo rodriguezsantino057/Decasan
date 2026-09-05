@@ -72,23 +72,49 @@ async function main() {
       
       if (result.images && result.images.length > 0) {
         // Filtrar imágenes que sean HTTP y que su título coincida en gran parte con el nombre del producto
-        const validImages = result.images.filter(img => {
+        let validImages = result.images.filter(img => {
           if (!img.imageUrl.startsWith("http")) return false;
-          
-          if (!img.title) return true; // Si no tiene título, le damos el beneficio de la duda
+          if (!img.title) return true;
           
           const titleWords = img.title.toLowerCase().split(/[\s-]/);
           const nameWords = p.nombre.toLowerCase().split(/[\s-]/);
-          
-          // Contar cuántas palabras del nombre original están en el título de la foto
           let matches = 0;
           for (const w of nameWords) {
              if (w.length > 2 && titleWords.includes(w)) matches++;
           }
-          
-          // Si comparten al menos 2 palabras clave, o es un nombre corto y comparte 1, la consideramos segura
           return matches >= 2 || (nameWords.length <= 2 && matches >= 1);
-        }).slice(0, 3);
+        });
+
+        // ORDENAMIENTO POR NIVELES (El toque maestro)
+        validImages.sort((a, b) => {
+           const getScore = (img) => {
+               const str = (img.link || img.source || img.imageUrl || "").toLowerCase();
+               
+               // Nivel 1: Páginas Oficiales
+               if (str.includes("totalbusiness") || 
+                   str.includes("hamilton") || 
+                   str.includes("brementools") || 
+                   str.includes("lusqtoff") || 
+                   str.includes("milwaukeetool") || 
+                   str.includes("dewalt") || 
+                   str.includes("bosch")) {
+                   return 1;
+               }
+               
+               // Nivel 2: Mercado Libre
+               if (str.includes("mercadolibre") || str.includes("mlstatic")) {
+                   return 2;
+               }
+               
+               // Nivel 3: Resto de internet
+               return 3;
+           };
+           
+           return getScore(a) - getScore(b); // Menor puntaje va primero (Nivel 1 > Nivel 2 > Nivel 3)
+        });
+
+        // Finalmente nos quedamos con las 3 mejores
+        validImages = validImages.slice(0, 3);
         
         if (validImages.length > 0) {
           const firstImage = validImages[0];
