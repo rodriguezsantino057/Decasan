@@ -83,6 +83,31 @@ export async function fetchProductos(opts: {
   if (error) throw error;
   const rows = (data ?? []) as Producto[];
 
+  // Fallback: para productos sin portada, traer la primera imagen de la galería
+  const withoutCover = rows.filter((r) => !r.image_url).map((r) => r.id);
+  if (withoutCover.length > 0) {
+    const { data: galleryRows } = await supabase
+      .from("product_images")
+      .select("producto_id, url, url_webp")
+      .in("producto_id", withoutCover)
+      .order("orden", { ascending: true });
+    if (galleryRows?.length) {
+      const firstImageByProduct = new Map<number, { url: string; url_webp: string | null }>();
+      for (const g of galleryRows) {
+        if (!firstImageByProduct.has(g.producto_id) && g.url) {
+          firstImageByProduct.set(g.producto_id, { url: g.url, url_webp: g.url_webp });
+        }
+      }
+      for (const row of rows) {
+        const fallback = firstImageByProduct.get(row.id);
+        if (fallback) {
+          row.image_url = fallback.url;
+          row.image_webp = fallback.url_webp;
+        }
+      }
+    }
+  }
+
   let ranked = rows.map((item) => ({ item, score: searchTokens.length ? scoreProductSearch(item, searchTokens) : 1 }));
   if (searchTokens.length) {
     ranked = ranked.filter((entry) => entry.score > 0);
@@ -178,6 +203,23 @@ export async function fetchProducto(id: number, isAdmin?: boolean): Promise<Prod
   if (!isAdmin) query = query.or("activo.eq.true,activo.is.null");
   const { data, error } = await query.maybeSingle();
   if (error) throw error;
+  if (!data) return null;
+
+  // Fallback: si no tiene portada, traer la primera imagen de la galería
+  if (!data.image_url) {
+    const { data: galleryRow } = await supabase
+      .from("product_images")
+      .select("url, url_webp")
+      .eq("producto_id", id)
+      .order("orden", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (galleryRow?.url) {
+      data.image_url = galleryRow.url;
+      data.image_webp = galleryRow.url_webp;
+    }
+  }
+
   return data as Producto | null;
 }
 

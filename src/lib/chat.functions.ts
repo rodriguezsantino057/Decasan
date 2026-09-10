@@ -305,6 +305,32 @@ async function searchCatalogProducts(terms: string[], category: string | null): 
     }
 
     const rows = (data ?? []) as CatalogProduct[];
+
+    // Fallback: para productos sin portada, traer la primera imagen de la galería
+    const withoutCover = rows.filter((r) => !r.image_url).map((r) => r.id);
+    if (withoutCover.length > 0) {
+      const { data: galleryRows } = await supabaseAdmin
+        .from("product_images")
+        .select("producto_id, url, url_webp")
+        .in("producto_id", withoutCover)
+        .order("orden", { ascending: true });
+      if (galleryRows?.length) {
+        const firstByProduct = new Map<number, { url: string; url_webp: string | null }>();
+        for (const g of galleryRows) {
+          if (!firstByProduct.has(g.producto_id) && g.url) {
+            firstByProduct.set(g.producto_id, { url: g.url, url_webp: g.url_webp });
+          }
+        }
+        for (const row of rows) {
+          const fb = firstByProduct.get(row.id);
+          if (fb) {
+            row.image_url = fb.url;
+            row.image_webp = fb.url_webp;
+          }
+        }
+      }
+    }
+
     if (terms.length === 0) return rows.slice(0, 8);
 
     const ranked = rows
