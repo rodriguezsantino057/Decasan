@@ -9,6 +9,8 @@ import {
   ScrollRestoration,
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
+import { MaintenanceScreen } from "@/components/MaintenanceScreen";
+import { useMaintenanceGate } from "@/lib/maintenance";
 
 import appCss from "../styles.css?url";
 
@@ -125,6 +127,11 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const maintenance = useMaintenanceGate();
+
+  if (maintenance.locked) {
+    return <MaintenanceScreen onUnlock={maintenance.unlock} />;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

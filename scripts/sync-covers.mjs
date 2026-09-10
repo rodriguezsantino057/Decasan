@@ -31,13 +31,14 @@ async function fetchAll(table, columns) {
 async function main() {
   console.log("🛠️ FORZANDO SINCRONIZACIÓN DE PORTADAS DESDE LA GALERÍA...");
   
-  // 1. Obtener toda la galería
-  const images = await fetchAll("product_images", "producto_id, url");
+  // 1. Obtener toda la galería, ordenada por producto y orden
+  const images = await fetchAll("product_images", "producto_id, url, orden");
+  images.sort((a, b) => a.producto_id - b.producto_id || a.orden - b.orden);
   
-  // Agrupar la primera imagen disponible para cada producto
+  // Agrupar la primera imagen CON URL VÁLIDA para cada producto
   const productToImageMap = new Map();
   for (const img of images) {
-     if (img.producto_id && !productToImageMap.has(img.producto_id)) {
+     if (img.producto_id && img.url && !productToImageMap.has(img.producto_id)) {
         productToImageMap.set(img.producto_id, img.url);
      }
   }
