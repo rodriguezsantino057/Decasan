@@ -56,3 +56,5 @@ Para probar todo el flujo de compra, generación de guía y descarga de etiqueta
 2. Entra a `/admin/shipping-demo`.
 3. Ingresa tu código postal de destino.
 4. Verifica que aparezcan el retiro en local y la opción de envío a domicilio calculada.
+
+> **Nota:** La API v2 de Zipnova exige `city` y `state` en el `destination` de la cotización (además del `zipcode`). El checkout envía la ciudad y provincia que ingresa el cliente; si faltan, la cotización cae en tarifas fallback.

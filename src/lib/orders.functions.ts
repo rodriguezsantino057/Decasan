@@ -82,7 +82,12 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
       paymentMethod: data.pago.metodo,
     });
 
-    const shipping = await getActiveShippingOption(data.envio.shipping_option_id, data.direccion.codigo_postal);
+    const shipping = await getActiveShippingOption(
+      data.envio.shipping_option_id,
+      data.direccion.codigo_postal,
+      data.direccion.provincia,
+      data.direccion.ciudad
+    );
     const isLocalPickup = shipping.codigo_servicio === LOCAL_PICKUP_CODE;
     if (!isLocalPickup) validateShippingAddress(data.direccion);
     
@@ -353,13 +358,18 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
     };
   });
 
-async function getActiveShippingOption(id: string, codigoPostal?: string | null) {
+async function getActiveShippingOption(
+  id: string,
+  codigoPostal?: string | null,
+  provincia?: string | null,
+  ciudad?: string | null
+) {
   if (id === LOCAL_PICKUP_CODE) {
     return getLocalPickupOption();
   }
 
   if ((id === "zipnova_envio" || id === "andreani_envio") && codigoPostal) {
-    const quote = await getZipnovaQuote(codigoPostal);
+    const quote = await getZipnovaQuote(codigoPostal, 1, 1000, provincia, ciudad);
     if (!quote) {
       throw new Error("No se pudo obtener la cotizacion de Zipnova para este codigo postal");
     }

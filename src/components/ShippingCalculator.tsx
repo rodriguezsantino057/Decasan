@@ -26,8 +26,8 @@ export function ShippingCalculator({
   const canShowRates = !!codigoPostal && codigoPostal.trim().length > 0;
 
   const { data: opciones, isLoading, error } = useQuery({
-    queryKey: ["shipping-options", provincia, codigoPostal],
-    queryFn: () => shippingFn({ data: { provincia, codigoPostal } }),
+    queryKey: ["shipping-options", provincia, codigoPostal, ciudad],
+    queryFn: () => shippingFn({ data: { provincia, codigoPostal, ciudad } }),
     enabled: true,
   });
 

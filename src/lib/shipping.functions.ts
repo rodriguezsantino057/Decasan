@@ -60,6 +60,7 @@ export const SHIPPING_PROVINCES = [
 const shippingOptionsSchema = z.object({
   provincia: z.string().trim().max(80).optional().nullable(),
   codigoPostal: z.string().trim().max(8).optional().nullable(),
+  ciudad: z.string().trim().max(80).optional().nullable(),
 });
 
 export const getShippingOptions = createServerFn({ method: "GET" })
@@ -68,7 +69,7 @@ export const getShippingOptions = createServerFn({ method: "GET" })
     const options: ShippingOption[] = [getLocalPickupOption()];
 
     if (data.codigoPostal) {
-      const zipnovaQuote = await getZipnovaQuote(data.codigoPostal);
+      const zipnovaQuote = await getZipnovaQuote(data.codigoPostal, 1, 1000, data.provincia, data.ciudad);
       if (zipnovaQuote) {
         options.push({
           id: zipnovaQuote.id,

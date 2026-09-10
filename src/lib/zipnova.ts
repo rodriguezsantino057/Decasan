@@ -109,13 +109,31 @@ startxref
 }
 
 /**
+ * Parsea una duración ISO 8601 (ej: "P5DT12H", "P4DT12H", "PT0S") a días,
+ * redondeando hacia arriba. Devuelve null si no se puede parsear.
+ */
+function parseIsoDurationDays(duration?: string | null): number | null {
+  if (!duration) return null;
+  const match = duration.match(/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/);
+  if (!match) return null;
+  const days = Number(match[1] || 0);
+  const hours = Number(match[2] || 0);
+  const minutes = Number(match[3] || 0);
+  const seconds = Number(match[4] || 0);
+  const totalDays = days + hours / 24 + minutes / (24 * 60) + seconds / (24 * 3600);
+  return Math.ceil(totalDays);
+}
+
+/**
  * Cotiza un envío a través de Zipnova por código postal.
  * Si faltan credenciales o se activa ZIPNOVA_MOCK, utiliza las tarifas de fallback.
  */
 export async function getZipnovaQuote(
   cpDestino: string,
   pesoKg = 1,
-  valorDeclarado = 1000
+  valorDeclarado = 1000,
+  provincia?: string | null,
+  ciudad?: string | null
 ): Promise<ZipnovaQuoteResult | null> {
   const isMock = process.env.ZIPNOVA_MOCK === "true";
   const headers = getAuthHeaders();
@@ -140,6 +158,8 @@ export async function getZipnovaQuote(
       declared_value: declaredValue,
       destination: {
         zipcode: cpDestino.trim(),
+        ...(provincia ? { state: provincia } : {}),
+        ...(ciudad ? { city: ciudad } : {}),
       },
       items: [
         {
@@ -186,10 +206,12 @@ export async function getZipnovaQuote(
 
     const costo = Number(selected.amounts?.price_incl_tax || selected.amounts?.price || 0);
     const carrierName = selected.carrier?.name || "Zipnova";
+    const parsedDays = parseIsoDurationDays(selected.delivery_time?.times?.total?.max);
     const diasEstimados =
-      Number(selected.delivery_time?.times?.total?.max?.replace(/\D/g, "")) ||
-      Number(selected.delivery_time?.max) ||
-      Number(process.env.ZIPNOVA_DEFAULT_DELIVERY_DAYS || 5);
+      parsedDays != null
+        ? parsedDays
+        : Number(selected.delivery_time?.max) ||
+          Number(process.env.ZIPNOVA_DEFAULT_DELIVERY_DAYS || 5);
 
     return {
       id: "zipnova_envio",
