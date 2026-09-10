@@ -1,28 +1,35 @@
-# Resumen de Implementacion de Envios - Andreani
+# Resumen de Implementación de Envíos - Zipnova
 
-La integracion de envios queda centralizada en `src/lib/shipping.functions.ts`.
+La integración de envíos queda centralizada en `src/lib/zipnova.ts` y se expone a través de `src/lib/shipping.functions.ts`.
 
-## Que incluye
+## Qué incluye
 
-- Cotizacion de envio a domicilio con Andreani.
-- Login con credenciales Andreani y uso de `x-authorization-token`.
-- Variables de entorno `ANDREANI_*`.
-- Retiro en local sin costo.
-- Soporte opcional para sucursales/puntos de retiro si se configura `ANDREANI_BRANCHES_URL`.
-- Tarifas fallback para no bloquear el checkout si faltan credenciales o Andreani no responde.
+- Cotización de envío a domicilio con Zipnova API v2 (`POST /shipments/quote`).
+- Creación y despacho de envíos post-pago (`POST /shipments`).
+- Descarga de etiquetas en PDF para pedidos enviados (`GET /shipments/{id}/label.pdf`).
+- Autenticación HTTP Basic (`ZIPNOVA_TOKEN` / `ZIPNOVA_SECRET`) o Bearer Token.
+- Variables de entorno `ZIPNOVA_*` documentadas en `.env.example`.
+- Retiro en local sin costo siempre disponible.
+- Tarifas de fallback (`SHIPPING_FALLBACK_BASE`, `SHIPPING_FALLBACK_PER_KG`) para no bloquear el checkout si faltan credenciales o la API externa no responde.
+- Modo Mock (`ZIPNOVA_MOCK=true`) para pruebas completas de extremo a extremo sin credenciales de producción.
 
 ## Flujo
 
-1. El cliente ingresa codigo postal en checkout.
-2. El server function `calculateShipping()` consulta Andreani.
-3. Se devuelve retiro en local, sucursales opcionales y envio Andreani a domicilio.
-4. Al crear la orden, `selectShippingOption()` vuelve a validar el metodo y precio en servidor.
+1. El cliente ingresa su código postal en el checkout o cotizador.
+2. La server function `getShippingOptions()` consulta Zipnova (o aplica el fallback/mock).
+3. Se devuelven las opciones ordenadas por costo (Retiro en local y Envío a domicilio).
+4. Al confirmar la compra, `orders.functions.ts` re-valida la opción y guarda el pedido con `carrier: "zipnova"`.
+5. Al confirmarse el pago mediante webhook de Mercado Pago o MODO, se genera la orden en Zipnova y se asigna el `tracking_number`.
+6. Desde el panel de administración (`/admin/pedidos`), el administrador puede ver el número de tracking y descargar la etiqueta en PDF.
 
 ## Archivos principales
 
+- `src/lib/zipnova.ts`
 - `src/lib/shipping.functions.ts`
-- `src/components/ShippingCalculator.tsx`
-- `src/routes/checkout.tsx`
+- `src/lib/orders.functions.ts`
+- `src/lib/admin.functions.ts`
+- `src/lib/mercadopago.ts`
+- `src/lib/modo.ts`
+- `src/routes/_authenticated.admin.pedidos.tsx`
 - `src/routes/admin.shipping-demo.tsx`
-- `.env.example`
 - `SHIPPING_SETUP.md`

@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { sendPaidOrderEmail } from "@/lib/order-email";
-import { createAndreaniShipping } from "@/lib/andreani";
+import { createZipnovaShipping } from "@/lib/zipnova";
 
 export type MercadoPagoPayment = {
   id: number | string;
@@ -79,7 +79,7 @@ export async function applyMercadoPagoPayment(payment: MercadoPagoPayment) {
 
   const { data: pedido, error: readError } = await supabaseAdmin
     .from("pedidos")
-    .select("id,total,mp_preference_id,confirmation_email_sent_at,transportista,email,nombre,telefono,direccion,andreani_tracking_number")
+    .select("id,total,mp_preference_id,confirmation_email_sent_at,transportista,carrier,tracking_number,email,nombre,telefono,direccion,andreani_tracking_number")
     .eq("id", pedidoId)
     .single();
 
@@ -116,15 +116,25 @@ export async function applyMercadoPagoPayment(payment: MercadoPagoPayment) {
   }
 
   if (estado === "pagado") {
-    if (pedido.transportista === "andreani" && !pedido.andreani_tracking_number) {
+    const isShippingOrder = (pedido as any).carrier === "zipnova" || pedido.transportista === "zipnova" || pedido.transportista === "andreani";
+    const existingTracking = (pedido as any).tracking_number || pedido.andreani_tracking_number;
+
+    if (isShippingOrder && !existingTracking) {
       try {
-        const tracking = await createAndreaniShipping(pedidoId, pedido);
+        const tracking = await createZipnovaShipping(pedidoId, pedido);
         if (tracking) {
-          await supabaseAdmin.from("pedidos").update({ andreani_tracking_number: tracking }).eq("id", pedidoId);
-          console.info("[andreani] envio creado via MP webhook", { pedidoId, tracking });
+          await supabaseAdmin
+            .from("pedidos")
+            .update({
+              tracking_number: tracking,
+              carrier: "zipnova",
+              andreani_tracking_number: tracking,
+            } as any)
+            .eq("id", pedidoId);
+          console.info("[zipnova] envio creado via MP webhook", { pedidoId, tracking });
         }
       } catch (err) {
-        console.error("[andreani] Error creando el envio post-pago:", err);
+        console.error("[zipnova] Error creando el envio post-pago:", err);
       }
     }
 

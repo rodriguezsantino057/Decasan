@@ -170,6 +170,8 @@ export type Database = {
           telefono: string | null
           total: number
           transportista: string | null
+          carrier: string | null
+          tracking_number: string | null
           andreani_tracking_number: string | null
           updated_at: string
           user_id: string | null
@@ -196,6 +198,8 @@ export type Database = {
           telefono?: string | null
           total?: number
           transportista?: string | null
+          carrier?: string | null
+          tracking_number?: string | null
           andreani_tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
@@ -222,6 +226,8 @@ export type Database = {
           telefono?: string | null
           total?: number
           transportista?: string | null
+          carrier?: string | null
+          tracking_number?: string | null
           andreani_tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
@@ -486,6 +492,7 @@ export type Database = {
       transportista:
         | "correo_argentino"
         | "andreani"
+        | "zipnova"
         | "cadete"
         | "retiro_local"
     }

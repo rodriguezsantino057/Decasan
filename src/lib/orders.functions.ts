@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { LOCAL_PICKUP_CODE, TRANSPORTISTA_LABEL } from "@/lib/shipping.functions";
 import { assertValidPublicBaseUrl, getMercadoPagoAccessToken, getPublicBaseUrl } from "@/lib/mercadopago";
 import { createModoPaymentIntention, isModoConfigured } from "@/lib/modo";
-import { getAndreaniQuote } from "@/lib/andreani";
+import { getZipnovaQuote } from "@/lib/zipnova";
 
 const itemSchema = z.object({
   id: z.number().int().positive(),
@@ -156,6 +156,7 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
         shipping_option_id: null,
         costo_envio: shippingTotal,
         transportista: shipping.transportista,
+        carrier: shipping.transportista,
         total,
         email: data.email,
         nombre: data.nombre,
@@ -357,25 +358,25 @@ async function getActiveShippingOption(id: string, codigoPostal?: string | null)
     return getLocalPickupOption();
   }
 
-  if (id === "andreani_envio" && codigoPostal) {
-    const quote = await getAndreaniQuote(codigoPostal);
+  if ((id === "zipnova_envio" || id === "andreani_envio") && codigoPostal) {
+    const quote = await getZipnovaQuote(codigoPostal);
     if (!quote) {
-      throw new Error("No se pudo obtener la cotizacion de Andreani para este codigo postal");
+      throw new Error("No se pudo obtener la cotizacion de Zipnova para este codigo postal");
     }
     return {
       id: quote.id,
-      transportista: "andreani",
+      transportista: "zipnova" as const,
       provincia: null,
       costo: quote.costo,
       label: quote.label,
       dias_estimados_min: quote.diasEstimados,
       dias_estimados_max: quote.diasEstimados + 2,
       codigo_servicio: quote.id,
-      servicio: TRANSPORTISTA_LABEL["andreani"],
+      servicio: TRANSPORTISTA_LABEL["zipnova"],
       descripcion: quote.label,
       dias_habiles: quote.diasEstimados + 2,
       precio: quote.costo,
-      tipo: "domicilio",
+      tipo: "domicilio" as const,
     };
   }
 

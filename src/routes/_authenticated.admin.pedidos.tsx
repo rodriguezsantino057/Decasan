@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { adminListPedidos, adminUpdatePedidoEstado, adminGetAndreaniLabel } from "@/lib/admin.functions";
+import { adminListPedidos, adminUpdatePedidoEstado, adminGetShippingLabel } from "@/lib/admin.functions";
 import { formatARS } from "@/lib/format";
 import { LOCAL_PICKUP_CODE } from "@/lib/shipping.functions";
 
@@ -14,7 +14,7 @@ function AdminPedidos() {
   const qc = useQueryClient();
   const list = useServerFn(adminListPedidos);
   const update = useServerFn(adminUpdatePedidoEstado);
-  const getLabel = useServerFn(adminGetAndreaniLabel);
+  const getLabel = useServerFn(adminGetShippingLabel);
   const { data } = useQuery({ queryKey: ["admin-pedidos"], queryFn: () => list() });
 
   return (
@@ -26,6 +26,9 @@ function AdminPedidos() {
         const deliveryLabel = isLocalPickup ? "Retiro en local" : "Envio";
         const shippingCost = Number(p.envio_total ?? p.costo_envio ?? 0);
         const shippingDescription = shipping?.descripcion ?? shipping?.label ?? p.transportista;
+        const tracking = (p as any).tracking_number || p.andreani_tracking_number;
+        const carrier = (p as any).carrier || p.transportista;
+        const carrierLabel = carrier === "zipnova" ? "Zipnova" : carrier === "andreani" ? "Andreani" : "Envio";
 
         return (
           <details key={p.id} className="border border-border bg-surface-elevated">
@@ -79,18 +82,18 @@ function AdminPedidos() {
               {p.notas && (
                 <p className="whitespace-pre-line"><strong>Notas:</strong> {p.notas}</p>
               )}
-              {p.andreani_tracking_number && (
+              {tracking && (
                 <div className="flex items-center gap-2 mt-2">
-                  <p><strong>Tracking Andreani:</strong> {p.andreani_tracking_number}</p>
+                  <p><strong>Tracking {carrierLabel}:</strong> {tracking}</p>
                   <button
                     onClick={async (e) => {
                       e.stopPropagation();
                       try {
                         toast.loading("Obteniendo etiqueta...", { id: `label-${p.id}` });
-                        const base64 = await getLabel({ data: { trackingNumber: p.andreani_tracking_number as string } });
+                        const base64 = await getLabel({ data: { trackingNumber: tracking as string } });
                         const link = document.createElement("a");
                         link.href = `data:application/pdf;base64,${base64}`;
-                        link.download = `Etiqueta_Andreani_${p.andreani_tracking_number}.pdf`;
+                        link.download = `Etiqueta_${carrierLabel}_${tracking}.pdf`;
                         link.click();
                         toast.success("Etiqueta descargada", { id: `label-${p.id}` });
                       } catch (err: any) {

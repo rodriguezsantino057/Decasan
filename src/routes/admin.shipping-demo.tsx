@@ -10,6 +10,7 @@ export const Route = createFileRoute("/admin/shipping-demo")({
 export default function ShippingDemoPage() {
   const shippingFn = useServerFn(getShippingOptions);
   const [provincia, setProvincia] = useState("Cordoba");
+  const [codigoPostal, setCodigoPostal] = useState("5000");
   const [resultado, setResultado] = useState<any[]>([]);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
@@ -18,7 +19,7 @@ export default function ShippingDemoPage() {
     setCargando(true);
     setError("");
     try {
-      const opciones = await shippingFn({ data: { provincia } });
+      const opciones = await shippingFn({ data: { provincia, codigoPostal } });
       setResultado(opciones);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido");
@@ -30,18 +31,30 @@ export default function ShippingDemoPage() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Demo - Tarifas de envio</h1>
+        <h1 className="text-3xl font-bold mb-6">Demo - Tarifas de envio (Zipnova)</h1>
 
         <div className="bg-card border border-border p-6 space-y-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium mb-2">Provincia destino</label>
-            <input
-              type="text"
-              value={provincia}
-              onChange={(e) => setProvincia(e.target.value)}
-              placeholder="Ej: Cordoba"
-              className="w-full border border-border px-3 py-2 outline-none focus:border-primary"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Codigo Postal</label>
+              <input
+                type="text"
+                value={codigoPostal}
+                onChange={(e) => setCodigoPostal(e.target.value)}
+                placeholder="Ej: 5000"
+                className="w-full border border-border px-3 py-2 outline-none focus:border-primary bg-background"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Provincia destino</label>
+              <input
+                type="text"
+                value={provincia}
+                onChange={(e) => setProvincia(e.target.value)}
+                placeholder="Ej: Cordoba"
+                className="w-full border border-border px-3 py-2 outline-none focus:border-primary bg-background"
+              />
+            </div>
           </div>
 
           <button

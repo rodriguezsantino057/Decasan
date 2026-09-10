@@ -17,7 +17,7 @@ const faqs = [
   },
   {
     question: "Como se calcula el envio?",
-    answer: "El sistema cotiza el envio con Andreani usando el codigo postal de destino, origen La Falda y datos del paquete. Si un destino no se puede cotizar, podes consultarnos por WhatsApp.",
+    answer: "El sistema cotiza el envio con Zipnova usando el codigo postal de destino, origen La Falda y datos del paquete. Si un destino no se puede cotizar, podes consultarnos por WhatsApp.",
   },
   {
     question: "Puedo retirar mi compra en el local?",

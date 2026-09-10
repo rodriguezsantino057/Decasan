@@ -21,7 +21,7 @@ export const adminListPedidos = createServerFn({ method: "GET" })
     await ensureAdmin(context.supabase, context.userId);
     const { data, error } = await context.supabase
       .from("pedidos")
-      .select("id, estado, total, email, nombre, telefono, direccion, envio_total, costo_envio, envio_metodo, transportista, andreani_tracking_number, notas, created_at, mp_payment_id, payment_method, modo_payment_id, pedido_items(id, nombre, cantidad, subtotal)")
+      .select("id, estado, total, email, nombre, telefono, direccion, envio_total, costo_envio, envio_metodo, transportista, carrier, tracking_number, andreani_tracking_number, notas, created_at, mp_payment_id, payment_method, modo_payment_id, pedido_items(id, nombre, cantidad, subtotal)")
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
@@ -41,16 +41,19 @@ export const adminUpdatePedidoEstado = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-import { getAndreaniLabelBase64 } from "@/lib/andreani";
+import { getZipnovaLabelBase64 } from "@/lib/zipnova";
 
-export const adminGetAndreaniLabel = createServerFn({ method: "POST" })
+export const adminGetShippingLabel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ trackingNumber: z.string().min(1) }).parse(d))
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
-    const base64 = await getAndreaniLabelBase64(data.trackingNumber);
+    const base64 = await getZipnovaLabelBase64(data.trackingNumber);
     return base64;
   });
+
+// Retrocompatibilidad mientras se migra
+export const adminGetAndreaniLabel = adminGetShippingLabel;
 
 export type AdminShippingRow = {
   id: string;

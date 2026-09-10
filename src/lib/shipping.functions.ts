@@ -1,8 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { getAndreaniQuote } from "./andreani";
+import { getZipnovaQuote } from "./zipnova";
 
-export type Transportista = "correo_argentino" | "andreani" | "cadete" | "retiro_local";
+export type Transportista = "correo_argentino" | "andreani" | "zipnova" | "cadete" | "retiro_local";
 
 export type ShippingOption = {
   id: string;
@@ -25,6 +25,7 @@ export const LOCAL_PICKUP_CODE = "retiro-local";
 export const TRANSPORTISTA_LABEL: Record<Transportista, string> = {
   correo_argentino: "Correo Argentino",
   andreani: "Andreani",
+  zipnova: "Zipnova",
   cadete: "Cadete",
   retiro_local: "Retiro en local",
 };
@@ -67,21 +68,21 @@ export const getShippingOptions = createServerFn({ method: "GET" })
     const options: ShippingOption[] = [getLocalPickupOption()];
 
     if (data.codigoPostal) {
-      const andreaniQuote = await getAndreaniQuote(data.codigoPostal);
-      if (andreaniQuote) {
+      const zipnovaQuote = await getZipnovaQuote(data.codigoPostal);
+      if (zipnovaQuote) {
         options.push({
-          id: andreaniQuote.id,
-          transportista: "andreani",
+          id: zipnovaQuote.id,
+          transportista: "zipnova",
           provincia: data.provincia ?? null,
-          costo: andreaniQuote.costo,
-          label: andreaniQuote.label,
-          dias_estimados_min: andreaniQuote.diasEstimados,
-          dias_estimados_max: andreaniQuote.diasEstimados + 2,
-          codigo_servicio: andreaniQuote.id,
-          servicio: TRANSPORTISTA_LABEL["andreani"],
-          descripcion: andreaniQuote.label,
-          dias_habiles: andreaniQuote.diasEstimados + 2,
-          precio: andreaniQuote.costo,
+          costo: zipnovaQuote.costo,
+          label: zipnovaQuote.label,
+          dias_estimados_min: zipnovaQuote.diasEstimados,
+          dias_estimados_max: zipnovaQuote.diasEstimados + 2,
+          codigo_servicio: zipnovaQuote.id,
+          servicio: TRANSPORTISTA_LABEL["zipnova"],
+          descripcion: zipnovaQuote.label,
+          dias_habiles: zipnovaQuote.diasEstimados + 2,
+          precio: zipnovaQuote.costo,
           tipo: "domicilio",
         });
       }

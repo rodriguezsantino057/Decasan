@@ -12,7 +12,7 @@ import type { Transportista } from "@/lib/shipping.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/envios")({ component: AdminEnvios });
 
-const TRANSPORTISTA_ORDER: Transportista[] = ["retiro_local", "cadete", "correo_argentino", "andreani"];
+const TRANSPORTISTA_ORDER: Transportista[] = ["retiro_local", "cadete", "correo_argentino", "zipnova", "andreani"];
 
 function AdminEnvios() {
   const qc = useQueryClient();
