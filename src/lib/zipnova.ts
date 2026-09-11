@@ -138,12 +138,21 @@ export async function getZipnovaQuote(
   const isMock = process.env.ZIPNOVA_MOCK === "true";
   const headers = getAuthHeaders();
 
-  if (isMock || !headers) {
+  // El fallback de tarifas SOLO se usa en modo mock (pruebas internas).
+  // En producción, si no hay credenciales o la API falla, no se cotiza:
+  // el checkout muestra solo retiro en local y contacto por WhatsApp,
+  // evitando cobrar un precio inventado.
+  if (isMock) {
     console.info("[zipnova] Usando cotización fallback/mock", {
-      reason: isMock ? "ZIPNOVA_MOCK activado" : "Credenciales ausentes",
+      reason: "ZIPNOVA_MOCK activado",
       cpDestino,
     });
     return getFallbackQuote(cpDestino, pesoKg);
+  }
+
+  if (!headers) {
+    console.warn("[zipnova] Sin credenciales ZIPNOVA, no se cotiza", { cpDestino });
+    return null;
   }
 
   try {
@@ -185,7 +194,7 @@ export async function getZipnovaQuote(
     if (!response.ok) {
       const errorText = await response.text();
       console.warn("[zipnova] Falló cotización API:", { status: response.status, errorText });
-      return getFallbackQuote(cpDestino, pesoKg);
+      return null;
     }
 
     const data = await response.json();
@@ -201,10 +210,16 @@ export async function getZipnovaQuote(
 
     if (!selected) {
       console.warn("[zipnova] No se encontraron opciones válidas en la respuesta");
-      return getFallbackQuote(cpDestino, pesoKg);
+      return null;
     }
 
     const costo = Number(selected.amounts?.price_incl_tax || selected.amounts?.price || 0);
+
+    if (!Number.isFinite(costo)) {
+      console.warn("[zipnova] Precio inválido en la respuesta", { costo });
+      return null;
+    }
+
     const carrierName = selected.carrier?.name || "Zipnova";
     const parsedDays = parseIsoDurationDays(selected.delivery_time?.times?.total?.max);
     const diasEstimados =
@@ -215,7 +230,7 @@ export async function getZipnovaQuote(
 
     return {
       id: "zipnova_envio",
-      costo: costo || calculateFallbackRate(pesoKg),
+      costo,
       diasEstimados,
       label: `Envío a Domicilio (${carrierName})`,
       carrierName,
@@ -225,7 +240,7 @@ export async function getZipnovaQuote(
     };
   } catch (err) {
     console.error("[zipnova] Excepción al cotizar con Zipnova:", err);
-    return getFallbackQuote(cpDestino, pesoKg);
+    return null;
   }
 }
 

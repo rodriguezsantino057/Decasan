@@ -39,9 +39,10 @@ SHIPPING_FALLBACK_PER_KG=50
 
 ## Fallback y Resiliencia
 
-Si `ZIPNOVA_TOKEN` y `ZIPNOVA_SECRET` no están configurados, o si la API de Zipnova no responde:
-- El sistema automáticamente genera una opción de tarifa de contingencia calculada con `SHIPPING_FALLBACK_BASE` + (`pesoKg - 1`) * `SHIPPING_FALLBACK_PER_KG`.
-- **El checkout nunca se bloquea ni muestra error al cliente final.**
+- Las tarifas fallback (`SHIPPING_FALLBACK_BASE` + (`pesoKg - 1`) * `SHIPPING_FALLBACK_PER_KG`) **solo se usan en modo mock** (`ZIPNOVA_MOCK=true`) para pruebas internas.
+- En producción, si `ZIPNOVA_TOKEN`/`ZIPNOVA_SECRET` no están configurados o la API de Zipnova no responde, `getZipnovaQuote()` devuelve `null`:
+  - El checkout no muestra tarifa de envío a domicilio (solo retiro en local + contacto por WhatsApp).
+  - **El checkout nunca se bloquea ni muestra error al cliente final, y nunca se cobra un precio inventado.**
 
 ## Modo Mock para Pruebas
 
@@ -57,4 +58,4 @@ Para probar todo el flujo de compra, generación de guía y descarga de etiqueta
 3. Ingresa tu código postal de destino.
 4. Verifica que aparezcan el retiro en local y la opción de envío a domicilio calculada.
 
-> **Nota:** La API v2 de Zipnova exige `city` y `state` en el `destination` de la cotización (además del `zipcode`). El checkout envía la ciudad y provincia que ingresa el cliente; si faltan, la cotización cae en tarifas fallback.
+> **Nota:** La API v2 de Zipnova exige `city` y `state` en el `destination` de la cotización (además del `zipcode`). El checkout envía la ciudad y provincia que ingresa el cliente; si faltan, la cotización no se muestra (solo retiro en local + WhatsApp).
