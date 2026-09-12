@@ -1,11 +1,11 @@
 export const DEFAULT_CATEGORIES = [
   "Accesorios y Herramientas",
   "Automotor",
-  "Bateria",
   "H. Eléctricas",
   "Sanitarios e instalaciones",
   "Jardín",
   "Materiales",
+  "Materiales Eléctricos",
 ] as const;
 
 export function normalizeCategoryName(value: string | null | undefined): string | null {

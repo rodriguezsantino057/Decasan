@@ -16,7 +16,6 @@ const delay = (ms) => new Promise(res => setTimeout(res, ms));
 const CATEGORIAS_VALIDAS = [
   "Accesorios y Herramientas",
   "Automotor",
-  "Bateria",
   "H. Eléctricas",
   "Sanitarios e instalaciones",
   "Jardín",

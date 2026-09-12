@@ -17,7 +17,6 @@ import heroGarden from "@/assets/hero-garden.png";
 import heroPlumbing from "@/assets/hero-plumbing.png";
 import catAccesorios from "@/assets/cat-accesorios.png";
 import catAutomotor from "@/assets/cat-automotor.png";
-import catBateria from "@/assets/cat-bateria.png";
 import catElectricas from "@/assets/cat-electricas.png";
 import catSanitarios from "@/assets/cat-sanitarios.png";
 import catJardin from "@/assets/cat-jardin.png";
@@ -27,7 +26,6 @@ import catElectricos from "@/assets/cat-materiales-electricos.png";
 const CATEGORY_IMAGES: Record<string, string> = {
   "accesorios y herramientas": catAccesorios,
   "automotor": catAutomotor,
-  "bateria": catBateria,
   "h. eléctricas": catElectricas,
   "sanitarios e instalaciones": catSanitarios,
   "jardín": catJardin,

@@ -401,7 +401,7 @@ function detectCategory(input: string): string | null {
 
   if (/\b(jardin|manguera|riego|poda|cesped|desmalezadora|cortadora)\b/.test(normalized)) return "Jardín";
   if (/\b(sanitario|canilla|griferia|bano|agua|instalacion|termofusion|valvula|plomeria)\b/.test(normalized)) return "Sanitarios e instalaciones";
-  if (/\b(bateria|inalambric|cargador|litio|20v|18v|12v)\b/.test(normalized)) return "Bateria";
+  if (/\b(bateria|inalambric|cargador|litio|20v|18v|12v)\b/.test(normalized)) return "H. Eléctricas";
   if (/\b(electrica|taladro|amoladora|sierra|lijadora|rotomartillo|sensitiva|soldadora|lustradora)\b/.test(normalized)) return "H. Eléctricas";
   if (/\b(auto|automotor|bujia|aceite|gato|llave cruz|compresor)\b/.test(normalized)) return "Automotor";
   if (/\b(cemento|arena|cal|ladrillo|material|adhesivo|sellador|membrana)\b/.test(normalized)) return "Materiales";
