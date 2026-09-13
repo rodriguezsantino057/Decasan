@@ -70,7 +70,7 @@ function Catalog() {
   }, [search.q]);
 
   const cats = useQuery({ queryKey: ["cats", isAdmin], queryFn: () => fetchCategorias(isAdmin) });
-  const grupos = useQuery({ queryKey: ["grupos", isAdmin], queryFn: () => fetchGrupos(isAdmin) });
+  const grupos = useQuery({ queryKey: ["grupos", isAdmin, search.cat], queryFn: () => fetchGrupos(isAdmin, search.cat) });
 
   const products = useQuery({
     queryKey: ["products", search.q, search.cat, search.grupo, search.min, search.max, sort, page, isAdmin],

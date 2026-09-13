@@ -67,6 +67,10 @@ function AdminProductos() {
 
   const { data: categorias } = useQuery({ queryKey: ["admin-categorias"], queryFn: () => listCategorias() });
   const { data: grupos } = useQuery({ queryKey: ["admin-grupos"], queryFn: () => listGrupos() });
+  const { data: gruposFiltrados } = useQuery({
+    queryKey: ["admin-grupos-filtrados", cat],
+    queryFn: () => listGrupos({ data: { cat: cat || null } }),
+  });
 
   const pageIds = useMemo(() => (data?.rows ?? []).map((p: any) => p.id as number), [data]);
   const allOnPageSelected = pageIds.length > 0 && pageIds.every((id: number) => selected.has(id));
@@ -235,7 +239,7 @@ function AdminProductos() {
         />
         <SearchSelect
           placeholder="Buscar Grupos..."
-          options={(grupos as string[]) ?? []}
+          options={(gruposFiltrados as string[]) ?? []}
           value={grupo}
           onChange={(g) => { setGrupo(g); setPage(1); }}
         />

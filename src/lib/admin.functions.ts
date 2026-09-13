@@ -697,22 +697,27 @@ export const adminListCategorias = createServerFn({ method: "GET" })
 
 export const adminListGrupos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d) => z.object({
+    cat: z.string().max(100).optional().nullable(),
+  }).parse(d ?? {}))
+  .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
     const allGrupos: string[] = [];
     let from = 0;
     const pageSize = 1000;
     while (true) {
-      const { data, error } = await context.supabase
+      let q = context.supabase
         .from("productos")
         .select("grupo")
         .not("grupo", "is", null)
-        .not("grupo", "eq", "")
+        .not("grupo", "eq", "");
+      if (data.cat) q = q.eq("categoria", data.cat);
+      const { data: rows, error } = await q
         .order("grupo")
         .range(from, from + pageSize - 1);
       if (error) throw new Error(error.message);
-      allGrupos.push(...(data ?? []).map((p: any) => p.grupo));
-      if (!data || data.length < pageSize) break;
+      allGrupos.push(...(rows ?? []).map((p: any) => p.grupo));
+      if (!rows || rows.length < pageSize) break;
       from += pageSize;
     }
     return [...new Set(allGrupos.filter(Boolean))].sort((a, b) =>

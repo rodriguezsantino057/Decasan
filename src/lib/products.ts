@@ -251,7 +251,7 @@ export async function fetchCategorias(isAdmin?: boolean): Promise<string[]> {
   return uniqueSortedCategories((fallback.data ?? []).map((r: { categoria: string | null }) => r.categoria));
 }
 
-export async function fetchGrupos(isAdmin?: boolean): Promise<string[]> {
+export async function fetchGrupos(isAdmin?: boolean, cat?: string): Promise<string[]> {
   const allGrupos: string[] = [];
   let from = 0;
   const pageSize = 1000;
@@ -262,7 +262,8 @@ export async function fetchGrupos(isAdmin?: boolean): Promise<string[]> {
       .not("grupo", "is", null)
       .not("grupo", "eq", "");
     if (!isAdmin) q = q.or("activo.eq.true,activo.is.null");
-    
+    if (cat) q = q.eq("categoria", normalizeCategoryName(cat));
+
     const { data, error } = await q
       .order("grupo")
       .range(from, from + pageSize - 1);
