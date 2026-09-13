@@ -19,7 +19,7 @@ La integración de envíos queda centralizada en `src/lib/zipnova.ts` y se expon
 2. La server function `getShippingOptions()` consulta Zipnova (o aplica el fallback solo en modo mock).
 3. Se devuelven las opciones ordenadas por costo (Retiro en local y Envío a domicilio).
 4. Al confirmar la compra, `orders.functions.ts` re-valida la opción y guarda el pedido con `carrier: "zipnova"`.
-5. Al confirmarse el pago mediante webhook de Mercado Pago o MODO, se genera la orden en Zipnova y se asigna el `tracking_number`.
+5. Al confirmarse el pago mediante webhook de Mercado Pago, se genera la orden en Zipnova y se asigna el `tracking_number`.
 6. Desde el panel de administración (`/admin/pedidos`), el administrador puede ver el número de tracking y descargar la etiqueta en PDF.
 
 ## Archivos principales
@@ -29,7 +29,6 @@ La integración de envíos queda centralizada en `src/lib/zipnova.ts` y se expon
 - `src/lib/orders.functions.ts`
 - `src/lib/admin.functions.ts`
 - `src/lib/mercadopago.ts`
-- `src/lib/modo.ts`
 - `src/routes/_authenticated.admin.pedidos.tsx`
 - `src/routes/admin.shipping-demo.tsx`
 - `SHIPPING_SETUP.md`

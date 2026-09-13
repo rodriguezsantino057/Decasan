@@ -50,13 +50,35 @@ async function main() {
     process.exit(0);
   }
 
-  console.log(`Se encontraron ${productos.length} productos sin imagen. Iniciando búsqueda automática...`);
+  // 1b. Excluir productos que ya tienen imágenes en la galería (evitar duplicados)
+  const ids = productos.map((p) => p.id);
+  const { data: conGaleria, error: galeriaError } = await supabase
+    .from("product_images")
+    .select("producto_id")
+    .in("producto_id", ids);
+  if (galeriaError) {
+    console.error("Error al consultar la galería:", galeriaError.message);
+    process.exit(1);
+  }
+  const conGaleriaSet = new Set((conGaleria ?? []).map((g) => g.producto_id));
+  const sinGaleria = productos.filter((p) => !conGaleriaSet.has(p.id));
+  const omitidos = productos.length - sinGaleria.length;
+  if (omitidos > 0) {
+    console.log(`Se omitieron ${omitidos} productos que ya tienen imágenes en la galería.`);
+  }
+
+  if (sinGaleria.length === 0) {
+    console.log(`¡Genial! Todos los productos de "${rubro}" ya tienen imagen o galería.`);
+    process.exit(0);
+  }
+
+  console.log(`Se encontraron ${sinGaleria.length} productos sin imagen ni galería. Iniciando búsqueda automática...`);
 
   let count = 0;
 
-  for (const p of productos) {
+  for (const p of sinGaleria) {
     const query = `${p.nombre} ${p.codigo_fabricante || ""} herramientas`.trim();
-    console.log(`[${count + 1}/${productos.length}] Buscando: ${query}...`);
+    console.log(`[${count + 1}/${sinGaleria.length}] Buscando: ${query}...`);
 
     try {
       const response = await fetch("https://google.serper.dev/images", {
@@ -161,7 +183,7 @@ async function main() {
     await delay(3500);
   }
 
-  console.log(`\n¡Proceso finalizado! Se actualizaron ${count} de ${productos.length} productos.`);
+  console.log(`\n¡Proceso finalizado! Se actualizaron ${count} de ${sinGaleria.length} productos.`);
 }
 
 main();

@@ -48,7 +48,7 @@ SHIPPING_FALLBACK_PER_KG=50
 
 Para probar todo el flujo de compra, generación de guía y descarga de etiqueta sin tener credenciales activas de Zipnova:
 1. Activa en `.env`: `ZIPNOVA_MOCK=true`.
-2. Al realizar un pedido y confirmarse el pago (Mercado Pago / MODO), se generará un número de tracking mock (ej. `ZN-MOCK-123456`).
+2. Al realizar un pedido y confirmarse el pago (Mercado Pago), se generará un número de tracking mock (ej. `ZN-MOCK-123456`).
 3. En el panel de administración (`/admin/pedidos`), el botón **Descargar PDF** generará y descargará una etiqueta PDF válida de prueba.
 
 ## Pruebas

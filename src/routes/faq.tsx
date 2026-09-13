@@ -25,7 +25,7 @@ const faqs = [
   },
   {
     question: "Que medios de pago aceptan?",
-    answer: "Podes pagar con Mercado Pago (tarjeta de crédito, débito o dinero en cuenta) o con MODO escaneando un QR desde la app de tu banco. Tambien podes coordinar el pago por WhatsApp o abonar en efectivo al retirar en el local.",
+    answer: "Podes pagar con Mercado Pago (tarjeta de crédito, débito o dinero en cuenta). Tambien podes coordinar el pago por WhatsApp o abonar en efectivo al retirar en el local.",
   },
   {
     question: "Los productos tienen garantia?",

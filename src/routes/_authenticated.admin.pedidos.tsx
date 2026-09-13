@@ -107,7 +107,6 @@ function AdminPedidos() {
                 </div>
               )}
               {p.mp_payment_id && <p className="text-xs text-muted-foreground mt-2">MP: {p.mp_payment_id}</p>}
-              {p.modo_payment_id && <p className="text-xs text-muted-foreground mt-2">MODO: {p.modo_payment_id}</p>}
               {p.payment_method && (
                 <p className="text-xs text-muted-foreground mt-2">Metodo de pago: {p.payment_method}</p>
               )}

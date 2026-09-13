@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BadgeCheck, Banknote, CreditCard, Landmark, MessageCircle, QrCode, Store, Truck } from "lucide-react";
+import { BadgeCheck, Banknote, CreditCard, Landmark, MessageCircle, Store, Truck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Layout } from "@/components/Layout";
@@ -11,13 +11,13 @@ import { useSession } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 import { formatARS } from "@/lib/format";
 import { createOrderAndPreference } from "@/lib/orders.functions";
-import { getMyOrders, getProfile } from "@/lib/profile.functions";
+import { getProfile } from "@/lib/profile.functions";
 import { LOCAL_PICKUP_CODE, SHIPPING_PROVINCES } from "@/lib/shipping.functions";
 import type { ShippingOption } from "@/lib/shipping.functions";
 
 export const Route = createFileRoute("/checkout")({ component: CheckoutPage });
 
-type PaymentMethod = "transferencia_mp" | "tarjeta" | "efectivo" | "modo";
+type PaymentMethod = "transferencia_mp" | "tarjeta" | "efectivo";
 
 function CheckoutPage() {
   const navigate = useNavigate();
@@ -46,11 +46,6 @@ function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("transferencia_mp");
   const [busy, setBusy] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [pendingModo, setPendingModo] = useState<{
-    qr: string | null;
-    checkoutUrl: string | null;
-    intentionId: string | null;
-  } | null>(null);
 
   const isLocalPickup = selectedShipping?.codigo_servicio === LOCAL_PICKUP_CODE;
   const shippingTotal = selectedShipping?.precio ?? 0;
@@ -158,20 +153,9 @@ function CheckoutPage() {
         },
       });
       clear();
-      if (res.modoQr || res.modoCheckoutUrl || (res.modoConfigured && res.modoIntentionId)) {
-        setPendingModo({
-          qr: res.modoQr ?? null,
-          checkoutUrl: res.modoCheckoutUrl ?? null,
-          intentionId: res.modoIntentionId ?? null,
-        });
-        return;
-      }
       const paymentUrl = res.initPoint ?? res.sandboxInitPoint;
       if (paymentUrl) {
         window.location.href = paymentUrl;
-      } else if (res.modoConfigured === false) {
-        toast.error(res.error ?? "MODO no esta configurado en la tienda.");
-        navigate({ to: "/cuenta" });
       } else if (res.mpConfigured) {
         toast.error(res.error ?? "No se pudo iniciar el pago. Intenta de nuevo.");
       } else {
@@ -187,15 +171,6 @@ function CheckoutPage() {
 
   return (
     <Layout>
-      {pendingModo && (
-        <ModoPaymentPanel
-          qr={pendingModo.qr}
-          checkoutUrl={pendingModo.checkoutUrl}
-          intentionId={pendingModo.intentionId}
-          amount={finalTotal}
-          onDone={() => navigate({ to: "/cuenta" })}
-        />
-      )}
       <div className="container-x py-10 max-w-5xl">
         <h1 className="font-display text-3xl mb-8">Finalizar compra</h1>
 
@@ -290,94 +265,6 @@ function CheckoutPage() {
   );
 }
 
-function ModoPaymentPanel({
-  qr,
-  checkoutUrl,
-  intentionId,
-  amount,
-  onDone,
-}: {
-  qr: string | null;
-  checkoutUrl: string | null;
-  intentionId: string | null;
-  amount: number;
-  onDone: () => void;
-}) {
-  const myOrdersFn = useServerFn(getMyOrders);
-  const [paid, setPaid] = useState(false);
-
-  useEffect(() => {
-    if (!intentionId) return;
-    const timer = setInterval(async () => {
-      try {
-        const orders = await myOrdersFn();
-        const order = orders.find((o) => o.id === intentionId);
-        if (order && order.estado !== "pendiente") {
-          setPaid(true);
-          clearInterval(timer);
-        }
-      } catch {
-        /* ignorar errores de polling */
-      }
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [intentionId, myOrdersFn]);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-md border border-border bg-background p-6 text-center">
-        {paid ? (
-          <>
-            <BadgeCheck className="size-10 text-primary mx-auto" />
-            <h2 className="font-display text-2xl mt-3">¡Pago confirmado!</h2>
-            <p className="text-sm text-muted-foreground mt-2">Tu pedido ya está confirmado.</p>
-            <button
-              onClick={onDone}
-              className="mt-6 w-full bg-primary text-primary-foreground py-3 font-display tracking-wide hover:bg-primary/90"
-            >
-              Ver mi pedido
-            </button>
-          </>
-        ) : (
-          <>
-            <h2 className="font-display text-2xl">Pagá con MODO</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Escaneá el QR con la app de tu banco o MODO
-            </p>
-            <div className="mt-5 inline-block border border-border bg-white p-3">
-              {qr ? (
-                <QRCodeSVG value={qr} size={220} />
-              ) : (
-                <p className="text-sm text-muted-foreground w-56">Generando QR de pago...</p>
-              )}
-            </div>
-            <div className="mt-4 font-display text-xl">{formatARS(amount)}</div>
-            {checkoutUrl && (
-              <a
-                href={checkoutUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-4 inline-flex items-center gap-2 border border-border px-4 py-2 text-sm hover:border-primary"
-              >
-                Abrir en el celular
-              </a>
-            )}
-            <p className="mt-4 text-xs text-muted-foreground">
-              Cuando pagues, el pedido se confirma automáticamente y esta ventana se actualiza sola.
-            </p>
-            <button
-              onClick={onDone}
-              className="mt-6 w-full bg-primary text-primary-foreground py-3 font-display tracking-wide hover:bg-primary/90"
-            >
-              Ya pagué / ver mis pedidos
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
@@ -451,13 +338,6 @@ function PaymentMethodSelector({
       show: true,
     },
     {
-      value: "modo",
-      title: "MODO",
-      subtitle: "Paga con la app de tu banco o MODO, sin datos de tarjeta.",
-      icon: QrCode,
-      show: true,
-    },
-    {
       value: "efectivo",
       title: "Efectivo en local",
       subtitle: "Pagá al retirar en nuestro local.",
@@ -519,18 +399,6 @@ function PaymentMethodSelector({
         </div>
       )}
 
-      {value === "modo" && (
-        <div className="border border-border bg-secondary/30 p-3 text-sm">
-          <div className="flex items-center gap-2 font-medium">
-            <QrCode className="size-4 text-primary" />
-            Pago con MODO
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Al confirmar te mostraremos un QR para que pagues desde la app de tu banco o MODO, sin ingresar los datos de tu tarjeta. El pedido se confirma automáticamente.
-          </p>
-        </div>
-      )}
-
       {value === "efectivo" && (
         <div className="border border-border bg-secondary/30 p-3 text-sm">
           <div className="flex items-center gap-2 font-medium">
@@ -549,7 +417,6 @@ function PaymentMethodSelector({
 function getSubmitLabel(paymentMethod: PaymentMethod): string {
   if (paymentMethod === "efectivo") return "Confirmar retiro";
   if (paymentMethod === "transferencia_mp") return "Pagar Transferencia";
-  if (paymentMethod === "modo") return "Generar QR de pago";
   return "Pagar con Tarjeta";
 }
 

@@ -4,7 +4,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { LOCAL_PICKUP_CODE, TRANSPORTISTA_LABEL } from "@/lib/shipping.functions";
 import { assertValidPublicBaseUrl, getMercadoPagoAccessToken, getPublicBaseUrl } from "@/lib/mercadopago";
-import { createModoPaymentIntention, isModoConfigured } from "@/lib/modo";
 import { getZipnovaQuote } from "@/lib/zipnova";
 
 const itemSchema = z.object({
@@ -29,7 +28,7 @@ const createOrderSchema = z.object({
     shipping_option_id: z.string(),
   }),
   pago: z.object({
-    metodo: z.enum(["transferencia_mp", "tarjeta", "efectivo", "modo"]),
+    metodo: z.enum(["transferencia_mp", "tarjeta", "efectivo"]),
   }),
   notas: z.string().max(500).optional().nullable(),
 });
@@ -38,7 +37,6 @@ const PAYMENT_LABELS = {
   transferencia_mp: "Transferencia por Mercado Pago",
   tarjeta: "Tarjeta por Mercado Pago",
   efectivo: "Efectivo al retirar (a convenir)",
-  modo: "MODO (QR / billetera)",
 } as const;
 
 type ProductForOrder = {
@@ -59,10 +57,6 @@ type CreateOrderResult = {
   sandboxInitPoint: string | null;
   mpConfigured: boolean;
   paymentMethod: string;
-  modoConfigured?: boolean;
-  modoIntentionId?: string | null;
-  modoQr?: string | null;
-  modoCheckoutUrl?: string | null;
   error?: string;
 };
 
@@ -202,63 +196,6 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
         mpConfigured: false,
         paymentMethod: data.pago.metodo,
       };
-    }
-
-    if (data.pago.metodo === "modo") {
-      if (!isModoConfigured()) {
-        console.warn("[orders] MODO not configured", { requestId, pedidoId: pedido.id });
-        return {
-          pedidoId: pedido.id,
-          total,
-          initPoint: null,
-          sandboxInitPoint: null,
-          mpConfigured: false,
-          modoConfigured: false,
-          paymentMethod: data.pago.metodo,
-          error: "MODO no esta configurado en la tienda. Escribinos por WhatsApp para coordinar el pago.",
-        };
-      }
-
-      try {
-        const intention = await createModoPaymentIntention({
-          amount: total,
-          externalIntentionId: pedido.id,
-          description: `Compra en Decasan Home Center - Pedido ${pedido.id.slice(0, 8)}`,
-        });
-        if (!intention.id) {
-          throw new Error("MODO no devolvio una intencion de pago");
-        }
-        await supabaseAdmin.from("pedidos").update({ modo_intention_id: intention.id } as any).eq("id", pedido.id);
-        console.info("[orders] MODO intention created", { requestId, pedidoId: pedido.id, intentionId: intention.id });
-        return {
-          pedidoId: pedido.id,
-          total,
-          initPoint: null,
-          sandboxInitPoint: null,
-          mpConfigured: true,
-          modoConfigured: true,
-          modoIntentionId: intention.id,
-          modoQr: intention.qr ?? null,
-          modoCheckoutUrl: intention.checkoutUrl ?? null,
-          paymentMethod: data.pago.metodo,
-        };
-      } catch (err) {
-        console.error("[orders] MODO intention failed", {
-          requestId,
-          pedidoId: pedido.id,
-          error: err instanceof Error ? err.message : String(err),
-        });
-        return {
-          pedidoId: pedido.id,
-          total,
-          initPoint: null,
-          sandboxInitPoint: null,
-          mpConfigured: true,
-          modoConfigured: true,
-          paymentMethod: data.pago.metodo,
-          error: "No se pudo iniciar el pago con MODO. Elegi otro metodo o escribinos por WhatsApp.",
-        };
-      }
     }
 
     if (!MP_TOKEN) {

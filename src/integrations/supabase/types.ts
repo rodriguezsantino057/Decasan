@@ -158,8 +158,6 @@ export type Database = {
           envio_metodo: Json | null
           envio_total: number
           id: string
-          modo_intention_id: string | null
-          modo_payment_id: string | null
           mp_payment_id: string | null
           mp_preference_id: string | null
           nombre: string | null
@@ -186,8 +184,6 @@ export type Database = {
           envio_metodo?: Json | null
           envio_total?: number
           id?: string
-          modo_intention_id?: string | null
-          modo_payment_id?: string | null
           mp_payment_id?: string | null
           mp_preference_id?: string | null
           nombre?: string | null
@@ -214,8 +210,6 @@ export type Database = {
           envio_metodo?: Json | null
           envio_total?: number
           id?: string
-          modo_intention_id?: string | null
-          modo_payment_id?: string | null
           mp_payment_id?: string | null
           mp_preference_id?: string | null
           nombre?: string | null

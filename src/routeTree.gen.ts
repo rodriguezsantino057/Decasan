@@ -28,7 +28,6 @@ import { Route as AuthenticatedAdminProductosRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated.admin.usuarios'
 import { Route as ApiPublicBootstrapAdminRouteImport } from './routes/api/public/bootstrap-admin'
 import { Route as ApiPublicMercadopagoRouteImport } from './routes/api/public/mercadopago'
-import { Route as ApiPublicModoRouteImport } from './routes/api/public/modo'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -128,11 +127,6 @@ const ApiPublicMercadopagoRoute = ApiPublicMercadopagoRouteImport.update({
   path: '/api/public/mercadopago',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicModoRoute = ApiPublicModoRouteImport.update({
-  id: '/api/public/modo',
-  path: '/api/public/modo',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -152,7 +146,6 @@ export interface FileRoutesByFullPath {
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/mercadopago': typeof ApiPublicMercadopagoRoute
-  '/api/public/modo': typeof ApiPublicModoRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -172,7 +165,6 @@ export interface FileRoutesByTo {
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/mercadopago': typeof ApiPublicMercadopagoRoute
-  '/api/public/modo': typeof ApiPublicModoRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
@@ -195,7 +187,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/mercadopago': typeof ApiPublicMercadopagoRoute
-  '/api/public/modo': typeof ApiPublicModoRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -218,7 +209,6 @@ export interface FileRouteTypes {
     | '/admin/usuarios'
     | '/api/public/bootstrap-admin'
     | '/api/public/mercadopago'
-    | '/api/public/modo'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -238,7 +228,6 @@ export interface FileRouteTypes {
     | '/admin/usuarios'
     | '/api/public/bootstrap-admin'
     | '/api/public/mercadopago'
-    | '/api/public/modo'
     | '/admin'
   id:
     | '__root__'
@@ -260,7 +249,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/usuarios'
     | '/api/public/bootstrap-admin'
     | '/api/public/mercadopago'
-    | '/api/public/modo'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -277,7 +265,6 @@ export interface RootRouteChildren {
   ProductosIndexRoute: typeof ProductosIndexRoute
   ApiPublicBootstrapAdminRoute: typeof ApiPublicBootstrapAdminRoute
   ApiPublicMercadopagoRoute: typeof ApiPublicMercadopagoRoute
-  ApiPublicModoRoute: typeof ApiPublicModoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -415,13 +402,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMercadopagoRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/modo': {
-      id: '/api/public/modo'
-      path: '/api/public/modo'
-      fullPath: '/api/public/modo'
-      preLoaderRoute: typeof ApiPublicModoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -471,7 +451,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProductosIndexRoute: ProductosIndexRoute,
   ApiPublicBootstrapAdminRoute: ApiPublicBootstrapAdminRoute,
   ApiPublicMercadopagoRoute: ApiPublicMercadopagoRoute,
-  ApiPublicModoRoute: ApiPublicModoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
