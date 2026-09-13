@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeCategoryName, uniqueSortedCategories } from "@/lib/categories";
+import { normalizeSearch, scoreProductSearch, tokenizeSearch } from "@/lib/search-ranking";
 
 export type Producto = {
   id: number;
@@ -141,13 +142,6 @@ export async function fetchProductos(opts: {
   };
 }
 
-function tokenizeSearch(q?: string) {
-  return normalizeSearch(q)
-    .split(/\s+/)
-    .map((token) => token.trim())
-    .filter((token) => token.length >= 2);
-}
-
 function buildQueryTokens(q?: string) {
   const rawTokens = (q ?? "")
     .toLowerCase()
@@ -158,44 +152,8 @@ function buildQueryTokens(q?: string) {
   return Array.from(new Set([...rawTokens, ...tokenizeSearch(q)]));
 }
 
-function normalizeSearch(value?: string | null) {
-  return (value ?? "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-}
-
 function escapePostgrestLike(value: string) {
   return value.replace(/[%,()]/g, " ").trim();
-}
-
-function scoreProductSearch(product: Producto, tokens: string[]) {
-  const name = normalizeSearch(product.nombre);
-  const sku = normalizeSearch(product.sku);
-  const group = normalizeSearch(product.grupo);
-  const category = normalizeSearch(product.categoria);
-  const description = normalizeSearch(product.descripcion);
-  let total = 0;
-
-  for (const token of tokens) {
-    let tokenScore = 0;
-    if (name === token) tokenScore = Math.max(tokenScore, 1200);
-    if (name.split(" ").some((word) => word === token)) tokenScore = Math.max(tokenScore, 1000);
-    if (name.split(" ").some((word) => word.startsWith(token))) tokenScore = Math.max(tokenScore, 850);
-    if (name.includes(token)) tokenScore = Math.max(tokenScore, 700);
-    if (sku === token) tokenScore = Math.max(tokenScore, 650);
-    if (sku.includes(token)) tokenScore = Math.max(tokenScore, 500);
-    if (group.includes(token)) tokenScore = Math.max(tokenScore, 280);
-    if (category.includes(token)) tokenScore = Math.max(tokenScore, 220);
-    if (description.includes(token)) tokenScore = Math.max(tokenScore, 60);
-    if (!tokenScore) return 0;
-    total += tokenScore;
-  }
-
-  if (name.includes(tokens.join(" "))) total += 500;
-  return total;
 }
 
 export async function fetchProducto(id: number, isAdmin?: boolean): Promise<Producto | null> {

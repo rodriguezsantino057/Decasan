@@ -355,8 +355,13 @@ function scoreProductMatch(product: CatalogProduct, tokens: string[]): number {
 
   for (const token of tokens) {
     let tokenScore = 0;
-    if (name === token) tokenScore = Math.max(tokenScore, 1000);
-    else if (name.split(" ").some((w) => w === token)) tokenScore = Math.max(tokenScore, 800);
+    const words = name.split(" ");
+    const firstWord = words[0] ?? "";
+    if (name === token) tokenScore = Math.max(tokenScore, 1300);
+    else if (firstWord === token) tokenScore = Math.max(tokenScore, 1200);
+    else if (firstWord.startsWith(token)) tokenScore = Math.max(tokenScore, 1100);
+    else if (words.some((w) => w === token)) tokenScore = Math.max(tokenScore, 800);
+    else if (words.some((w) => w.startsWith(token))) tokenScore = Math.max(tokenScore, 650);
     else if (name.includes(token)) tokenScore = Math.max(tokenScore, 500);
 
     if (group.includes(token)) tokenScore = Math.max(tokenScore, 400);

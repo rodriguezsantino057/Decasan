@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { normalizeCategoryName, uniqueSortedCategories } from "@/lib/categories";
+import { scoreProductSearch, tokenizeSearch } from "@/lib/search-ranking";
 import type { Transportista } from "@/lib/shipping.functions";
 
 async function ensureAdmin(supabase: any, userId: string) {
@@ -127,19 +128,48 @@ export const adminListProductos = createServerFn({ method: "GET" })
     const pageSize = 30;
     const sortBy = data.sortBy ?? "id";
     const sortDir = data.sortDir ?? "desc";
+
+    const applyFilters = (query: any) => {
+      if (data.cat) query = query.eq("categoria", data.cat);
+      if (data.grupo) query = query.eq("grupo", data.grupo);
+      if (data.activo === "yes") query = query.eq("activo", true);
+      if (data.activo === "no") query = query.eq("activo", false);
+      return query;
+    };
+
+    // Búsqueda: ranking por relevancia (nombres que empiezan con el término primero)
+    if (data.q) {
+      const term = data.q.replace(/[%_,]/g, "\\$&");
+      const tokens = tokenizeSearch(data.q);
+      let searchQuery = context.supabase
+        .from("productos")
+        .select("*", { count: "exact" })
+        .order(sortBy, { ascending: sortDir === "asc", nullsFirst: false });
+      if (sortBy !== "id") searchQuery = searchQuery.order("id", { ascending: false });
+      searchQuery = searchQuery.or(`nombre.ilike.%${term}%,sku.ilike.%${term}%,codigo_fabricante.ilike.%${term}%`);
+      searchQuery = applyFilters(searchQuery);
+      searchQuery = searchQuery.limit(2000);
+      const { data: rows, count, error } = await searchQuery;
+      if (error) throw new Error(error.message);
+      const all = (rows ?? []) as any[];
+      const ranked = all
+        .map((p) => ({ p, score: scoreProductSearch(p, tokens) }))
+        .sort((a, b) => b.score - a.score);
+      const start = (page - 1) * pageSize;
+      return {
+        rows: ranked.slice(start, start + pageSize).map((r) => r.p),
+        count: count ?? ranked.length,
+        page,
+        pageSize,
+      };
+    }
+
     let q = context.supabase
       .from("productos")
       .select("*", { count: "exact" })
       .order(sortBy, { ascending: sortDir === "asc", nullsFirst: false });
     if (sortBy !== "id") q = q.order("id", { ascending: false });
-    if (data.q) {
-      const term = data.q.replace(/[%_,]/g, "\\$&");
-      q = q.or(`nombre.ilike.%${term}%,sku.ilike.%${term}%,codigo_fabricante.ilike.%${term}%`);
-    }
-    if (data.cat) q = q.eq("categoria", data.cat);
-    if (data.grupo) q = q.eq("grupo", data.grupo);
-    if (data.activo === "yes") q = q.eq("activo", true);
-    if (data.activo === "no") q = q.eq("activo", false);
+    q = applyFilters(q);
     q = q.range((page - 1) * pageSize, page * pageSize - 1);
     const { data: rows, count, error } = await q;
     if (error) throw new Error(error.message);
