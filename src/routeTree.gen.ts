@@ -18,7 +18,6 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 import { Route as AuthenticatedCuentaRouteImport } from './routes/_authenticated.cuenta'
-import { Route as AdminShippingDemoRouteImport } from './routes/admin.shipping-demo'
 import { Route as ProductosIndexRouteImport } from './routes/productos.index'
 import { Route as ProductosIdRouteImport } from './routes/productos.$id'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated.admin.index'
@@ -73,11 +72,6 @@ const AuthenticatedCuentaRoute = AuthenticatedCuentaRouteImport.update({
   id: '/cuenta',
   path: '/cuenta',
   getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AdminShippingDemoRoute = AdminShippingDemoRouteImport.update({
-  id: '/admin/shipping-demo',
-  path: '/admin/shipping-demo',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const ProductosIndexRoute = ProductosIndexRouteImport.update({
   id: '/productos/',
@@ -144,7 +138,6 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/cuenta': typeof AuthenticatedCuentaRoute
-  '/admin/shipping-demo': typeof AdminShippingDemoRoute
   '/productos/$id': typeof ProductosIdRoute
   '/productos/': typeof ProductosIndexRoute
   '/admin/envios': typeof AuthenticatedAdminEnviosRoute
@@ -164,7 +157,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/cuenta': typeof AuthenticatedCuentaRoute
-  '/admin/shipping-demo': typeof AdminShippingDemoRoute
   '/productos/$id': typeof ProductosIdRoute
   '/productos': typeof ProductosIndexRoute
   '/admin/envios': typeof AuthenticatedAdminEnviosRoute
@@ -187,7 +179,6 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/cuenta': typeof AuthenticatedCuentaRoute
-  '/admin/shipping-demo': typeof AdminShippingDemoRoute
   '/productos/$id': typeof ProductosIdRoute
   '/productos/': typeof ProductosIndexRoute
   '/_authenticated/admin/envios': typeof AuthenticatedAdminEnviosRoute
@@ -210,7 +201,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin'
     | '/cuenta'
-    | '/admin/shipping-demo'
     | '/productos/$id'
     | '/productos/'
     | '/admin/envios'
@@ -230,7 +220,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/cuenta'
-    | '/admin/shipping-demo'
     | '/productos/$id'
     | '/productos'
     | '/admin/envios'
@@ -252,7 +241,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_authenticated/admin'
     | '/_authenticated/cuenta'
-    | '/admin/shipping-demo'
     | '/productos/$id'
     | '/productos/'
     | '/_authenticated/admin/envios'
@@ -273,7 +261,6 @@ export interface RootRouteChildren {
   FaqRoute: typeof FaqRoute
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  AdminShippingDemoRoute: typeof AdminShippingDemoRoute
   ProductosIdRoute: typeof ProductosIdRoute
   ProductosIndexRoute: typeof ProductosIndexRoute
   ApiPublicBootstrapAdminRoute: typeof ApiPublicBootstrapAdminRoute
@@ -344,13 +331,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/cuenta'
       preLoaderRoute: typeof AuthenticatedCuentaRouteImport
       parentRoute: typeof AuthenticatedRoute
-    }
-    '/admin/shipping-demo': {
-      id: '/admin/shipping-demo'
-      path: '/admin/shipping-demo'
-      fullPath: '/admin/shipping-demo'
-      preLoaderRoute: typeof AdminShippingDemoRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/productos/': {
       id: '/productos/'
@@ -468,7 +448,6 @@ const rootRouteChildren: RootRouteChildren = {
   FaqRoute: FaqRoute,
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  AdminShippingDemoRoute: AdminShippingDemoRoute,
   ProductosIdRoute: ProductosIdRoute,
   ProductosIndexRoute: ProductosIndexRoute,
   ApiPublicBootstrapAdminRoute: ApiPublicBootstrapAdminRoute,

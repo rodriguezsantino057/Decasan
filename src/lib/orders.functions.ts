@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { LOCAL_PICKUP_CODE, TRANSPORTISTA_LABEL } from "@/lib/shipping.functions";
+import { isCadeteZone, LOCAL_PICKUP_CODE, mapShippingOptionRow, TRANSPORTISTA_LABEL } from "@/lib/shipping.functions";
 import { assertValidPublicBaseUrl, getMercadoPagoAccessToken, getPublicBaseUrl } from "@/lib/mercadopago";
 import { getZipnovaQuote } from "@/lib/zipnova";
 
@@ -327,7 +327,32 @@ async function getActiveShippingOption(
     };
   }
 
+  // Opción de la tabla shipping_options (cadete local La Falda y alrededores)
+  const cadete = await getCadeteOptionById(id, codigoPostal, ciudad);
+  if (cadete) return cadete;
+
   throw new Error("La opcion de envio seleccionada no es valida");
+}
+
+async function getCadeteOptionById(
+  id: string,
+  codigoPostal?: string | null,
+  ciudad?: string | null
+) {
+  if (!isCadeteZone(codigoPostal, ciudad)) return null;
+  try {
+    const { data } = await supabaseAdmin
+      .from("shipping_options")
+      .select("id, transportista, provincia, costo, label, activo, dias_estimados_min, dias_estimados_max")
+      .eq("id", id)
+      .eq("transportista", "cadete")
+      .eq("activo", true)
+      .maybeSingle();
+    if (!data) return null;
+    return mapShippingOptionRow(data as any);
+  } catch {
+    return null;
+  }
 }
 
 function validateShippingAddress(direccion: z.infer<typeof createOrderSchema>["direccion"]) {

@@ -1,8 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getZipnovaQuote } from "./zipnova";
 
-export type Transportista = "correo_argentino" | "andreani" | "zipnova" | "cadete" | "retiro_local";
+export type Transportista = "zipnova" | "cadete" | "retiro_local";
 
 export type ShippingOption = {
   id: string;
@@ -23,8 +24,6 @@ export type ShippingOption = {
 export const LOCAL_PICKUP_CODE = "retiro-local";
 
 export const TRANSPORTISTA_LABEL: Record<Transportista, string> = {
-  correo_argentino: "Correo Argentino",
-  andreani: "Andreani",
   zipnova: "Zipnova",
   cadete: "Cadete",
   retiro_local: "Retiro en local",
@@ -67,6 +66,9 @@ export const getShippingOptions = createServerFn({ method: "GET" })
   .inputValidator((d) => shippingOptionsSchema.parse(d ?? {}))
   .handler(async ({ data }): Promise<ShippingOption[]> => {
     const options: ShippingOption[] = [getLocalPickupOption()];
+
+    const cadete = await getCadeteOption(data.codigoPostal, data.ciudad);
+    if (cadete) options.push(cadete);
 
     if (data.codigoPostal) {
       const zipnovaQuote = await getZipnovaQuote(data.codigoPostal, 1, 1000, data.provincia, data.ciudad);
@@ -124,4 +126,81 @@ export function normalizeProvince(value: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLowerCase();
+}
+
+// --- Cadete (envío local La Falda y alrededores) ---
+
+const CADETE_ZONE_CPS = new Set(["5172", "5168", "5176", "5178", "5166", "5153", "5164", "5182", "5184"]);
+const CADETE_ZONE_CITIES = [
+  "la falda",
+  "valle hermoso",
+  "huerta grande",
+  "villa giardino",
+  "cosquin",
+  "bialet masse",
+  "santa maria de punilla",
+  "la cumbre",
+  "capilla del monte",
+  "los cocos",
+];
+
+export function isCadeteZone(codigoPostal?: string | null, ciudad?: string | null): boolean {
+  const cp = codigoPostal?.trim();
+  if (cp && CADETE_ZONE_CPS.has(cp)) return true;
+  if (ciudad) {
+    const normalized = normalizeProvince(ciudad);
+    if (CADETE_ZONE_CITIES.includes(normalized)) return true;
+  }
+  return false;
+}
+
+export type ShippingOptionRow = {
+  id: string;
+  transportista: string;
+  provincia: string | null;
+  costo: number | string;
+  label: string;
+  activo?: boolean;
+  dias_estimados_min: number | null;
+  dias_estimados_max: number | null;
+};
+
+export function mapShippingOptionRow(row: ShippingOptionRow): ShippingOption {
+  const transportista = row.transportista as Transportista;
+  return {
+    id: row.id,
+    transportista,
+    provincia: row.provincia,
+    costo: Number(row.costo),
+    label: row.label,
+    dias_estimados_min: row.dias_estimados_min,
+    dias_estimados_max: row.dias_estimados_max,
+    codigo_servicio: row.id,
+    servicio: TRANSPORTISTA_LABEL[transportista] ?? transportista,
+    descripcion: row.label,
+    dias_habiles: row.dias_estimados_max ?? row.dias_estimados_min ?? 1,
+    precio: Number(row.costo),
+    tipo: "local",
+  };
+}
+
+export async function getCadeteOption(
+  codigoPostal?: string | null,
+  ciudad?: string | null
+): Promise<ShippingOption | null> {
+  if (!isCadeteZone(codigoPostal, ciudad)) return null;
+  try {
+    const { data } = await supabaseAdmin
+      .from("shipping_options")
+      .select("id, transportista, provincia, costo, label, activo, dias_estimados_min, dias_estimados_max")
+      .eq("transportista", "cadete")
+      .eq("activo", true)
+      .limit(1)
+      .maybeSingle();
+    if (!data) return null;
+    return mapShippingOptionRow(data as ShippingOptionRow);
+  } catch (err) {
+    console.error("[shipping] cadete option load failed", err);
+    return null;
+  }
 }
