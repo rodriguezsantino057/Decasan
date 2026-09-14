@@ -250,6 +250,16 @@ export const adminDeleteProducto = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const adminToggleProductoActivo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.number().int(), activo: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context.supabase, context.userId);
+    const { error } = await context.supabase.from("productos").update({ activo: data.activo }).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true, id: data.id, activo: data.activo };
+  });
+
 // === BULK ACTIONS ===
 
 const bulkSchema = z.discriminatedUnion("action", [

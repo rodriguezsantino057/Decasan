@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2, Search, X, Tag, Layers, Power, Percent, Package, BadgePercent, Upload, Download, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ImageOff, ExternalLink } from "lucide-react";
 import {
-  adminListProductos, adminUpsertProducto, adminDeleteProducto,
+  adminListProductos, adminUpsertProducto, adminDeleteProducto, adminToggleProductoActivo,
   adminListCategorias, adminListGrupos, adminBulkProductos, adminImportProductosErp, adminPreviewImportProductosErp,
   adminFetchErpCompareData, adminExportProductos,
 } from "@/lib/admin.functions";
@@ -37,6 +37,7 @@ function AdminProductos() {
   const list = useServerFn(adminListProductos);
   const upsert = useServerFn(adminUpsertProducto);
   const del = useServerFn(adminDeleteProducto);
+  const toggleActivo = useServerFn(adminToggleProductoActivo);
   const bulk = useServerFn(adminBulkProductos);
   const importErp = useServerFn(adminImportProductosErp);
   const previewImportErp = useServerFn(adminPreviewImportProductosErp);
@@ -183,6 +184,17 @@ function AdminProductos() {
     toast.success("Eliminado");
     setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
     qc.invalidateQueries({ queryKey: ["admin-productos"] });
+  }
+
+  async function toggleEstado(p: any) {
+    const next = p.activo === false;
+    try {
+      await toggleActivo({ data: { id: p.id, activo: next } });
+      toast.success(next ? "Producto activado" : "Producto desactivado");
+      qc.invalidateQueries({ queryKey: ["admin-productos"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Error al cambiar el estado");
+    }
   }
 
   async function runBulk(payload: any) {
@@ -340,9 +352,14 @@ function AdminProductos() {
                   </td>
                   <td className={`px-3 py-2 text-right ${(p.stock ?? 0) <= 5 ? "text-warning" : ""}`}>{p.stock ?? 0}</td>
                   <td className="px-3 py-2 hidden md:table-cell text-center">
-                    {p.activo === false
-                      ? <span className="text-[10px] uppercase bg-muted text-muted-foreground px-2 py-0.5">Inactivo</span>
-                      : <span className="text-[10px] uppercase bg-success/15 text-success px-2 py-0.5">Activo</span>}
+                    <button
+                      type="button"
+                      onClick={() => toggleEstado(p)}
+                      title={p.activo === false ? "Hacer clic para activar" : "Hacer clic para desactivar"}
+                      className={`text-[10px] uppercase px-2 py-0.5 cursor-pointer transition-opacity hover:opacity-70 ${p.activo === false ? "bg-muted text-muted-foreground" : "bg-success/15 text-success"}`}
+                    >
+                      {p.activo === false ? "Inactivo" : "Activo"}
+                    </button>
                   </td>
                   <td className="px-3 py-2 flex gap-1 justify-end">
                     <a href={`/productos/${p.id}`} target="_blank" rel="noopener noreferrer" className="p-1.5 hover:text-primary" title="Ver producto en la tienda"><ExternalLink className="size-4" /></a>
@@ -385,6 +402,7 @@ function AdminProductos() {
                 oferta_hasta: p.oferta_hasta ?? null,
               })}
               onDelete={() => remove(p.id)}
+              onToggleEstado={() => toggleEstado(p)}
             />
           );
         })}
@@ -548,13 +566,14 @@ function SortHeader({ label, active, dir, onClick, align = "left" }: {
   );
 }
 
-function ProductAdminCard({ product: p, selected, enOferta, onToggle, onEdit, onDelete }: {
+function ProductAdminCard({ product: p, selected, enOferta, onToggle, onEdit, onDelete, onToggleEstado }: {
   product: any;
   selected: boolean;
   enOferta: boolean;
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onToggleEstado: () => void;
 }) {
   return (
     <article className={`border border-border bg-surface-elevated p-3 ${selected ? "ring-1 ring-primary bg-accent/30" : ""}`}>
@@ -571,9 +590,14 @@ function ProductAdminCard({ product: p, selected, enOferta, onToggle, onEdit, on
               {p.nombre}
               {enOferta && <BadgePercent className="inline-block size-3.5 ml-1.5 text-primary" />}
             </h3>
-            <span className={`shrink-0 text-[10px] uppercase px-2 py-0.5 ${p.activo === false ? "bg-muted text-muted-foreground" : "bg-success/15 text-success"}`}>
+            <button
+              type="button"
+              onClick={onToggleEstado}
+              title={p.activo === false ? "Hacer clic para activar" : "Hacer clic para desactivar"}
+              className={`shrink-0 text-[10px] uppercase px-2 py-0.5 cursor-pointer transition-opacity hover:opacity-70 ${p.activo === false ? "bg-muted text-muted-foreground" : "bg-success/15 text-success"}`}
+            >
               {p.activo === false ? "Inactivo" : "Activo"}
-            </span>
+            </button>
           </div>
           <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
             <div>
