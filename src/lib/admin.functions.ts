@@ -42,7 +42,7 @@ export const adminUpdatePedidoEstado = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-import { getZipnovaLabelBase64 } from "@/lib/zipnova";
+import { getZipnovaLabelBase64, listZipnovaShipments, getZipnovaShipment, getZipnovaShipmentTracking } from "@/lib/zipnova";
 
 export const adminGetShippingLabel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -55,6 +55,35 @@ export const adminGetShippingLabel = createServerFn({ method: "POST" })
 
 // Retrocompatibilidad mientras se migra
 export const adminGetAndreaniLabel = adminGetShippingLabel;
+
+// --- Dashboard Zipnova (listado, detalle y seguimiento de envíos) ---
+
+export const adminListZipnovaShipments = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    page: z.number().int().min(1).optional(),
+    perPage: z.number().int().min(1).max(100).optional(),
+  }).parse(d ?? {}))
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context.supabase, context.userId);
+    return listZipnovaShipments(data.page ?? 1, data.perPage ?? 20);
+  });
+
+export const adminGetZipnovaShipmentDetail = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.union([z.string(), z.number()]) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context.supabase, context.userId);
+    return getZipnovaShipment(data.id);
+  });
+
+export const adminGetZipnovaShipmentTracking = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.union([z.string(), z.number()]) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context.supabase, context.userId);
+    return getZipnovaShipmentTracking(data.id);
+  });
 
 export type AdminShippingRow = {
   id: string;
