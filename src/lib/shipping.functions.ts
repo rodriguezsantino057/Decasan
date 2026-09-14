@@ -184,7 +184,7 @@ export function mapShippingOptionRow(row: ShippingOptionRow): ShippingOption {
   };
 }
 
-export async function getCadeteOption(
+async function getCadeteOption(
   codigoPostal?: string | null,
   ciudad?: string | null
 ): Promise<ShippingOption | null> {
