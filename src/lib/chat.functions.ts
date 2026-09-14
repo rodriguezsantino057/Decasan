@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { DEFAULT_CATEGORIES, normalizeCategoryName } from "@/lib/categories";
+import { DEFAULT_CATEGORIES } from "@/lib/categories";
 import { getPrecioEfectivo, tieneOferta } from "@/lib/products";
 import { formatARS } from "@/lib/format";
 
@@ -251,8 +251,8 @@ async function buildCatalogContext(query: string) {
     const saleInfo = tieneOferta(p) ? " (EN OFERTA)" : "";
     const stock = Number(p.stock ?? 0) > 0 ? `stock disponible (${p.stock} u.)` : "consultar disponibilidad";
     const categoryLabel = p.categoria ? `categoría: ${p.categoria}` : "";
-    const brand = p.grupo ? `marca: ${p.grupo}` : "";
-    return `- ID ${p.id}: "${p.nombre ?? "Producto"}" | ${brand} | ${categoryLabel} | ${price}${saleInfo} | ${stock} | link: ${BASE_URL}/productos/${p.id}`;
+    const group = p.grupo ? `grupo: ${p.grupo}` : "";
+    return `- ID ${p.id}: "${p.nombre ?? "Producto"}" | ${group} | ${categoryLabel} | ${price}${saleInfo} | ${stock} | link: ${BASE_URL}/productos/${p.id}`;
   });
 
   const prompt = `CONTEXTO DE CATALOGO ACTUAL
@@ -278,8 +278,10 @@ async function searchCatalogProducts(terms: string[], category: string | null): 
       query = query.eq("categoria", category);
     }
 
-    if (terms.length > 0) {
-      const searchClauses = terms.flatMap((term) => {
+    const expandedTerms = expandSearchTerms(terms);
+
+    if (expandedTerms.length > 0) {
+      const searchClauses = expandedTerms.flatMap((term) => {
         const safe = term.replace(/[%,()]/g, " ").trim();
         if (!safe) return [];
         return [
@@ -331,10 +333,10 @@ async function searchCatalogProducts(terms: string[], category: string | null): 
       }
     }
 
-    if (terms.length === 0) return rows.slice(0, 8);
+    if (expandedTerms.length === 0) return rows.slice(0, 8);
 
     const ranked = rows
-      .map((item) => ({ item, score: scoreProductMatch(item, terms) }))
+      .map((item) => ({ item, score: scoreProductMatch(item, expandedTerms) }))
       .filter((entry) => entry.score > 0)
       .sort((a, b) => b.score - a.score || Number(b.item.stock ?? 0) - Number(a.item.stock ?? 0));
 
@@ -401,18 +403,59 @@ function extractSearchTerms(input: string): string[] {
     .filter((term) => term.length >= 2 && !stopwords.has(term));
 }
 
+/**
+ * Genera variantes en singular de un término en español para tolerar
+ * plurales en la búsqueda (ej: "taladros" → "taladro", "llaves" → "llave").
+ */
+function singularVariants(term: string): string[] {
+  const variants: string[] = [];
+  if (term.length < 3) return variants;
+  if (term.endsWith("ces") && term.length > 4) {
+    variants.push(term.slice(0, -3) + "z"); // lapices → lapiz
+  }
+  if (term.endsWith("es") && term.length > 4) {
+    variants.push(term.slice(0, -2)); // flores → flor
+    variants.push(term.slice(0, -1)); // llaves → llave
+  } else if (term.endsWith("s") && term.length > 3) {
+    variants.push(term.slice(0, -1)); // taladros → taladro
+  }
+  return variants;
+}
+
+function expandSearchTerms(terms: string[]): string[] {
+  const expanded = new Set<string>();
+  for (const term of terms) {
+    expanded.add(term);
+    for (const variant of singularVariants(term)) expanded.add(variant);
+  }
+  return [...expanded];
+}
+
 function detectCategory(input: string): string | null {
   const normalized = normalizeText(input);
 
-  if (/\b(jardin|manguera|riego|poda|cesped|desmalezadora|cortadora)\b/.test(normalized)) return "Jardín";
-  if (/\b(sanitario|canilla|griferia|bano|agua|instalacion|termofusion|valvula|plomeria)\b/.test(normalized)) return "Sanitarios e instalaciones";
-  if (/\b(bateria|inalambric|cargador|litio|20v|18v|12v)\b/.test(normalized)) return "H. Eléctricas";
-  if (/\b(electrica|taladro|amoladora|sierra|lijadora|rotomartillo|sensitiva|soldadora|lustradora)\b/.test(normalized)) return "H. Eléctricas";
-  if (/\b(auto|automotor|bujia|aceite|gato|llave cruz|compresor)\b/.test(normalized)) return "Automotor";
-  if (/\b(cemento|arena|cal|ladrillo|material|adhesivo|sellador|membrana)\b/.test(normalized)) return "Materiales";
-  if (/\b(accesorio|herramienta|destornillador|pinza|llave|martillo|disco|mecha|bocallave)\b/.test(normalized)) return "Accesorios y Herramientas";
+  const rules: Array<[string, RegExp]> = [
+    ["Jardín", /\b(jardin|manguera|riego|poda|cesped|desmalezadora|cortadora)/],
+    ["Sanitarios e instalaciones", /\b(sanitario|canilla|griferia|bano|agua|instalacion|termofusion|valvula|plomeria)/],
+    ["H. Eléctricas", /\b(bateria|inalambric|cargador|litio|20v|18v|12v)/],
+    ["H. Eléctricas", /\b(electrica|taladro|amoladora|sierra|lijadora|rotomartillo|sensitiva|soldadora|lustradora)/],
+    ["Automotor", /\b(auto|automotor|bujia|aceite|gato|llave cruz|compresor)/],
+    ["Materiales", /\b(cemento|arena|ladrillo|material|adhesivo|sellador|membrana)/],
+    ["Materiales", /\bcal\b/],
+    ["Accesorios y Herramientas", /\b(accesorio|herramienta|destornillador|pinza|llave|martillo|disco|mecha|bocallave)/],
+  ];
 
-  return normalizeCategoryName(input);
+  for (const [category, regex] of rules) {
+    if (regex.test(normalized)) return category;
+  }
+
+  // Si el input es (o contiene) una categoría conocida (ej: "jardin", "materiales electricos")
+  for (const cat of DEFAULT_CATEGORIES) {
+    const catKey = normalizeText(cat);
+    if (normalized === catKey || normalized.includes(catKey)) return cat;
+  }
+
+  return null;
 }
 
 function buildFallbackReply(userQuery: string, context: { products: CatalogProduct[] }): string {
