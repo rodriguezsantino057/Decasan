@@ -8,6 +8,9 @@ export type CartItem = {
   sku: string | null;
   image_url?: string | null;
   image_webp?: string | null;
+  categoria?: string | null;
+  grupo?: string | null;
+  peso_kg?: number | null;
   qty: number;
 };
 

@@ -12,6 +12,7 @@ interface ShippingCalculatorProps {
   ciudad?: string;
   onShippingSelect?: (option: ShippingOption | null) => void;
   selectedShipping?: string;
+  pesoTotalKg?: number;
 }
 
 export function ShippingCalculator({
@@ -20,14 +21,15 @@ export function ShippingCalculator({
   ciudad,
   onShippingSelect,
   selectedShipping,
+  pesoTotalKg = 1,
 }: ShippingCalculatorProps) {
   const shippingFn = useServerFn(getShippingOptions);
   const [localSelected, setLocalSelected] = useState<string>(selectedShipping || "");
   const canShowRates = !!codigoPostal && codigoPostal.trim().length > 0;
 
   const { data: opciones, isLoading, error } = useQuery({
-    queryKey: ["shipping-options", provincia, codigoPostal, ciudad],
-    queryFn: () => shippingFn({ data: { provincia, codigoPostal, ciudad } }),
+    queryKey: ["shipping-options", provincia, codigoPostal, ciudad, pesoTotalKg],
+    queryFn: () => shippingFn({ data: { provincia, codigoPostal, ciudad, pesoTotalKg } }),
     enabled: true,
   });
 

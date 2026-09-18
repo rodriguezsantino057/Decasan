@@ -22,6 +22,7 @@ type ProductoForm = {
   codigo_fabricante: string; precio_vta_sin_iva: number | null;
   image_url: string; image_webp: string;
   activo: boolean; precio_oferta: number | null; oferta_hasta: string | null;
+  peso_kg: number | null;
 };
 type ProductSortBy = "id" | "nombre" | "precio" | "stock" | "erp_updated_at";
 type SortDir = "asc" | "desc";
@@ -30,6 +31,7 @@ const empty: ProductoForm = {
   nombre: "", descripcion: "", categoria: "", grupo: "", sku: "", precio: 0, stock: 0,
   codigo_fabricante: "", precio_vta_sin_iva: null,
   image_url: "", image_webp: "", activo: true, precio_oferta: null, oferta_hasta: null,
+  peso_kg: null,
 };
 
 function AdminProductos() {
@@ -167,6 +169,7 @@ function AdminProductos() {
       precio_vta_sin_iva: producto.precio_vta_sin_iva != null ? Number(producto.precio_vta_sin_iva) : null,
       precio_oferta: producto.precio_oferta != null && producto.precio_oferta > 0 ? Number(producto.precio_oferta) : null,
       oferta_hasta: producto.oferta_hasta || null,
+      peso_kg: producto.peso_kg != null ? Number(producto.peso_kg) : null,
     } });
     toast.success("Producto guardado");
     // Si era nuevo, dejamos abierto para subir imágenes
@@ -371,6 +374,7 @@ function AdminProductos() {
                       activo: p.activo !== false,
                       precio_oferta: p.precio_oferta != null ? Number(p.precio_oferta) : null,
                       oferta_hasta: p.oferta_hasta ?? null,
+                      peso_kg: p.peso_kg != null ? Number(p.peso_kg) : null,
                     })} className="p-1.5 hover:text-primary"><Edit className="size-4" /></button>
                     <button onClick={() => remove(p.id)} className="p-1.5 hover:text-destructive"><Trash2 className="size-4" /></button>
                   </td>
@@ -400,6 +404,7 @@ function AdminProductos() {
                 activo: p.activo !== false,
                 precio_oferta: p.precio_oferta != null ? Number(p.precio_oferta) : null,
                 oferta_hasta: p.oferta_hasta ?? null,
+                peso_kg: p.peso_kg != null ? Number(p.peso_kg) : null,
               })}
               onDelete={() => remove(p.id)}
               onToggleEstado={() => toggleEstado(p)}
@@ -1111,6 +1116,16 @@ function ProductoModal({ value, categorias, grupos, onClose, onSave }: {
             <Field label="Precio (ARS)" type="number" value={String(v.precio)} onChange={(x) => setV({ ...v, precio: Number(x) })} required />
             <Field label="Precio sin IVA" type="number" value={v.precio_vta_sin_iva != null ? String(v.precio_vta_sin_iva) : ""} onChange={(x) => setV({ ...v, precio_vta_sin_iva: x === "" ? null : Number(x) })} />
             <Field label="Stock" type="number" value={String(v.stock)} onChange={(x) => setV({ ...v, stock: Number(x) })} required />
+            <label className="block">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Peso (kg) (Opcional)</span>
+              <input
+                type="number" step="0.01" min={0}
+                value={v.peso_kg != null ? String(v.peso_kg) : ""}
+                onChange={(e) => setV({ ...v, peso_kg: e.target.value === "" ? null : Number(e.target.value) })}
+                className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+              <p className="text-[10px] text-muted-foreground mt-0.5">Dejar vacío para usar peso de la categoría</p>
+            </label>
             <label className="block sm:col-span-2">
               <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Descripción</span>
               <textarea value={v.descripcion} onChange={(e) => setV({ ...v, descripcion: e.target.value })} rows={4} className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />

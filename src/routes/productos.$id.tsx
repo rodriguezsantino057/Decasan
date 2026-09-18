@@ -173,6 +173,9 @@ function ProductDetail() {
         sku: p.sku,
         image_url: p.image_url,
         image_webp: p.image_webp,
+        categoria: p.categoria,
+        grupo: p.grupo,
+        peso_kg: p.peso_kg != null ? Number(p.peso_kg) : null,
       },
       qty,
     );

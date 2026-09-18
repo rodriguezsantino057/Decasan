@@ -26,6 +26,7 @@ const createOrderSchema = z.object({
   }),
   envio: z.object({
     shipping_option_id: z.string(),
+    peso_total_kg: z.number().optional().nullable(),
   }),
   pago: z.object({
     metodo: z.enum(["transferencia_mp", "tarjeta", "efectivo"]),
@@ -80,7 +81,8 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
       data.envio.shipping_option_id,
       data.direccion.codigo_postal,
       data.direccion.provincia,
-      data.direccion.ciudad
+      data.direccion.ciudad,
+      data.envio.peso_total_kg
     );
     const isLocalPickup = shipping.codigo_servicio === LOCAL_PICKUP_CODE;
     if (!isLocalPickup) validateShippingAddress(data.direccion);
@@ -299,14 +301,15 @@ async function getActiveShippingOption(
   id: string,
   codigoPostal?: string | null,
   provincia?: string | null,
-  ciudad?: string | null
+  ciudad?: string | null,
+  pesoTotalKg?: number | null
 ) {
   if (id === LOCAL_PICKUP_CODE) {
     return getLocalPickupOption();
   }
 
   if ((id === "zipnova_envio" || id === "andreani_envio") && codigoPostal) {
-    const quote = await getZipnovaQuote(codigoPostal, 1, 1000, provincia, ciudad);
+    const quote = await getZipnovaQuote(codigoPostal, pesoTotalKg ?? 1, 1000, provincia, ciudad);
     if (!quote) {
       throw new Error("No se pudo obtener la cotizacion de Zipnova para este codigo postal");
     }

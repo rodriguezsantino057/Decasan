@@ -60,6 +60,7 @@ const shippingOptionsSchema = z.object({
   provincia: z.string().trim().max(80).optional().nullable(),
   codigoPostal: z.string().trim().max(8).optional().nullable(),
   ciudad: z.string().trim().max(80).optional().nullable(),
+  pesoTotalKg: z.number().optional().nullable(),
 });
 
 export const getShippingOptions = createServerFn({ method: "GET" })
@@ -71,7 +72,7 @@ export const getShippingOptions = createServerFn({ method: "GET" })
     if (cadete) options.push(cadete);
 
     if (data.codigoPostal) {
-      const zipnovaQuote = await getZipnovaQuote(data.codigoPostal, 1, 1000, data.provincia, data.ciudad);
+      const zipnovaQuote = await getZipnovaQuote(data.codigoPostal, data.pesoTotalKg ?? 1, 1000, data.provincia, data.ciudad);
       if (zipnovaQuote) {
         options.push({
           id: zipnovaQuote.id,

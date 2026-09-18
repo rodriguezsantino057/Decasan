@@ -15,7 +15,7 @@ export type Producto = {
   image_webp?: string | null;
   activo?: boolean;
   precio_oferta?: number | null;
-  oferta_hasta?: string | null;
+  peso_kg?: number | null;
 };
 
 export type ProductImageRow = {

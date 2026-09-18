@@ -14,6 +14,7 @@ import { createOrderAndPreference } from "@/lib/orders.functions";
 import { getProfile } from "@/lib/profile.functions";
 import { LOCAL_PICKUP_CODE, SHIPPING_PROVINCES } from "@/lib/shipping.functions";
 import type { ShippingOption } from "@/lib/shipping.functions";
+import { getProductWeight } from "@/lib/shipping.weights";
 
 export const Route = createFileRoute("/checkout")({ component: CheckoutPage });
 
@@ -50,6 +51,10 @@ function CheckoutPage() {
   const isLocalPickup = selectedShipping?.codigo_servicio === LOCAL_PICKUP_CODE;
   const shippingTotal = selectedShipping?.precio ?? 0;
   const finalTotal = total + shippingTotal;
+
+  const pesoTotalKg = useMemo(() => {
+    return items.reduce((acc, item) => acc + getProductWeight(item) * item.qty, 0);
+  }, [items]);
 
   function setProvincia(provincia: string) {
     setForm((current) => ({ ...current, provincia }));
@@ -145,6 +150,7 @@ function CheckoutPage() {
           },
           envio: {
             shipping_option_id: selectedShipping.id,
+            peso_total_kg: pesoTotalKg,
           },
           pago: {
             metodo: paymentMethod,
@@ -198,6 +204,7 @@ function CheckoutPage() {
                   provincia={form.provincia}
                   codigoPostal={form.codigo_postal}
                   ciudad={form.ciudad}
+                  pesoTotalKg={pesoTotalKg}
                   onShippingSelect={setShipping}
                   selectedShipping={selectedShipping?.codigo_servicio}
                 />
