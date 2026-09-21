@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Search, X, Tag, Layers, Power, Percent, Package, BadgePercent, Upload, Download, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ImageOff, ExternalLink } from "lucide-react";
+import { Plus, Edit, Trash2, Search, X, Tag, Layers, Power, Percent, Package, AlertTriangle, BadgePercent, Upload, Download, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ImageOff, ExternalLink } from "lucide-react";
 import {
   adminListProductos, adminUpsertProducto, adminDeleteProducto, adminToggleProductoActivo,
   adminListCategorias, adminListGrupos, adminBulkProductos,
@@ -213,10 +213,17 @@ function AdminProductos() {
     }
   }
 
-
+  const hasNumber = (str: string | null | undefined) => str ? /[0-9]/.test(str) : false;
 
   return (
     <div className="pb-32">
+      <div className="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-md flex items-center gap-2">
+        <AlertTriangle className="size-4 shrink-0 text-amber-600" />
+        <p>
+          <strong>Advertencia:</strong> Los productos que contengan números en su <strong>Categoría</strong> o <strong>Grupo</strong> no se muestran en la tienda web pública. Por favor modifícalos si deseas que sean visibles.
+        </p>
+      </div>
+
       <div className="grid gap-2 mb-4 sm:grid-cols-2 lg:grid-cols-[minmax(260px,1fr)_180px_180px_170px_auto_auto_auto] lg:items-center">
         <div className="relative sm:col-span-2 lg:col-span-1">
           <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -256,13 +263,13 @@ function AdminProductos() {
           <option value="precio-desc">Mayor Precio</option>
           <option value="precio-asc">Menor Precio</option>
         </select>
-        <button onClick={() => setPesosOpen(true)} className="w-full justify-center border border-border px-4 py-2 text-sm font-medium flex items-center gap-2 hover:border-primary">
+        <button onClick={() => setPesosOpen(true)} className="w-full justify-center border border-border px-4 py-2 text-sm font-medium flex items-center gap-2 hover:border-primary whitespace-nowrap">
           <Layers className="size-4" /> Pesos de Grupos
         </button>
         <button 
           onClick={handleExport} 
           disabled={exporting}
-          className="w-full justify-center border border-border px-4 py-2 text-sm font-medium flex items-center gap-2 hover:border-primary disabled:opacity-50"
+          className="w-full justify-center border border-border px-4 py-2 text-sm font-medium flex items-center gap-2 hover:border-primary disabled:opacity-50 whitespace-nowrap"
         >
           <Download className="size-4" /> {exporting ? "Exportando..." : "Exportar Excel"}
         </button>
@@ -304,8 +311,11 @@ function AdminProductos() {
             {data?.rows.map((p: any) => {
               const isSel = selected.has(p.id);
               const enOferta = p.precio_oferta && Number(p.precio_oferta) > 0 && (!p.oferta_hasta || new Date(p.oferta_hasta) > new Date());
+              const catHasNum = hasNumber(p.categoria);
+              const groupHasNum = hasNumber(p.grupo);
+              const isHidden = catHasNum || groupHasNum;
               return (
-                <tr key={p.id} className={`border-t border-border ${isSel ? "bg-accent/30" : ""}`}>
+                <tr key={p.id} className={`border-t border-border ${isSel ? "bg-accent/30" : ""} ${isHidden ? "bg-amber-50/50" : ""}`}>
                   <td className="px-3 py-2 text-center">
                     <input type="checkbox" checked={isSel} onChange={() => toggleOne(p.id)} aria-label={`Seleccionar ${p.nombre}`} />
                   </td>
@@ -320,8 +330,18 @@ function AdminProductos() {
                   </td>
                   <td className="px-3 py-2 hidden md:table-cell text-muted-foreground">{p.sku}</td>
                   <td className="px-3 py-2 hidden xl:table-cell text-muted-foreground">{p.codigo_fabricante || "-"}</td>
-                  <td className="px-3 py-2 hidden lg:table-cell text-muted-foreground">{p.categoria}</td>
-                  <td className="px-3 py-2 hidden xl:table-cell text-muted-foreground">{p.grupo || "-"}</td>
+                  <td className="px-3 py-2 hidden lg:table-cell">
+                    <div className={`text-xs ${catHasNum ? "text-amber-700 font-semibold" : "text-muted-foreground"}`}>
+                      {p.categoria ?? "-"}
+                      {catHasNum && " ⚠️"}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 hidden xl:table-cell">
+                    <div className={`text-xs truncate max-w-[120px] ${groupHasNum ? "text-amber-700 font-semibold" : "text-muted-foreground"}`} title={p.grupo ?? ""}>
+                      {p.grupo ?? "-"}
+                      {groupHasNum && " ⚠️"}
+                    </div>
+                  </td>
                   <td className="px-3 py-2 hidden xl:table-cell text-right text-muted-foreground">{p.precio_vta_sin_iva != null ? formatARS(Number(p.precio_vta_sin_iva)) : "-"}</td>
                   <td className="px-3 py-2 text-right">
                     {enOferta ? (
@@ -342,7 +362,12 @@ function AdminProductos() {
                       {p.activo === false ? "Inactivo" : "Activo"}
                     </button>
                   </td>
-                  <td className="px-3 py-2 flex gap-1 justify-end">
+                  <td className="px-3 py-2 flex gap-1 justify-end items-center">
+                    {isHidden && (
+                      <span className="text-amber-600 text-[10px] uppercase font-bold flex items-center mr-1" title="Oculto en web por números">
+                        Oculto
+                      </span>
+                    )}
                     <a href={`/productos/${p.id}`} target="_blank" rel="noopener noreferrer" className="p-1.5 hover:text-primary" title="Ver producto en la tienda"><ExternalLink className="size-4" /></a>
                     <button onClick={() => setEditing({
                       id: p.id, nombre: p.nombre ?? "", descripcion: p.descripcion ?? "", categoria: p.categoria ?? "",

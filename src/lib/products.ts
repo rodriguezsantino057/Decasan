@@ -110,7 +110,12 @@ export async function fetchProductos(opts: {
     }
   }
 
-  let ranked = rows.map((item) => ({ item, score: searchTokens.length ? scoreProductSearch(item, searchTokens) : 1 }));
+  const hasNumber = (str: string | null) => str ? /[0-9]/.test(str) : false;
+  let filteredRows = opts.isAdmin 
+    ? rows 
+    : rows.filter((r) => !hasNumber(r.categoria) && !hasNumber(r.grupo));
+
+  let ranked = filteredRows.map((item) => ({ item, score: searchTokens.length ? scoreProductSearch(item, searchTokens) : 1 }));
   if (searchTokens.length) {
     ranked = ranked.filter((entry) => entry.score > 0);
   }
@@ -207,7 +212,11 @@ export async function fetchCategorias(isAdmin?: boolean): Promise<string[]> {
   if (!isAdmin) fallbackQuery = fallbackQuery.or("activo.eq.true,activo.is.null");
   const fallback = await fallbackQuery;
   if (fallback.error) throw fallback.error;
-  return uniqueSortedCategories((fallback.data ?? []).map((r: { categoria: string | null }) => r.categoria));
+  let categories = (fallback.data ?? []).map((r: { categoria: string | null }) => r.categoria);
+  if (!isAdmin) {
+    categories = categories.filter((c: string | null) => c && !/[0-9]/.test(c));
+  }
+  return uniqueSortedCategories(categories);
 }
 
 export async function fetchGrupos(isAdmin?: boolean, cat?: string): Promise<string[]> {
@@ -231,7 +240,11 @@ export async function fetchGrupos(isAdmin?: boolean, cat?: string): Promise<stri
     if (!data || data.length < pageSize) break;
     from += pageSize;
   }
-  return [...new Set(allGrupos.filter(Boolean))].sort((a, b) =>
+  let groups = [...new Set(allGrupos.filter(Boolean))];
+  if (!isAdmin) {
+    groups = groups.filter((g) => !/[0-9]/.test(g));
+  }
+  return groups.sort((a, b) =>
     a.localeCompare(b, "es", { sensitivity: "base" })
   );
 }
