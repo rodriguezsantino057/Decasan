@@ -6,13 +6,13 @@ import { toast } from "sonner";
 import { Plus, Edit, Trash2, Search, X, Tag, Layers, Power, Percent, Package, BadgePercent, Upload, Download, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ImageOff, ExternalLink } from "lucide-react";
 import {
   adminListProductos, adminUpsertProducto, adminDeleteProducto, adminToggleProductoActivo,
-  adminListCategorias, adminListGrupos, adminBulkProductos, adminImportProductosErp, adminPreviewImportProductosErp,
-  adminFetchErpCompareData, adminExportProductos,
+  adminListCategorias, adminListGrupos, adminBulkProductos,
+  adminExportProductos, adminUpsertGroupWeight
 } from "@/lib/admin.functions";
+import { getGroupWeights } from "@/lib/shipping.functions";
 import { formatARS } from "@/lib/format";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductGalleryAdmin } from "@/components/ProductGalleryAdmin";
-import { parseErpProductFile, type ErpImportRow } from "@/lib/erp-import";
 
 export const Route = createFileRoute("/_authenticated/admin/productos")({ component: AdminProductos });
 
@@ -41,9 +41,6 @@ function AdminProductos() {
   const del = useServerFn(adminDeleteProducto);
   const toggleActivo = useServerFn(adminToggleProductoActivo);
   const bulk = useServerFn(adminBulkProductos);
-  const importErp = useServerFn(adminImportProductosErp);
-  const previewImportErp = useServerFn(adminPreviewImportProductosErp);
-  const fetchErpCompareData = useServerFn(adminFetchErpCompareData);
   const exportProductos = useServerFn(adminExportProductos);
   const listCategorias = useServerFn(adminListCategorias);
   const listGrupos = useServerFn(adminListGrupos);
@@ -61,7 +58,7 @@ function AdminProductos() {
   // Persistente entre paginación / búsqueda / filtros
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [bulkOpen, setBulkOpen] = useState<null | BulkKind>(null);
-  const [importOpen, setImportOpen] = useState(false);
+  const [pesosOpen, setPesosOpen] = useState(false);
 
   const { data } = useQuery({
     queryKey: ["admin-productos", q, page, cat, grupo, activo, sortBy, sortDir],
@@ -216,23 +213,7 @@ function AdminProductos() {
     }
   }
 
-  async function importRows(rows: ErpImportRow[]) {
-    const chunks = chunkRows(rows, IMPORT_CHUNK_SIZE);
-    let updated = 0;
-    let created = 0;
-    let unchanged = 0;
-    for (let i = 0; i < chunks.length; i++) {
-      toast.info(`Importando lote ${i + 1} de ${chunks.length}`);
-      const chunk = chunks[i];
-      const res = await importErp({ data: { rows: chunk } });
-      updated += res.updated;
-      created += res.created;
-      unchanged += res.unchanged || 0;
-    }
-    toast.success(`ERP importado: ${updated} actualizados, ${created} nuevos, ${unchanged} sin cambios.`);
-    setImportOpen(false);
-    qc.invalidateQueries({ queryKey: ["admin-productos"] });
-  }
+
 
   return (
     <div className="pb-32">
@@ -275,11 +256,8 @@ function AdminProductos() {
           <option value="precio-desc">Mayor Precio</option>
           <option value="precio-asc">Menor Precio</option>
         </select>
-        <button onClick={() => setEditing({ ...empty })} className="w-full justify-center bg-primary text-primary-foreground px-4 py-2 text-sm font-medium flex items-center gap-2">
-          <Plus className="size-4" /> Nuevo
-        </button>
-        <button onClick={() => setImportOpen(true)} className="w-full justify-center border border-border px-4 py-2 text-sm font-medium flex items-center gap-2 hover:border-primary">
-          <Upload className="size-4" /> Importar ERP
+        <button onClick={() => setPesosOpen(true)} className="w-full justify-center border border-border px-4 py-2 text-sm font-medium flex items-center gap-2 hover:border-primary">
+          <Layers className="size-4" /> Pesos de Grupos
         </button>
         <button 
           onClick={handleExport} 
@@ -456,85 +434,7 @@ function AdminProductos() {
       )}
 
       {editing && <ProductoModal value={editing} categorias={(categorias as string[]) ?? []} grupos={(grupos as string[]) ?? []} onClose={() => setEditing(null)} onSave={save} />}
-      {importOpen && (
-        <ErpImportModal
-          onClose={() => setImportOpen(false)}
-          onImport={importRows}
-          onPreview={async (rows, onStatus) => {
-            onStatus("Descargando catálogo existente para comparar...");
-            const existing = await fetchErpCompareData();
-            
-            onStatus(`Comparando ${rows.length} productos...`);
-            const bySku = new Map<string, any>();
-            for (const item of existing) {
-              if (item.sku) {
-                bySku.set(item.sku, item);
-              }
-            }
-
-            const created: ErpImportRow[] = [];
-            const updated: Array<{ row: ErpImportRow; current: any; changes: Array<{ field: string; before: any; after: any }> }> = [];
-            let unchanged = 0;
-
-            function sameNumber(a: unknown, b: unknown) {
-              if (a == null && b == null) return true;
-              const na = Number(a);
-              const nb = Number(b);
-              return Number.isFinite(na) && Number.isFinite(nb) && Math.abs(na - nb) < 0.001;
-            }
-
-            for (const row of rows) {
-              const current = bySku.get(row.sku);
-              if (!current) {
-                created.push(row);
-                continue;
-              }
-
-              const changes = [
-                { field: "nombre", before: current.nombre, after: row.nombre, same: String(current.nombre ?? "") === row.nombre },
-                { field: "codigo_fabricante", before: current.codigo_fabricante, after: row.codigo_fabricante, same: String(current.codigo_fabricante ?? "") === String(row.codigo_fabricante ?? "") },
-                { field: "precio_vta_sin_iva", before: current.precio_vta_sin_iva, after: row.precio_vta_sin_iva, same: sameNumber(current.precio_vta_sin_iva, row.precio_vta_sin_iva) },
-                { field: "precio", before: current.precio, after: row.precio, same: sameNumber(current.precio, row.precio) },
-              ];
-
-              if (row.categoria !== undefined) {
-                changes.push({ field: "categoria", before: current.categoria, after: row.categoria, same: String(current.categoria ?? "") === String(row.categoria ?? "") });
-              }
-              if (row.grupo !== undefined) {
-                changes.push({ field: "grupo", before: current.grupo, after: row.grupo, same: String(current.grupo ?? "") === String(row.grupo ?? "") });
-              }
-              if (row.stock !== undefined && row.stock !== null) {
-                changes.push({ field: "stock", before: current.stock, after: row.stock, same: Number(current.stock ?? 0) === Number(row.stock ?? 0) });
-              }
-              if (row.descripcion !== undefined) {
-                changes.push({ field: "descripcion", before: current.descripcion, after: row.descripcion, same: String(current.descripcion ?? "") === String(row.descripcion ?? "") });
-              }
-              if (row.activo !== undefined && row.activo !== null) {
-                changes.push({ field: "activo", before: current.activo, after: row.activo, same: Boolean(current.activo) === Boolean(row.activo) });
-              }
-              if (row.precio_oferta !== undefined) {
-                changes.push({ field: "precio_oferta", before: current.precio_oferta, after: row.precio_oferta, same: sameNumber(current.precio_oferta, row.precio_oferta) });
-              }
-              if (row.oferta_hasta !== undefined) {
-                changes.push({ field: "oferta_hasta", before: current.oferta_hasta, after: row.oferta_hasta, same: String(current.oferta_hasta ?? "") === String(row.oferta_hasta ?? "") });
-              }
-
-              const filteredChanges = changes.filter((change) => !change.same).map(({ same, ...change }) => change);
-
-              if (filteredChanges.length) {
-                updated.push({ row, current, changes: filteredChanges });
-              } else {
-                unchanged++;
-              }
-            }
-
-            created.sort((a, b) => compareProductName(a.nombre, b.nombre));
-            updated.sort((a, b) => compareProductName(a.row.nombre, b.row.nombre));
-
-            return { created, updated, unchanged };
-          }}
-        />
-      )}
+      {pesosOpen && <PesosGruposModal grupos={(grupos as string[]) ?? []} onClose={() => setPesosOpen(false)} />}
     </div>
   );
 }
@@ -639,287 +539,7 @@ function ProductAdminCard({ product: p, selected, enOferta, onToggle, onEdit, on
   );
 }
 
-function chunkRows<T>(rows: T[], size: number) {
-  const chunks: T[][] = [];
-  for (let i = 0; i < rows.length; i += size) chunks.push(rows.slice(i, i + size));
-  return chunks;
-}
 
-const IMPORT_CHUNK_SIZE = 500;
-const IMPORT_PREVIEW_PAGE_SIZE = 50;
-
-type ImportPreview = {
-  created: ErpImportRow[];
-  updated: Array<{ row: ErpImportRow; changes: Array<{ field: string; before: unknown; after: unknown }> }>;
-  unchanged: number;
-};
-
-function ErpImportModal({ onClose, onImport, onPreview }: {
-  onClose: () => void;
-  onImport: (rows: ErpImportRow[]) => Promise<void>;
-  onPreview: (rows: ErpImportRow[], onStatus: (status: string) => void) => Promise<ImportPreview>;
-}) {
-  const [rows, setRows] = useState<ErpImportRow[]>([]);
-  const [preview, setPreview] = useState<ImportPreview | null>(null);
-  const [tab, setTab] = useState<"created" | "updated">("created");
-  const [createdPage, setCreatedPage] = useState(1);
-  const [updatedPage, setUpdatedPage] = useState(1);
-  const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState("");
-  const [fileName, setFileName] = useState("");
-
-  async function loadFile(file: File | null) {
-    if (!file) return;
-    setBusy(true);
-    try {
-      const parsed = await parseErpProductFile(file);
-      setRows(parsed);
-      setFileName(file.name);
-      setCreatedPage(1);
-      setUpdatedPage(1);
-      if (!parsed.length) toast.error("No encontré filas válidas en el Excel.");
-      else {
-        setPreview(await onPreview(parsed, setStatus));
-      }
-    } catch (e: any) {
-      toast.error(formatError(e));
-    } finally {
-      setBusy(false);
-      setStatus("");
-    }
-  }
-
-  async function apply() {
-    if (!rows.length || !preview) return;
-    setBusy(true);
-    try {
-      const changedSkus = new Set([
-        ...preview.created.map((r) => r.sku),
-        ...preview.updated.map((u) => u.row.sku),
-      ]);
-      const filteredRows = rows.filter((r) => changedSkus.has(r.sku));
-      if (!filteredRows.length) {
-        toast.info("No hay cambios para importar");
-        setBusy(false);
-        return;
-      }
-      setStatus(`Importando ${filteredRows.length} productos (${preview.created.length} nuevos, ${preview.updated.length} modificados)...`);
-      await onImport(filteredRows);
-    } catch (e: any) {
-      toast.error(formatError(e));
-    } finally {
-      setBusy(false);
-      setStatus("");
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/50 grid place-items-end sm:place-items-center p-2 sm:p-4" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="bg-background text-foreground border border-border max-w-5xl w-full max-h-[92vh] overflow-auto p-4 sm:p-6">
-        <h2 className="font-display text-xl mb-1">Importar productos del ERP</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          Actualiza SKU, nombre, código fabricante y precios. No toca categorías, grupos, stock ecommerce, imágenes, descripción, estado ni ofertas.
-        </p>
-        <label className="block border border-dashed border-border p-6 text-center cursor-pointer hover:border-primary">
-          <Upload className="size-5 mx-auto mb-2 text-muted-foreground" />
-          <span className="text-sm font-medium">{fileName || "Elegir Excel o CSV"}</span>
-          <input type="file" accept=".xlsx,.xls,.csv,text/csv" className="sr-only" onChange={(e) => loadFile(e.target.files?.[0] ?? null)} />
-        </label>
-
-        {preview && (
-          <div className="mt-4">
-            <div className="grid grid-cols-3 gap-2 mb-3 text-sm">
-              <div className="border border-border px-3 py-2 text-foreground"><strong>{preview.created.length}</strong> nuevos</div>
-              <div className="border border-border px-3 py-2 text-foreground"><strong>{preview.updated.length}</strong> modificados</div>
-              <div className="border border-border px-3 py-2 text-muted-foreground"><strong>{preview.unchanged}</strong> sin cambios</div>
-            </div>
-            <div className="flex gap-2 mb-2 text-sm">
-              <button onClick={() => setTab("created")} className={`px-3 py-1.5 border ${tab === "created" ? "border-primary text-foreground" : "border-border text-muted-foreground"}`}>Nuevos</button>
-              <button onClick={() => setTab("updated")} className={`px-3 py-1.5 border ${tab === "updated" ? "border-primary text-foreground" : "border-border text-muted-foreground"}`}>Modificados</button>
-            </div>
-            {tab === "created" ? (
-              <>
-                <CreatedRowsTable rows={paginateRows(preview.created, createdPage)} />
-                <ImportPagination total={preview.created.length} page={createdPage} onPageChange={setCreatedPage} />
-              </>
-            ) : (
-              <>
-                <UpdatedRowsTable rows={paginateRows(preview.updated, updatedPage)} />
-                <ImportPagination total={preview.updated.length} page={updatedPage} onPageChange={setUpdatedPage} />
-              </>
-            )}
-          </div>
-        )}
-
-        <div className="flex items-center justify-between gap-3 mt-5">
-          <span className="text-xs text-muted-foreground">{status || (preview ? `${preview.created.length + preview.updated.length} productos para importar (${preview.unchanged} sin cambios se omiten)` : rows.length ? `${rows.length} filas leídas` : "Esperando archivo")}</span>
-          <div className="flex gap-2">
-            <button onClick={onClose} className="px-4 py-2 text-sm">Cancelar</button>
-            <button disabled={busy || rows.length === 0} onClick={apply} className="bg-primary text-primary-foreground px-5 py-2 text-sm font-medium disabled:opacity-50">
-              {busy ? "Procesando..." : "Aplicar importación"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-
-function compareProductName(a: string, b: string) {
-  return a.localeCompare(b, "es", { sensitivity: "base", numeric: true });
-}
-
-function formatError(error: any) {
-  if (typeof error?.message === "string" && error.message) return error.message;
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return "No pude procesar el archivo.";
-  }
-}
-
-function CreatedRowsTable({ rows }: { rows: ErpImportRow[] }) {
-  if (!rows.length) return <div className="border border-border p-6 text-sm text-muted-foreground">No hay productos nuevos en este archivo.</div>;
-
-  const hasCategoria = rows.some((r) => r.categoria !== undefined);
-  const hasGrupo = rows.some((r) => r.grupo !== undefined);
-  const hasStock = rows.some((r) => r.stock !== undefined && r.stock !== null);
-  const hasDescripcion = rows.some((r) => r.descripcion !== undefined);
-  const hasActivo = rows.some((r) => r.activo !== undefined && r.activo !== null);
-  const hasOferta = rows.some((r) => r.precio_oferta !== undefined);
-
-  return (
-    <div className="border border-border max-h-72 overflow-auto">
-      <table className="w-full text-xs text-foreground">
-        <thead className="bg-secondary text-secondary-foreground sticky top-0">
-          <tr>
-            <th className="text-left px-3 py-2">SKU</th>
-            <th className="text-left px-3 py-2">Nombre</th>
-            <th className="text-left px-3 py-2">Cód. fabricante</th>
-            <th className="text-right px-3 py-2">Sin IVA</th>
-            <th className="text-right px-3 py-2">Venta</th>
-            {hasCategoria && <th className="text-left px-3 py-2">Categoría</th>}
-            {hasGrupo && <th className="text-left px-3 py-2">Grupo</th>}
-            {hasStock && <th className="text-right px-3 py-2">Stock</th>}
-            {hasActivo && <th className="text-center px-3 py-2">Estado</th>}
-            {hasOferta && <th className="text-right px-3 py-2">Oferta</th>}
-            {hasDescripcion && <th className="text-left px-3 py-2">Descripción</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.slice(0, 100).map((row) => (
-            <tr key={row.sku} className="border-t border-border">
-              <td className="px-3 py-2 font-medium">{row.sku}</td>
-              <td className="px-3 py-2">{row.nombre}</td>
-              <td className="px-3 py-2 text-muted-foreground">{row.codigo_fabricante ?? "-"}</td>
-              <td className="px-3 py-2 text-right">{row.precio_vta_sin_iva != null ? formatARS(row.precio_vta_sin_iva) : "-"}</td>
-              <td className="px-3 py-2 text-right">{formatARS(row.precio)}</td>
-              {hasCategoria && <td className="px-3 py-2">{row.categoria ?? "-"}</td>}
-              {hasGrupo && <td className="px-3 py-2">{row.grupo ?? "-"}</td>}
-              {hasStock && <td className="px-3 py-2 text-right">{row.stock ?? "-"}</td>}
-              {hasActivo && <td className="px-3 py-2 text-center">{row.activo == null ? "-" : row.activo ? "Activo" : "Inactivo"}</td>}
-              {hasOferta && <td className="px-3 py-2 text-right">{row.precio_oferta != null ? formatARS(row.precio_oferta) : "-"}</td>}
-              {hasDescripcion && <td className="px-3 py-2 max-w-[200px] truncate">{row.descripcion ?? "-"}</td>}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function UpdatedRowsTable({ rows }: { rows: Array<{ row: ErpImportRow; changes: Array<{ field: string; before: unknown; after: unknown }> }> }) {
-  if (!rows.length) return <div className="border border-border p-6 text-sm text-muted-foreground">No hay productos modificados en este archivo.</div>;
-  return (
-    <div className="border border-border max-h-72 overflow-auto">
-      <table className="w-full text-xs text-foreground">
-        <thead className="bg-secondary text-secondary-foreground sticky top-0">
-          <tr>
-            <th className="text-left px-3 py-2">SKU</th>
-            <th className="text-left px-3 py-2">Producto</th>
-            <th className="text-left px-3 py-2">Cambios detectados</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.slice(0, 100).map(({ row, changes }) => (
-            <tr key={row.sku} className="border-t border-border align-top">
-              <td className="px-3 py-2 font-medium">{row.sku}</td>
-              <td className="px-3 py-2">{row.nombre}</td>
-              <td className="px-3 py-2">
-                <div className="space-y-1">
-                  {changes.map((change) => (
-                    <div key={change.field} className="grid grid-cols-[130px_1fr] gap-2">
-                      <span className="text-muted-foreground">{fieldLabel(change.field)}</span>
-                      <span>
-                        <span className="line-through text-muted-foreground">{formatImportValue(change.field, change.before)}</span>
-                        <span className="mx-1 text-muted-foreground">→</span>
-                        <span className="font-medium text-foreground">{formatImportValue(change.field, change.after)}</span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function paginateRows<T>(rows: T[], page: number) {
-  const start = (page - 1) * IMPORT_PREVIEW_PAGE_SIZE;
-  return rows.slice(start, start + IMPORT_PREVIEW_PAGE_SIZE);
-}
-
-function ImportPagination({ total, page, onPageChange }: { total: number; page: number; onPageChange: (page: number) => void }) {
-  if (total <= IMPORT_PREVIEW_PAGE_SIZE) return null;
-  const totalPages = Math.max(1, Math.ceil(total / IMPORT_PREVIEW_PAGE_SIZE));
-  const start = (page - 1) * IMPORT_PREVIEW_PAGE_SIZE + 1;
-  const end = Math.min(total, page * IMPORT_PREVIEW_PAGE_SIZE);
-
-  return (
-    <div className="flex items-center justify-between gap-3 mt-2 text-xs text-muted-foreground">
-      <span>{start}-{end} de {total}</span>
-      <div className="flex items-center gap-2">
-        <button type="button" disabled={page <= 1} onClick={() => onPageChange(page - 1)} className="border border-border px-3 py-1 text-foreground disabled:opacity-40">
-          Anterior
-        </button>
-        <span>Pag {page} de {totalPages}</span>
-        <button type="button" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)} className="border border-border px-3 py-1 text-foreground disabled:opacity-40">
-          Siguiente
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function fieldLabel(field: string) {
-  const labels: Record<string, string> = {
-    nombre: "Nombre",
-    codigo_fabricante: "Cód. fabricante",
-    precio_vta_sin_iva: "Precio sin IVA",
-    precio: "Precio venta",
-    categoria: "Categoría",
-    grupo: "Grupo",
-    stock: "Stock",
-    descripcion: "Descripción",
-    activo: "Estado",
-    precio_oferta: "Precio oferta",
-    oferta_hasta: "Oferta hasta",
-  };
-  return labels[field] ?? field;
-}
-
-function formatImportValue(field: string, value: unknown) {
-  if (value == null || value === "") return "-";
-  if (field === "precio" || field === "precio_vta_sin_iva" || field === "precio_oferta") return formatARS(Number(value));
-  if (field === "activo") return value ? "Activo" : "Inactivo";
-  if (field === "stock") return String(Number(value));
-  return String(value);
-}
 
 // === BULK DIALOG ===
 
@@ -1266,6 +886,126 @@ function SearchSelect({ placeholder, options, value, onChange }: { placeholder: 
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function PesosGruposModal({ grupos, onClose }: { grupos: string[]; onClose: () => void }) {
+  const qc = useQueryClient();
+  const upsert = useServerFn(adminUpsertGroupWeight);
+  const getWeights = useServerFn(getGroupWeights);
+
+  const { data: currentWeights, isLoading } = useQuery({
+    queryKey: ["group-weights"],
+    queryFn: () => getWeights()
+  });
+
+  const [search, setSearch] = useState("");
+  const [editingGrupo, setEditingGrupo] = useState<string | null>(null);
+  const [editVal, setEditVal] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const filtered = grupos.filter(g => g.toLowerCase().includes(search.toLowerCase()));
+
+  async function handleSave(g: string) {
+    if (!editVal || isNaN(Number(editVal))) return;
+    setBusy(true);
+    try {
+      await upsert({ data: { grupo: g, peso_kg: Number(editVal) } });
+      toast.success("Peso actualizado");
+      setEditingGrupo(null);
+      qc.invalidateQueries({ queryKey: ["group-weights"] });
+    } catch (e: any) {
+      toast.error(e.message || "Error al actualizar peso");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 grid place-items-end sm:place-items-center p-2 sm:p-4" onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} className="bg-background border border-border max-w-lg w-full max-h-[92vh] flex flex-col p-4 sm:p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="font-display text-xl">Pesos por Grupo</h2>
+          <button onClick={onClose} className="p-1 hover:text-muted-foreground"><X className="size-5" /></button>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Definí el peso promedio (en Kg) que se asignará automáticamente a todos los productos de cada marca o grupo, a menos que un producto tenga un peso específico asignado.
+        </p>
+
+        <div className="relative mb-4 shrink-0">
+          <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Buscar grupo..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 border border-border bg-background text-sm outline-none focus:border-primary"
+          />
+        </div>
+
+        <div className="flex-1 overflow-y-auto border border-border">
+          {isLoading ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">Cargando pesos...</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-secondary text-secondary-foreground sticky top-0">
+                <tr>
+                  <th className="px-3 py-2 text-left">Grupo</th>
+                  <th className="px-3 py-2 text-right">Peso (Kg)</th>
+                  <th className="px-3 py-2 w-16"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(g => {
+                  const currentKg = currentWeights?.[g.toLowerCase()] ?? 1.0;
+                  const isEditing = editingGrupo === g;
+                  return (
+                    <tr key={g} className="border-t border-border group hover:bg-accent/30">
+                      <td className="px-3 py-2">{g}</td>
+                      <td className="px-3 py-2 text-right">
+                        {isEditing ? (
+                          <input
+                            type="number" step="0.1" min="0"
+                            autoFocus
+                            value={editVal}
+                            onChange={(e) => setEditVal(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSave(g);
+                              if (e.key === "Escape") setEditingGrupo(null);
+                            }}
+                            className="w-20 text-right border border-border px-2 py-1 text-xs outline-none focus:border-primary"
+                          />
+                        ) : (
+                          <span className={currentWeights?.[g.toLowerCase()] == null ? "text-muted-foreground italic" : ""}>
+                            {currentKg}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        {isEditing ? (
+                          <button disabled={busy} onClick={() => handleSave(g)} className="text-xs text-primary font-medium hover:underline">
+                            Guardar
+                          </button>
+                        ) : (
+                          <button onClick={() => { setEditingGrupo(g); setEditVal(String(currentKg)); }} className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground">
+                            Editar
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="px-3 py-4 text-center text-muted-foreground text-sm">No se encontraron grupos</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

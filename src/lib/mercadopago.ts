@@ -105,7 +105,7 @@ export async function applyMercadoPagoPayment(payment: MercadoPagoPayment) {
   }
 
   const estado = mapMercadoPagoStatus(payment.status);
-  const { error: updateError } = await supabaseAdmin
+  const { error: updateError } = await (supabaseAdmin as any)
     .from("pedidos")
     .update({ estado, mp_payment_id: String(payment.id) })
     .eq("id", pedidoId);
@@ -121,7 +121,7 @@ export async function applyMercadoPagoPayment(payment: MercadoPagoPayment) {
 
     if (isShippingOrder && !existingTracking) {
       try {
-        const tracking = await createZipnovaShipping(pedidoId, pedido);
+        const tracking = await createZipnovaShipping(pedidoId, pedido as any);
         if (tracking) {
           await supabaseAdmin
             .from("pedidos")

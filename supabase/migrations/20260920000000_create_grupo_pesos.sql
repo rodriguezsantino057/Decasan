@@ -1,0 +1,62 @@
+-- Crea la tabla para almacenar los pesos por defecto de los grupos
+CREATE TABLE IF NOT EXISTS public.grupo_pesos (
+  grupo text PRIMARY KEY,
+  peso_kg decimal(10, 2) NOT NULL
+);
+
+COMMENT ON TABLE public.grupo_pesos IS 'Pesos predeterminados por categoría/grupo para el cálculo de envíos.';
+
+-- Inserción inicial de los promedios
+INSERT INTO public.grupo_pesos (grupo, peso_kg) VALUES
+  ('amoladoras', 3.0),
+  ('atornilladores', 1.5),
+  ('taladros', 2.5),
+  ('motosierras', 8.0),
+  ('sierras circulares', 5.0),
+  ('caladoras', 2.5),
+  ('sierras caladoras', 2.5),
+  ('rotomartillos', 6.0),
+  ('lijadoras', 2.0),
+  ('ingletadoras', 18.0),
+  ('sierras ingletadoras', 18.0),
+  ('pistolas de calor', 1.0),
+  ('fresadoras', 3.5),
+  ('cepillos electricos', 3.0),
+  ('llaves', 1.0),
+  ('llaves de impacto', 3.0),
+  ('demoledores', 15.0),
+  ('martillos demoledores', 15.0),
+  ('sierras e ingletadoras', 12.0),
+  ('sopladoras y aspiradoras', 5.0),
+  ('cortacercos', 3.5),
+  ('minitornos', 1.0),
+  ('cargadores', 1.0),
+  ('baterias', 1.0),
+  ('pistolas', 1.0),
+  ('pulidoras', 3.0),
+  ('hojas de sierras', 0.5),
+  ('tijeras y cortapernos', 1.5),
+  ('soldadoras', 10.0),
+  ('soldadoras inverters', 6.0),
+  ('compresores', 25.0),
+  ('generadores', 40.0),
+  ('bordeadoras', 4.5),
+  ('desmalezadoras', 7.0),
+  ('cortadoras de cesped', 15.0),
+  ('sopladoras', 4.0),
+  ('hidrolavadoras', 8.0),
+  ('bombas de agua', 15.0),
+  ('electrobombas', 15.0),
+  ('hormigoneras', 45.0),
+  ('carretillas', 15.0),
+  ('escaleras', 12.0),
+  ('andamios', 25.0),
+  ('cajas de herramientas', 3.0),
+  ('herramientas manuales', 1.0),
+  ('pinturas', 5.0),
+  ('adhesivos y selladores', 0.5),
+  ('tornillos y fijaciones', 0.5),
+  ('electricidad', 0.5),
+  ('plomeria', 1.0),
+  ('jardineria', 1.5)
+ON CONFLICT (grupo) DO UPDATE SET peso_kg = EXCLUDED.peso_kg;

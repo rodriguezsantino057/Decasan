@@ -37,7 +37,10 @@ export const adminUpdatePedidoEstado = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
-    const { error } = await context.supabase.from("pedidos").update({ estado: data.estado }).eq("id", data.id);
+    const { error } = await (supabaseAdmin as any)
+      .from("pedidos")
+      .update({ estado: data.estado })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -531,7 +534,7 @@ export const adminPreviewImportProductosErp = createServerFn({ method: "POST" })
         changes.push({ field: "descripcion", before: current.descripcion, after: row.descripcion, same: String(current.descripcion ?? "") === String(row.descripcion ?? "") });
       }
       if (row.activo !== undefined && row.activo !== null) {
-        changes.push({ field: "activo", before: current.activo, after: row.activo, same: Boolean(current.activo) === Boolean(row.activo) });
+        changes.push({ field: "activo", before: current.activo, after: row.activo as any, same: Boolean(current.activo) === Boolean(row.activo) });
       }
       if (row.precio_oferta !== undefined) {
         changes.push({ field: "precio_oferta", before: current.precio_oferta, after: row.precio_oferta, same: sameNumber(current.precio_oferta, row.precio_oferta) });
@@ -792,6 +795,21 @@ export const adminListGrupos = createServerFn({ method: "GET" })
     return [...new Set(allGrupos.filter(Boolean))].sort((a, b) =>
       a.localeCompare(b, "es", { sensitivity: "base" })
     );
+  });
+
+export const adminUpsertGroupWeight = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    grupo: z.string().trim().min(1),
+    peso_kg: z.number().nonnegative(),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context.supabase, context.userId);
+    const { error } = await (supabaseAdmin as any)
+      .from("grupo_pesos")
+      .upsert({ grupo: data.grupo.toLowerCase(), peso_kg: data.peso_kg }, { onConflict: "grupo" });
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 export const adminListUsuarios = createServerFn({ method: "GET" })

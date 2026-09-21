@@ -15,6 +15,7 @@ export type Producto = {
   image_webp?: string | null;
   activo?: boolean;
   precio_oferta?: number | null;
+  oferta_hasta?: string | null;
   peso_kg?: number | null;
 };
 
@@ -220,7 +221,7 @@ export async function fetchGrupos(isAdmin?: boolean, cat?: string): Promise<stri
       .not("grupo", "is", null)
       .not("grupo", "eq", "");
     if (!isAdmin) q = q.or("activo.eq.true,activo.is.null");
-    if (cat) q = q.eq("categoria", normalizeCategoryName(cat));
+    if (cat) q = q.eq("categoria", normalizeCategoryName(cat) as string);
 
     const { data, error } = await q
       .order("grupo")

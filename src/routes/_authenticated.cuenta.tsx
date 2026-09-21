@@ -129,7 +129,7 @@ function CuentaPage() {
                   ))}
                 </ul>
 
-                {p.estado === "pendiente" && p.notas?.includes("Efectivo al retirar") && (
+                {p.estado === "pendiente" && (p as any).notas?.includes("Efectivo al retirar") && (
                   <div className="mt-4 pt-3 border-t border-border flex items-center justify-between gap-3 flex-wrap bg-primary/5 p-3">
                     <div className="text-xs text-muted-foreground">
                       <span className="font-semibold text-foreground block mb-0.5">Retiro y Pago en Efectivo:</span>

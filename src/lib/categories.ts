@@ -45,7 +45,7 @@ export function uniqueSortedCategories(values: Array<string | null | undefined>)
   const defaults = DEFAULT_CATEGORIES.map((category) => category);
   const extra = values
     .map(normalizeCategoryName)
-    .filter((category): category is string => !!category && !defaults.includes(category));
+    .filter((category): category is string => !!category && !defaults.includes(category as any));
 
   return [...defaults, ...Array.from(new Set(extra)).sort((a, b) => a.localeCompare(b, "es-AR"))];
 }

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { BadgeCheck, Banknote, CreditCard, Landmark, MessageCircle, Store, Truck } from "lucide-react";
@@ -12,7 +12,7 @@ import { useCart } from "@/lib/cart";
 import { formatARS } from "@/lib/format";
 import { createOrderAndPreference } from "@/lib/orders.functions";
 import { getProfile } from "@/lib/profile.functions";
-import { LOCAL_PICKUP_CODE, SHIPPING_PROVINCES } from "@/lib/shipping.functions";
+import { getGroupWeights, LOCAL_PICKUP_CODE, SHIPPING_PROVINCES } from "@/lib/shipping.functions";
 import type { ShippingOption } from "@/lib/shipping.functions";
 import { getProductWeight } from "@/lib/shipping.weights";
 
@@ -28,8 +28,10 @@ function CheckoutPage() {
   const clear = useCart((s) => s.clear);
   const profileFn = useServerFn(getProfile);
   const orderFn = useServerFn(createOrderAndPreference);
+  const getWeightsFn = useServerFn(getGroupWeights);
 
   const profile = useQuery({ queryKey: ["profile"], queryFn: () => profileFn(), enabled: !!user });
+  const { data: dynamicWeights } = useQuery({ queryKey: ["group-weights"], queryFn: () => getWeightsFn() });
 
   const [form, setForm] = useState({
     email: "",
@@ -53,8 +55,8 @@ function CheckoutPage() {
   const finalTotal = total + shippingTotal;
 
   const pesoTotalKg = useMemo(() => {
-    return items.reduce((acc, item) => acc + getProductWeight(item) * item.qty, 0);
-  }, [items]);
+    return items.reduce((acc, item) => acc + getProductWeight(item as any, dynamicWeights) * item.qty, 0);
+  }, [items, dynamicWeights]);
 
   function setProvincia(provincia: string) {
     setForm((current) => ({ ...current, provincia }));

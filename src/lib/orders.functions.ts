@@ -2,9 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { isCadeteZone, LOCAL_PICKUP_CODE, mapShippingOptionRow, TRANSPORTISTA_LABEL } from "@/lib/shipping.functions";
+import { isCadeteZone, LOCAL_PICKUP_CODE, mapShippingOptionRow, TRANSPORTISTA_LABEL, getLocalPickupOption } from "@/lib/shipping.functions";
 import { assertValidPublicBaseUrl, getMercadoPagoAccessToken, getPublicBaseUrl } from "@/lib/mercadopago";
 import { getZipnovaQuote } from "@/lib/zipnova";
+import { CATEGORY_WEIGHTS, getProductWeight } from "@/lib/shipping.weights";
 
 const itemSchema = z.object({
   id: z.number().int().positive(),
@@ -49,6 +50,9 @@ type ProductForOrder = {
   oferta_hasta: string | null;
   activo: boolean | null;
   stock: number | null;
+  peso_kg?: number | null;
+  categoria?: string | null;
+  grupo?: string | null;
 };
 
 type CreateOrderResult = {
@@ -77,12 +81,40 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
       paymentMethod: data.pago.metodo,
     });
 
+    const ids = [...new Set(data.items.map((item) => item.id))];
+    const { data: products, error: productError } = await (supabaseAdmin as any)
+      .from("productos")
+      .select("id,nombre,sku,precio,precio_oferta,oferta_hasta,activo,stock,peso_kg,categoria,grupo")
+      .in("id", ids);
+
+    if (productError) {
+      console.error("[orders] product validation failed", { requestId, error: productError.message });
+      throw new Error("No se pudieron validar los productos");
+    }
+
+    const productsById = new Map<number, ProductForOrder>((products ?? []).map((product: any) => [product.id, product as ProductForOrder]));
+
+    // Re-calcular el peso en el servidor para mayor seguridad
+    const { data: weightsData } = await (supabaseAdmin as any).from("grupo_pesos").select("grupo, peso_kg");
+    const dynamicWeights = { ...CATEGORY_WEIGHTS };
+    for (const row of weightsData ?? []) {
+      if (row.grupo && row.peso_kg != null) {
+        dynamicWeights[row.grupo.toLowerCase()] = Number(row.peso_kg);
+      }
+    }
+
+    const serverPesoTotalKg = data.items.reduce((acc, item) => {
+      const product = productsById.get(item.id);
+      if (!product) return acc;
+      return acc + getProductWeight(product as any, dynamicWeights) * item.qty;
+    }, 0);
+
     const shipping = await getActiveShippingOption(
       data.envio.shipping_option_id,
       data.direccion.codigo_postal,
       data.direccion.provincia,
       data.direccion.ciudad,
-      data.envio.peso_total_kg
+      serverPesoTotalKg
     );
     const isLocalPickup = shipping.codigo_servicio === LOCAL_PICKUP_CODE;
     if (!isLocalPickup) validateShippingAddress(data.direccion);
@@ -91,18 +123,6 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
       throw new Error("El pago en efectivo solo esta disponible con retiro en local");
     }
 
-    const ids = [...new Set(data.items.map((item) => item.id))];
-    const { data: products, error: productError } = await supabaseAdmin
-      .from("productos")
-      .select("id,nombre,sku,precio,precio_oferta,oferta_hasta,activo,stock")
-      .in("id", ids);
-
-    if (productError) {
-      console.error("[orders] product validation failed", { requestId, error: productError.message });
-      throw new Error("No se pudieron validar los productos");
-    }
-
-    const productsById = new Map((products ?? []).map((product) => [product.id, product as ProductForOrder]));
     const validatedItems = data.items.map((item) => {
       const product = productsById.get(item.id);
       if (!product || !product.activo) {
@@ -283,7 +303,7 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
     }
 
     const pref = await resp.json();
-    await supabaseAdmin.from("pedidos").update({ mp_preference_id: pref.id }).eq("id", pedido.id);
+    await (supabaseAdmin as any).from("pedidos").update({ mp_preference_id: pref.id }).eq("id", pedido.id);
 
     console.info("[orders] MP preference created", { requestId, pedidoId: pedido.id, preferenceId: pref.id });
 

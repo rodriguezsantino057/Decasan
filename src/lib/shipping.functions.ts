@@ -1,7 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getZipnovaQuote } from "./zipnova";
+import { CATEGORY_WEIGHTS } from "./shipping.weights";
 
 export type Transportista = "zipnova" | "cadete" | "retiro_local";
 
@@ -205,3 +207,28 @@ async function getCadeteOption(
     return null;
   }
 }
+
+export const getGroupWeights = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId } = context;
+    if (!userId) throw new Error("No autenticado");
+
+    try {
+      const { data, error } = await (supabaseAdmin as any).from("grupo_pesos").select("grupo, peso_kg");
+      if (error) {
+        console.error("Error al obtener pesos de grupos:", error);
+        return CATEGORY_WEIGHTS;
+      }
+      const dynamicWeights = { ...CATEGORY_WEIGHTS };
+      for (const row of data ?? []) {
+        if (row.grupo && row.peso_kg != null) {
+          dynamicWeights[row.grupo.toLowerCase()] = Number(row.peso_kg);
+        }
+      }
+      return dynamicWeights;
+    } catch (error) {
+      console.error("Error al obtener pesos de grupos:", error);
+      return CATEGORY_WEIGHTS;
+    }
+  });
