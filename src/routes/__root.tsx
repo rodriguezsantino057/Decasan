@@ -129,9 +129,9 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const maintenance = useMaintenanceGate();
 
-  if (maintenance.locked) {
-    return <MaintenanceScreen onUnlock={maintenance.unlock} />;
-  }
+  // if (maintenance.locked) {
+  //   return <MaintenanceScreen onUnlock={maintenance.unlock} />;
+  // }
 
   return (
     <QueryClientProvider client={queryClient}>

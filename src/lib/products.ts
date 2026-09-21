@@ -60,7 +60,7 @@ export async function fetchProductos(opts: {
   isAdmin?: boolean;
 }): Promise<{ items: Producto[]; count: number }> {
   let query = supabase.from("productos").select("*", { count: "exact" });
-  if (!opts.isAdmin) query = query.or("activo.eq.true,activo.is.null");
+  query = query.or("activo.eq.true,activo.is.null");
   const searchTokens = tokenizeSearch(opts.q);
 
   const normalizedCat = normalizeCategoryName(opts.cat);
@@ -164,7 +164,7 @@ function escapePostgrestLike(value: string) {
 
 export async function fetchProducto(id: number, isAdmin?: boolean): Promise<Producto | null> {
   let query = supabase.from("productos").select("*").eq("id", id);
-  if (!isAdmin) query = query.or("activo.eq.true,activo.is.null");
+  query = query.or("activo.eq.true,activo.is.null");
   const { data, error } = await query.maybeSingle();
   if (error) throw error;
   if (!data) return null;
@@ -209,7 +209,7 @@ export async function fetchCategorias(isAdmin?: boolean): Promise<string[]> {
   if (!error) return uniqueSortedCategories((data ?? []).map((c: { nombre: string | null }) => c.nombre));
 
   let fallbackQuery = supabase.from("productos").select("categoria");
-  if (!isAdmin) fallbackQuery = fallbackQuery.or("activo.eq.true,activo.is.null");
+  fallbackQuery = fallbackQuery.or("activo.eq.true,activo.is.null");
   const fallback = await fallbackQuery;
   if (fallback.error) throw fallback.error;
   let categories = (fallback.data ?? []).map((r: { categoria: string | null }) => r.categoria);
@@ -229,7 +229,7 @@ export async function fetchGrupos(isAdmin?: boolean, cat?: string): Promise<stri
       .select("grupo")
       .not("grupo", "is", null)
       .not("grupo", "eq", "");
-    if (!isAdmin) q = q.or("activo.eq.true,activo.is.null");
+    q = q.or("activo.eq.true,activo.is.null");
     if (cat) q = q.eq("categoria", normalizeCategoryName(cat) as string);
 
     const { data, error } = await q
