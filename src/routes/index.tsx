@@ -15,22 +15,27 @@ import heroHome from "@/assets/hero-home.png";
 import heroConstruction from "@/assets/hero-construction.png";
 import heroGarden from "@/assets/hero-garden.png";
 import heroPlumbing from "@/assets/hero-plumbing.png";
-import catAccesorios from "@/assets/cat-accesorios.png";
-import catAutomotor from "@/assets/cat-automotor.png";
-import catElectricas from "@/assets/cat-electricas.png";
-import catSanitarios from "@/assets/cat-sanitarios.png";
-import catJardin from "@/assets/cat-jardin.png";
-import catMateriales from "@/assets/cat-materiales.png";
-import catElectricos from "@/assets/cat-materiales-electricos.png";
+import catAccesorios from "@/assets/cat-accesorios.jpg";
+import catAutomotor from "@/assets/cat-automotor.jpg";
+import catElectricas from "@/assets/cat-electricas.jpg";
+import catSanitarios from "@/assets/cat-sanitarios.jpg";
+import catJardin from "@/assets/cat-jardin.jpg";
+import catMateriales from "@/assets/cat-materiales.jpg";
+import catElectricos from "@/assets/cat-materiales-electricos.jpg";
 
 const CATEGORY_IMAGES: Record<string, string> = {
   "accesorios y herramientas": catAccesorios,
   "automotor": catAutomotor,
   "h. eléctricas": catElectricas,
+  "h. electricas": catElectricas,
+  "herramientas eléctricas": catElectricas,
   "sanitarios e instalaciones": catSanitarios,
+  "sanitarios": catSanitarios,
   "jardín": catJardin,
+  "jardin": catJardin,
   "materiales": catMateriales,
   "materiales eléctricos": catElectricos,
+  "materiales electricos": catElectricos,
 };
 export const Route = createFileRoute("/")({
   component: Index,
