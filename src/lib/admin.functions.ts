@@ -852,21 +852,87 @@ export const adminToggleAdmin = createServerFn({ method: "POST" })
 
 export const adminMetrics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d) => z.object({
+    mes: z.number().int().min(1).max(12).optional().nullable(),
+    anio: z.number().int().min(2000).max(2100).optional().nullable(),
+  }).parse(d ?? {}))
+  .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
-    const since = new Date();
-    since.setDate(since.getDate() - 30);
-    const [{ data: pedidos }, { count: prodCount }, { data: lowStock }] = await Promise.all([
-      context.supabase.from("pedidos").select("id, total, estado, created_at").gte("created_at", since.toISOString()),
-      context.supabase.from("productos").select("id", { count: "exact", head: true }),
-      context.supabase.from("productos").select("id, nombre, stock").lte("stock", 5).gt("stock", 0).limit(20),
+    
+    let startDate: Date;
+    let endDate: Date;
+    let prevStartDate: Date;
+    let prevEndDate: Date;
+
+    const now = new Date();
+    
+    if (data.mes || data.anio) {
+      const year = data.anio ?? now.getFullYear();
+      if (data.mes) {
+        startDate = new Date(year, data.mes - 1, 1);
+        endDate = new Date(year, data.mes, 1);
+        prevStartDate = new Date(year, data.mes - 2, 1);
+        prevEndDate = startDate;
+      } else {
+        startDate = new Date(year, 0, 1);
+        endDate = new Date(year + 1, 0, 1);
+        prevStartDate = new Date(year - 1, 0, 1);
+        prevEndDate = startDate;
+      }
+    } else {
+      endDate = new Date();
+      startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30);
+      
+      prevEndDate = new Date(startDate);
+      prevStartDate = new Date(startDate);
+      prevStartDate.setDate(prevStartDate.getDate() - 30);
+    }
+    
+    const hoyInicio = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const [
+      { data: pedidosAct },
+      { data: pedidosPrev },
+      { data: pedidosHoy },
+      { count: usuariosCount },
+    ] = await Promise.all([
+      context.supabase.from("pedidos").select("id, total, estado, pedido_items(nombre, cantidad)").gte("created_at", startDate.toISOString()).lt("created_at", endDate.toISOString()),
+      context.supabase.from("pedidos").select("id, total, estado").gte("created_at", prevStartDate.toISOString()).lt("created_at", prevEndDate.toISOString()),
+      context.supabase.from("pedidos").select("id, total, estado").gte("created_at", hoyInicio.toISOString()),
+      context.supabase.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", startDate.toISOString()).lt("created_at", endDate.toISOString()),
     ]);
-    const ventasMes = (pedidos ?? []).filter((p) => p.estado !== "cancelado").reduce((a, b) => a + Number(b.total), 0);
-    const pedidosMes = (pedidos ?? []).length;
-    const pendientes = (pedidos ?? []).filter((p) => p.estado === "pendiente").length;
+
+    const ventas = (pedidosAct ?? []).filter((p) => p.estado !== "cancelado").reduce((a, b) => a + Number(b.total), 0);
+    const ventasAnterior = (pedidosPrev ?? []).filter((p) => p.estado !== "cancelado").reduce((a, b) => a + Number(b.total), 0);
+    const ventasHoy = (pedidosHoy ?? []).filter((p) => p.estado !== "cancelado").reduce((a, b) => a + Number(b.total), 0);
+
+    let crecimientoPct = 0;
+    if (ventasAnterior > 0) {
+      crecimientoPct = ((ventas - ventasAnterior) / ventasAnterior) * 100;
+    } else if (ventas > 0) {
+      crecimientoPct = 100;
+    }
+
+    const productSales: Record<string, number> = {};
+    for (const pedido of (pedidosAct ?? [])) {
+      if (pedido.estado !== "cancelado") {
+        for (const item of (pedido.pedido_items ?? [])) {
+           productSales[item.nombre] = (productSales[item.nombre] ?? 0) + Number(item.cantidad);
+        }
+      }
+    }
+    
+    const top3Productos = Object.entries(productSales)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([nombre, cantidad]) => ({ nombre, cantidad }));
+
     return {
-      ventasMes, pedidosMes, pendientes,
-      productosTotal: prodCount ?? 0,
-      lowStock: lowStock ?? [],
+      ventas,
+      ventasHoy,
+      crecimientoPct,
+      nuevosUsuarios: usuariosCount ?? 0,
+      top3Productos,
     };
   });

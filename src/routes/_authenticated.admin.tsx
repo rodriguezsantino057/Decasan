@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, Link, useLocation, useNavigate } from "@tansta
 import { useEffect } from "react";
 import { useSession, useIsAdmin } from "@/lib/auth";
 import { Layout } from "@/components/Layout";
-import { LayoutDashboard, Package, PackageSearch, ShoppingBag, Truck, Users } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, Users } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({ component: AdminLayout });
 
@@ -23,10 +23,8 @@ function AdminLayout() {
   const tabs = [
     { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
     { to: "/admin/productos", label: "Productos", icon: Package, exact: false },
-    { to: "/admin/pedidos", label: "Pedidos", icon: ShoppingBag, exact: false },
+    { to: "/admin/pedidos", label: "Gestión de Pedidos", icon: ShoppingBag, exact: false },
     { to: "/admin/usuarios", label: "Usuarios", icon: Users, exact: false },
-    { to: "/admin/envios", label: "Envios", icon: Truck, exact: false },
-    { to: "/admin/zipnova", label: "Zipnova", icon: PackageSearch, exact: false },
   ];
 
   return (
@@ -35,7 +33,7 @@ function AdminLayout() {
         <h1 className="font-display text-2xl sm:text-3xl leading-tight mb-1">Panel de administracion</h1>
         <p className="text-sm text-muted-foreground mb-5 sm:mb-6">Gestion de productos, pedidos y usuarios</p>
 
-        <div className="-mx-4 flex overflow-x-auto border-y border-border bg-surface-elevated sm:mx-0 sm:mb-8 sm:grid sm:grid-cols-6 sm:border-x">
+        <div className="-mx-4 flex overflow-x-auto border-y border-border bg-surface-elevated sm:mx-0 sm:mb-8 sm:grid sm:grid-cols-4 sm:border-x">
           {tabs.map((t) => {
             const active = t.exact ? location.pathname === t.to : location.pathname.startsWith(t.to);
             return (
