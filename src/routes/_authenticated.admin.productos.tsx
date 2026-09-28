@@ -251,20 +251,21 @@ function AdminProductos() {
           <option value="yes">Solo activos</option>
           <option value="no">Solo inactivos</option>
         </select>
-        <div className="flex items-center border border-border bg-background w-full focus-within:border-primary">
-          <span className="pl-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Ordenar:</span>
+        <div className="relative w-full border border-border bg-background focus-within:border-primary">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground pointer-events-none uppercase tracking-wide">Ordenar:</span>
           <select value={`${sortBy}-${sortDir}`} onChange={(e) => { 
             const [by, dir] = e.target.value.split('-'); 
             setSortBy(by as any); 
             setSortDir(dir as any); 
             setPage(1); 
-          }} className="w-full bg-transparent px-2 py-2 text-sm outline-none cursor-pointer">
+          }} className="w-full bg-transparent pl-[84px] pr-8 py-2 text-sm outline-none cursor-pointer appearance-none">
             <option value="nombre-asc">Nombre A-Z</option>
             <option value="id-desc">Últimos Agregados</option>
             <option value="erp_updated_at-desc">Últimos Modificados</option>
             <option value="precio-desc">Mayor Precio</option>
             <option value="precio-asc">Menor Precio</option>
           </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
         </div>
         <button onClick={() => setPesosOpen(true)} className="w-full justify-center border border-border px-4 py-2 text-sm font-medium flex items-center gap-2 hover:border-primary whitespace-nowrap">
           <Layers className="size-4" /> Pesos de Grupos

@@ -923,9 +923,9 @@ export const adminMetrics = createServerFn({ method: "GET" })
       }
     }
     
-    const top3Productos = Object.entries(productSales)
+    const topProductos = Object.entries(productSales)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
+      .slice(0, 103)
       .map(([nombre, cantidad]) => ({ nombre, cantidad }));
 
     return {
@@ -933,6 +933,6 @@ export const adminMetrics = createServerFn({ method: "GET" })
       ventasHoy,
       crecimientoPct,
       nuevosUsuarios: usuariosCount ?? 0,
-      top3Productos,
+      topProductos,
     };
   });
