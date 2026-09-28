@@ -903,7 +903,11 @@ export const adminMetrics = createServerFn({ method: "GET" })
       context.supabase.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", startDate.toISOString()).lt("created_at", endDate.toISOString()),
     ]);
 
-    const ventas = (pedidosAct ?? []).filter((p) => p.estado !== "cancelado").reduce((a, b) => a + Number(b.total), 0);
+    const pedidosValidos = (pedidosAct ?? []).filter((p) => p.estado !== "cancelado");
+    const ventas = pedidosValidos.reduce((a, b) => a + Number(b.total), 0);
+    const pedidosCount = pedidosValidos.length;
+    const ticketPromedio = pedidosCount > 0 ? ventas / pedidosCount : 0;
+
     const ventasAnterior = (pedidosPrev ?? []).filter((p) => p.estado !== "cancelado").reduce((a, b) => a + Number(b.total), 0);
     const ventasHoy = (pedidosHoy ?? []).filter((p) => p.estado !== "cancelado").reduce((a, b) => a + Number(b.total), 0);
 
@@ -915,11 +919,9 @@ export const adminMetrics = createServerFn({ method: "GET" })
     }
 
     const productSales: Record<string, number> = {};
-    for (const pedido of (pedidosAct ?? [])) {
-      if (pedido.estado !== "cancelado") {
-        for (const item of (pedido.pedido_items ?? [])) {
-           productSales[item.nombre] = (productSales[item.nombre] ?? 0) + Number(item.cantidad);
-        }
+    for (const pedido of pedidosValidos) {
+      for (const item of (pedido.pedido_items ?? [])) {
+         productSales[item.nombre] = (productSales[item.nombre] ?? 0) + Number(item.cantidad);
       }
     }
     
@@ -934,5 +936,7 @@ export const adminMetrics = createServerFn({ method: "GET" })
       crecimientoPct,
       nuevosUsuarios: usuariosCount ?? 0,
       topProductos,
+      pedidosCount,
+      ticketPromedio,
     };
   });

@@ -50,7 +50,13 @@ function AdminDashboard() {
       color: "text-success",
       bgIcon: "bg-success/10"
     },
-    { 
+    (mes || anio) ? {
+      label: "Ticket Promedio",
+      value: formatARS((data as any).ticketPromedio ?? 0),
+      icon: Activity,
+      color: "text-primary",
+      bgIcon: "bg-primary/10"
+    } : { 
       label: "Ventas de Hoy", 
       value: formatARS(data.ventasHoy), 
       icon: Calendar, 
