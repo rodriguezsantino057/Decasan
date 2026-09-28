@@ -32,7 +32,7 @@ function AdminDashboard() {
 
   const { data } = useQuery({ 
     queryKey: ["admin-metrics", mes, anio], 
-    queryFn: () => fn({ mes, anio }) 
+    queryFn: () => fn({ data: { mes, anio } }) 
   });
 
   if (!data) return (
