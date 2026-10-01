@@ -43,7 +43,7 @@ const SYSTEM_PROMPT = `Sos "Decabot", el asistente virtual inteligente de Decasa
 
 Información del local:
 - Ubicación: Av. Pres. Kennedy 270, La Falda, Córdoba, Argentina.
-- Horarios de atención: Lunes a viernes de 08:30 a 13:00 y de 16:30 a 20:30 hs. Sábados de 08:30 a 13:00 y de 17:00 a 20:30 hs. Domingos cerrado.
+- Horarios de atención: Lunes a viernes de 08:30 a 13:00 y de 16:00 a 19:30 hs. Sábados de 08:30 a 13:00 hs. Domingos cerrado.
 - WhatsApp de asesoramiento directo: +54 9 3548 59-2127 (${WHATSAPP_URL}).
 - Medios de pago: Mercado Pago (tarjetas de crédito, débito, dinero en cuenta), Transferencia bancaria, y efectivo en el local.
 - Envíos: Envíos a todo el país a través de Correo Argentino y transportes expresos. Retiro gratis en el local en La Falda.
@@ -468,7 +468,7 @@ function buildFallbackReply(userQuery: string, context: { products: CatalogProdu
 
   // 2. Horarios
   if (/\b(horario|horarios|atienden|abierto|hora|abren|cierran)\b/.test(norm)) {
-    return `🕒 **Nuestros Horarios de Atención en el local:**\n• **Lunes a Viernes:** 08:30 a 13:00 y 16:30 a 20:30 hs.\n• **Sábados:** 08:30 a 13:00 y 17:00 a 20:30 hs.\n• **Domingos:** Cerrado.\n\n¡La tienda online está abierta las 24 hs para hacer tus compras!`;
+    return `🕒 **Nuestros Horarios de Atención en el local:**\n• **Lunes a Viernes:** 08:30 a 13:00 y 16:00 a 19:30 hs.\n• **Sábados:** 08:30 a 13:00 hs.\n• **Domingos:** Cerrado.\n\n¡La tienda online está abierta las 24 hs para hacer tus compras!`;
   }
 
   // 3. Ubicación / Local
