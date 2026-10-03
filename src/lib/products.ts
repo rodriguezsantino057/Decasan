@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { normalizeCategoryName, uniqueSortedCategories } from "@/lib/categories";
+import { isNumericCategory, normalizeCategoryName, uniqueSortedCategories } from "@/lib/categories";
 import { normalizeSearch, scoreProductSearch, tokenizeSearch } from "@/lib/search-ranking";
 
 export type Producto = {
@@ -198,7 +198,7 @@ export async function fetchProductoImagenes(productoId: number): Promise<Product
   return (data ?? []) as ProductImageRow[];
 }
 
-export async function fetchCategorias(isAdmin?: boolean): Promise<string[]> {
+export async function fetchCategorias(_isAdmin?: boolean): Promise<string[]> {
   const { data, error } = await (supabase as any)
     .from("categorias")
     .select("nombre")
@@ -207,10 +207,9 @@ export async function fetchCategorias(isAdmin?: boolean): Promise<string[]> {
     .order("nombre", { ascending: true });
 
   if (!error) {
-    let categories = (data ?? []).map((c: { nombre: string | null }) => c.nombre);
-    if (!isAdmin) {
-      categories = categories.filter((c: string | null) => c && !/^\d+$/.test(c.trim()));
-    }
+    const categories = (data ?? [])
+      .map((c: { nombre: string | null }) => c.nombre)
+      .filter((c: string | null): c is string => !!c && !isNumericCategory(c));
     return uniqueSortedCategories(categories);
   }
 
@@ -218,10 +217,9 @@ export async function fetchCategorias(isAdmin?: boolean): Promise<string[]> {
   fallbackQuery = fallbackQuery.or("activo.eq.true,activo.is.null");
   const fallback = await fallbackQuery;
   if (fallback.error) throw fallback.error;
-  let categories = (fallback.data ?? []).map((r: { categoria: string | null }) => r.categoria);
-  if (!isAdmin) {
-    categories = categories.filter((c: string | null) => c && !/^\d+$/.test(c.trim()));
-  }
+  const categories = (fallback.data ?? [])
+    .map((r: { categoria: string | null }) => r.categoria)
+    .filter((c: string | null): c is string => !!c && !isNumericCategory(c));
   return uniqueSortedCategories(categories);
 }
 
@@ -247,9 +245,7 @@ export async function fetchGrupos(isAdmin?: boolean, cat?: string): Promise<stri
     from += pageSize;
   }
   let groups = [...new Set(allGrupos.filter(Boolean))];
-  if (!isAdmin) {
-    groups = groups.filter((g) => !/^\d+$/.test(g.trim()));
-  }
+  groups = groups.filter((g) => !/^\d+$/.test(g.trim()));
   return groups.sort((a, b) =>
     a.localeCompare(b, "es", { sensitivity: "base" })
   );

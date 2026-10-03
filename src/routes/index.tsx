@@ -7,6 +7,7 @@ import { Brands } from "@/components/Brands";
 import { InstagramReels } from "@/components/InstagramReels";
 import { LocationSection } from "@/components/LocationSection";
 import { fetchProductos, fetchCategorias } from "@/lib/products";
+import { isNumericCategory } from "@/lib/categories";
 import { useSession, useIsAdmin } from "@/lib/auth";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
@@ -53,7 +54,8 @@ function Index() {
     queryKey: ["featured", isAdmin],
     queryFn: () => fetchProductos({ limit: 8, isAdmin }),
   });
-  const cats = useQuery({ queryKey: ["cats", isAdmin], queryFn: () => fetchCategorias(isAdmin) });
+  const cats = useQuery({ queryKey: ["cats"], queryFn: () => fetchCategorias() });
+  const displayedCategories = (cats.data ?? []).filter((c) => !isNumericCategory(c));
 
   const slides = [
     {
@@ -166,7 +168,7 @@ function Index() {
           </Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {(cats.data ?? []).map((c, idx) => {
+          {displayedCategories.map((c, idx) => {
             const bgImg = CATEGORY_IMAGES[c.toLowerCase()];
             return (
               <Link

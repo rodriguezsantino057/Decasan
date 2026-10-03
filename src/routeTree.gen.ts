@@ -21,11 +21,9 @@ import { Route as AuthenticatedCuentaRouteImport } from './routes/_authenticated
 import { Route as ProductosIndexRouteImport } from './routes/productos.index'
 import { Route as ProductosIdRouteImport } from './routes/productos.$id'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated.admin.index'
-import { Route as AuthenticatedAdminEnviosRouteImport } from './routes/_authenticated.admin.envios'
 import { Route as AuthenticatedAdminPedidosRouteImport } from './routes/_authenticated.admin.pedidos'
 import { Route as AuthenticatedAdminProductosRouteImport } from './routes/_authenticated.admin.productos'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated.admin.usuarios'
-import { Route as AuthenticatedAdminZipnovaRouteImport } from './routes/_authenticated.admin.zipnova'
 import { Route as ApiPublicBootstrapAdminRouteImport } from './routes/api/public/bootstrap-admin'
 import { Route as ApiPublicMercadopagoRouteImport } from './routes/api/public/mercadopago'
 
@@ -88,12 +86,6 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
-const AuthenticatedAdminEnviosRoute =
-  AuthenticatedAdminEnviosRouteImport.update({
-    id: '/envios',
-    path: '/envios',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
 const AuthenticatedAdminPedidosRoute =
   AuthenticatedAdminPedidosRouteImport.update({
     id: '/pedidos',
@@ -110,12 +102,6 @@ const AuthenticatedAdminUsuariosRoute =
   AuthenticatedAdminUsuariosRouteImport.update({
     id: '/usuarios',
     path: '/usuarios',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
-const AuthenticatedAdminZipnovaRoute =
-  AuthenticatedAdminZipnovaRouteImport.update({
-    id: '/zipnova',
-    path: '/zipnova',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const ApiPublicBootstrapAdminRoute = ApiPublicBootstrapAdminRouteImport.update({
@@ -140,11 +126,9 @@ export interface FileRoutesByFullPath {
   '/cuenta': typeof AuthenticatedCuentaRoute
   '/productos/$id': typeof ProductosIdRoute
   '/productos/': typeof ProductosIndexRoute
-  '/admin/envios': typeof AuthenticatedAdminEnviosRoute
   '/admin/pedidos': typeof AuthenticatedAdminPedidosRoute
   '/admin/productos': typeof AuthenticatedAdminProductosRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
-  '/admin/zipnova': typeof AuthenticatedAdminZipnovaRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/mercadopago': typeof ApiPublicMercadopagoRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -159,11 +143,9 @@ export interface FileRoutesByTo {
   '/cuenta': typeof AuthenticatedCuentaRoute
   '/productos/$id': typeof ProductosIdRoute
   '/productos': typeof ProductosIndexRoute
-  '/admin/envios': typeof AuthenticatedAdminEnviosRoute
   '/admin/pedidos': typeof AuthenticatedAdminPedidosRoute
   '/admin/productos': typeof AuthenticatedAdminProductosRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
-  '/admin/zipnova': typeof AuthenticatedAdminZipnovaRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/mercadopago': typeof ApiPublicMercadopagoRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -181,11 +163,9 @@ export interface FileRoutesById {
   '/_authenticated/cuenta': typeof AuthenticatedCuentaRoute
   '/productos/$id': typeof ProductosIdRoute
   '/productos/': typeof ProductosIndexRoute
-  '/_authenticated/admin/envios': typeof AuthenticatedAdminEnviosRoute
   '/_authenticated/admin/pedidos': typeof AuthenticatedAdminPedidosRoute
   '/_authenticated/admin/productos': typeof AuthenticatedAdminProductosRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
-  '/_authenticated/admin/zipnova': typeof AuthenticatedAdminZipnovaRoute
   '/api/public/bootstrap-admin': typeof ApiPublicBootstrapAdminRoute
   '/api/public/mercadopago': typeof ApiPublicMercadopagoRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -203,11 +183,9 @@ export interface FileRouteTypes {
     | '/cuenta'
     | '/productos/$id'
     | '/productos/'
-    | '/admin/envios'
     | '/admin/pedidos'
     | '/admin/productos'
     | '/admin/usuarios'
-    | '/admin/zipnova'
     | '/api/public/bootstrap-admin'
     | '/api/public/mercadopago'
     | '/admin/'
@@ -222,11 +200,9 @@ export interface FileRouteTypes {
     | '/cuenta'
     | '/productos/$id'
     | '/productos'
-    | '/admin/envios'
     | '/admin/pedidos'
     | '/admin/productos'
     | '/admin/usuarios'
-    | '/admin/zipnova'
     | '/api/public/bootstrap-admin'
     | '/api/public/mercadopago'
     | '/admin'
@@ -243,11 +219,9 @@ export interface FileRouteTypes {
     | '/_authenticated/cuenta'
     | '/productos/$id'
     | '/productos/'
-    | '/_authenticated/admin/envios'
     | '/_authenticated/admin/pedidos'
     | '/_authenticated/admin/productos'
     | '/_authenticated/admin/usuarios'
-    | '/_authenticated/admin/zipnova'
     | '/api/public/bootstrap-admin'
     | '/api/public/mercadopago'
     | '/_authenticated/admin/'
@@ -353,13 +327,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
-    '/_authenticated/admin/envios': {
-      id: '/_authenticated/admin/envios'
-      path: '/envios'
-      fullPath: '/admin/envios'
-      preLoaderRoute: typeof AuthenticatedAdminEnviosRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
     '/_authenticated/admin/pedidos': {
       id: '/_authenticated/admin/pedidos'
       path: '/pedidos'
@@ -381,13 +348,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsuariosRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
-    '/_authenticated/admin/zipnova': {
-      id: '/_authenticated/admin/zipnova'
-      path: '/zipnova'
-      fullPath: '/admin/zipnova'
-      preLoaderRoute: typeof AuthenticatedAdminZipnovaRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
     '/api/public/bootstrap-admin': {
       id: '/api/public/bootstrap-admin'
       path: '/api/public/bootstrap-admin'
@@ -406,20 +366,16 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteChildren {
-  AuthenticatedAdminEnviosRoute: typeof AuthenticatedAdminEnviosRoute
   AuthenticatedAdminPedidosRoute: typeof AuthenticatedAdminPedidosRoute
   AuthenticatedAdminProductosRoute: typeof AuthenticatedAdminProductosRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
-  AuthenticatedAdminZipnovaRoute: typeof AuthenticatedAdminZipnovaRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
-  AuthenticatedAdminEnviosRoute: AuthenticatedAdminEnviosRoute,
   AuthenticatedAdminPedidosRoute: AuthenticatedAdminPedidosRoute,
   AuthenticatedAdminProductosRoute: AuthenticatedAdminProductosRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
-  AuthenticatedAdminZipnovaRoute: AuthenticatedAdminZipnovaRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
