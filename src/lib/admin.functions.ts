@@ -151,6 +151,7 @@ export const adminListProductos = createServerFn({ method: "GET" })
     cat: z.string().max(100).optional().nullable(),
     grupo: z.string().max(100).optional().nullable(),
     activo: z.enum(["all", "yes", "no"]).optional(),
+    conNumeros: z.boolean().optional(),
     sortBy: z.enum(["id", "nombre", "precio", "stock", "erp_updated_at"]).optional(),
     sortDir: z.enum(["asc", "desc"]).optional(),
   }).parse(d ?? {}))
@@ -166,6 +167,7 @@ export const adminListProductos = createServerFn({ method: "GET" })
       if (data.grupo) query = query.eq("grupo", data.grupo);
       if (data.activo === "yes") query = query.eq("activo", true);
       if (data.activo === "no") query = query.eq("activo", false);
+      if (data.conNumeros) query = query.or("categoria.match.[0-9],grupo.match.[0-9]");
       return query;
     };
 
@@ -218,7 +220,7 @@ const productoSchema = z.object({
   codigo_fabricante: z.string().max(120).optional().nullable(),
   precio_vta_sin_iva: z.number().nonnegative().nullable().optional(),
   precio: z.number().nonnegative(),
-  stock: z.number().int().min(0),
+  stock: z.number().int(),
   image_url: z.string().max(500).optional().nullable(),
   image_webp: z.string().max(500).optional().nullable(),
   activo: z.boolean().optional(),
@@ -581,6 +583,7 @@ export const adminExportProductos = createServerFn({ method: "POST" })
     cat: z.string().max(100).optional().nullable(),
     grupo: z.string().max(100).optional().nullable(),
     activo: z.enum(["all", "yes", "no"]).optional(),
+    conNumeros: z.boolean().optional(),
     ids: z.array(z.number().int()).optional().nullable(),
   }).parse(d ?? {}))
   .handler(async ({ data, context }) => {
@@ -601,6 +604,7 @@ export const adminExportProductos = createServerFn({ method: "POST" })
       if (data.grupo) q = q.eq("grupo", data.grupo);
       if (data.activo === "yes") q = q.eq("activo", true);
       if (data.activo === "no") q = q.eq("activo", false);
+      if (data.conNumeros) q = q.or("categoria.match.[0-9],grupo.match.[0-9]");
     }
 
     const allRows: any[] = [];

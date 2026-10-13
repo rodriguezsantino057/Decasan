@@ -52,6 +52,7 @@ function AdminProductos() {
   const [cat, setCat] = useState("");
   const [grupo, setGrupo] = useState("");
   const [activo, setActivo] = useState<"all" | "yes" | "no">("all");
+  const [conNumeros, setConNumeros] = useState(false);
   const [sortBy, setSortBy] = useState<ProductSortBy>("id");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [editing, setEditing] = useState<ProductoForm | null>(null);
@@ -61,8 +62,8 @@ function AdminProductos() {
   const [pesosOpen, setPesosOpen] = useState(false);
 
   const { data } = useQuery({
-    queryKey: ["admin-productos", q, page, cat, grupo, activo, sortBy, sortDir],
-    queryFn: () => list({ data: { q: q || null, page, cat: cat || null, grupo: grupo || null, activo, sortBy, sortDir } }),
+    queryKey: ["admin-productos", q, page, cat, grupo, activo, conNumeros, sortBy, sortDir],
+    queryFn: () => list({ data: { q: q || null, page, cat: cat || null, grupo: grupo || null, activo, conNumeros: conNumeros || undefined, sortBy, sortDir } }),
   });
 
   const { data: categorias } = useQuery({ queryKey: ["admin-categorias"], queryFn: () => listCategorias() });
@@ -115,6 +116,7 @@ function AdminProductos() {
         payload.cat = cat || null;
         payload.grupo = grupo || null;
         payload.activo = activo;
+        payload.conNumeros = conNumeros || undefined;
       }
 
       const rows = await exportProductos({ data: payload });
@@ -221,11 +223,24 @@ function AdminProductos() {
 
   return (
     <div className="pb-32">
-      <div className="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-md flex items-center gap-2">
-        <AlertTriangle className="size-4 shrink-0 text-amber-600" />
-        <p>
-          <strong>Advertencia:</strong> Los productos que contengan números en su <strong>Categoría</strong> o <strong>Grupo</strong> no se muestran en la tienda web pública. Por favor modifícalos si deseas que sean visibles.
-        </p>
+      <div className={`mb-4 p-3 border text-sm rounded-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${conNumeros ? "bg-amber-100 border-amber-400 text-amber-950" : "bg-amber-50 border-amber-200 text-amber-900"}`}>
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="size-4 shrink-0 text-amber-600" />
+          <p>
+            <strong>Atención:</strong> Los productos con números en su <strong>Categoría</strong> o <strong>Grupo</strong> no se muestran en el catálogo público.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => { setConNumeros((prev) => !prev); setPage(1); }}
+          className={`shrink-0 px-3 py-1.5 text-xs font-semibold rounded border transition-colors flex items-center gap-1.5 self-start sm:self-auto ${
+            conNumeros
+              ? "bg-amber-600 text-white border-amber-700 shadow-sm hover:bg-amber-700"
+              : "bg-white text-amber-900 border-amber-300 hover:bg-amber-100"
+          }`}
+        >
+          <span>{conNumeros ? "✓ Mostrando solo con números" : "🔍 Filtrar productos con números"}</span>
+        </button>
       </div>
 
       <div className="grid gap-2 mb-4 sm:grid-cols-2 lg:grid-cols-[minmax(260px,1fr)_180px_180px_170px_auto_auto_auto] lg:items-center">
