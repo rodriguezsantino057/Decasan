@@ -224,6 +224,7 @@ const productoSchema = z.object({
   activo: z.boolean().optional(),
   precio_oferta: z.number().nonnegative().nullable().optional(),
   oferta_hasta: z.string().nullable().optional(),
+  peso_kg: z.number().nonnegative().nullable().optional(),
 });
 
 export const adminUpsertProducto = createServerFn({ method: "POST" })

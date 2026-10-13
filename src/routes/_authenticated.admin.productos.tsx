@@ -153,29 +153,33 @@ function AdminProductos() {
   }
 
   async function save(v: ProductoForm) {
-    const { image_url: _imageUrl, image_webp: _imageWebp, ...producto } = v;
-    const res = await upsert({ data: {
-      ...producto,
-      descripcion: producto.descripcion || null,
-      categoria: producto.categoria || null,
-      grupo: producto.grupo || null,
-      sku: producto.sku || null,
-      precio: Number(producto.precio),
-      stock: Number(producto.stock),
-      codigo_fabricante: producto.codigo_fabricante || null,
-      precio_vta_sin_iva: producto.precio_vta_sin_iva != null ? Number(producto.precio_vta_sin_iva) : null,
-      precio_oferta: producto.precio_oferta != null && producto.precio_oferta > 0 ? Number(producto.precio_oferta) : null,
-      oferta_hasta: producto.oferta_hasta || null,
-      peso_kg: producto.peso_kg != null ? Number(producto.peso_kg) : null,
-    } });
-    toast.success("Producto guardado");
-    // Si era nuevo, dejamos abierto para subir imágenes
-    if (!v.id && res?.id) {
-      setEditing({ ...v, id: res.id });
-    } else {
-      setEditing(null);
+    try {
+      const { image_url: _imageUrl, image_webp: _imageWebp, ...producto } = v;
+      const res = await upsert({ data: {
+        ...producto,
+        descripcion: producto.descripcion || null,
+        categoria: producto.categoria || null,
+        grupo: producto.grupo || null,
+        sku: producto.sku || null,
+        precio: Number(producto.precio),
+        stock: Number(producto.stock),
+        codigo_fabricante: producto.codigo_fabricante || null,
+        precio_vta_sin_iva: producto.precio_vta_sin_iva != null ? Number(producto.precio_vta_sin_iva) : null,
+        precio_oferta: producto.precio_oferta != null && producto.precio_oferta > 0 ? Number(producto.precio_oferta) : null,
+        oferta_hasta: producto.oferta_hasta || null,
+        peso_kg: producto.peso_kg != null ? Number(producto.peso_kg) : null,
+      } });
+      toast.success("Producto guardado");
+      // Si era nuevo, dejamos abierto para subir imágenes
+      if (!v.id && res?.id) {
+        setEditing({ ...v, id: res.id });
+      } else {
+        setEditing(null);
+      }
+      qc.invalidateQueries({ queryKey: ["admin-productos"] });
+    } catch (e: any) {
+      toast.error(e?.message || "Error al guardar el producto");
     }
-    qc.invalidateQueries({ queryKey: ["admin-productos"] });
   }
 
   async function remove(id: number) {
