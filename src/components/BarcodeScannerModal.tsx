@@ -64,23 +64,27 @@ export function BarcodeScannerModal({
     if (!selectedCameraId) return;
 
     const html5QrCode = new Html5Qrcode("barcode-scanner-viewport", {
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.QR_CODE,
-      ],
       verbose: false,
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true,
+      },
     });
     scannerRef.current = html5QrCode;
 
+    // Configuración optimizada para códigos de barra horizontales
     const config = {
-      fps: 10,
-      qrbox: { width: 280, height: 180 },
+      fps: 20, // Mayor frecuencia de cuadros para que no se pierda el escaneo
+      qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+        // En celular, los códigos de barra son alargados horizontalmente
+        const width = Math.min(viewfinderWidth * 0.9, 360);
+        const height = Math.min(viewfinderHeight * 0.5, 180);
+        return { width: Math.floor(width), height: Math.floor(height) };
+      },
       aspectRatio: 1.0,
+      videoConstraints: {
+        facingMode: "environment",
+        focusMode: "continuous",
+      },
     };
 
     html5QrCode
@@ -205,11 +209,46 @@ export function BarcodeScannerModal({
           )}
 
           {/* Visor de Cámara */}
-          <div className="relative rounded-lg overflow-hidden border-2 border-dashed border-border bg-black aspect-video flex items-center justify-center">
-            <div id="barcode-scanner-viewport" className="w-full h-full" />
+          <div className="relative rounded-lg overflow-hidden border border-border bg-black min-h-[300px] sm:min-h-[340px] flex items-center justify-center">
+            <div id="barcode-scanner-viewport" className="w-full h-full [&_video]:object-cover [&_video]:w-full [&_video]:min-h-[300px] [&_video]:max-h-[380px]" />
+            
+            {/* Guía visual con puntitos verdes indicadores y marco */}
+            {scanning && !cameraError && !isSearching && (
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center p-6">
+                {/* Cuadro central con esquinas y puntos verdes */}
+                <div className="relative w-full max-w-[320px] h-36 border border-emerald-500/40 rounded-lg flex items-center justify-center bg-emerald-500/5">
+                  {/* Puntos verdes indicadores en las 4 esquinas */}
+                  <span className="absolute -top-1.5 -left-1.5 size-3 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-ping" />
+                  <span className="absolute -top-1.5 -left-1.5 size-3 rounded-full bg-emerald-500" />
+
+                  <span className="absolute -top-1.5 -right-1.5 size-3 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-ping" />
+                  <span className="absolute -top-1.5 -right-1.5 size-3 rounded-full bg-emerald-500" />
+
+                  <span className="absolute -bottom-1.5 -left-1.5 size-3 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-ping" />
+                  <span className="absolute -bottom-1.5 -left-1.5 size-3 rounded-full bg-emerald-500" />
+
+                  <span className="absolute -bottom-1.5 -right-1.5 size-3 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-ping" />
+                  <span className="absolute -bottom-1.5 -right-1.5 size-3 rounded-full bg-emerald-500" />
+
+                  {/* Puntos de foco guía intermedios */}
+                  <span className="absolute left-1/4 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-emerald-400/80" />
+                  <span className="absolute left-1/2 top-1/2 -translate-y-1/2 size-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+                  <span className="absolute right-1/4 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-emerald-400/80" />
+
+                  {/* Línea horizontal central */}
+                  <div className="w-full h-0.5 bg-emerald-400 shadow-[0_0_8px_#34d399] opacity-90 animate-pulse" />
+                </div>
+
+                <div className="mt-3 flex items-center gap-1.5 bg-black/75 px-3 py-1 rounded-full text-emerald-400 text-xs font-mono border border-emerald-500/30 backdrop-blur-sm">
+                  <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Enfocá el código dentro de los puntos verdes</span>
+                </div>
+              </div>
+            )}
+
             {isSearching && (
               <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white text-xs gap-2 backdrop-blur-sm z-10">
-                <RefreshCw className="size-6 animate-spin text-primary" />
+                <RefreshCw className="size-6 animate-spin text-emerald-400" />
                 <span>Buscando producto...</span>
               </div>
             )}
