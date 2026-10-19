@@ -1,10 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Trash2, MapPin, Package, MessageCircle } from "lucide-react";
+import { Plus, Trash2, MapPin, Package, MessageCircle, Shield, ArrowRight } from "lucide-react";
 import { Layout } from "@/components/Layout";
+import { useSession, useIsAdmin } from "@/lib/auth";
 import {
   getProfile,
   updateProfile,
@@ -53,6 +54,8 @@ type DireccionFormValues = {
 
 function CuentaPage() {
   const qc = useQueryClient();
+  const { user } = useSession();
+  const { data: isAdmin } = useIsAdmin(user);
   const profileFn = useServerFn(getProfile);
   const ordersFn = useServerFn(getMyOrders);
   const updateFn = useServerFn(updateProfile);
@@ -72,10 +75,26 @@ function CuentaPage() {
   return (
     <Layout>
       <div className="container-x py-10 max-w-5xl">
-        <h1 className="font-display text-3xl mb-2">Mi cuenta</h1>
-        {profile.data?.profile?.nombre && (
-          <p className="text-sm text-muted-foreground mb-8">Hola, {profile.data.profile.nombre}</p>
-        )}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="font-display text-3xl mb-1">Mi cuenta</h1>
+            {profile.data?.profile?.nombre && (
+              <p className="text-sm text-muted-foreground">Hola, {profile.data.profile.nombre}</p>
+            )}
+          </div>
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className="inline-flex items-center justify-between sm:justify-start gap-2 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-semibold tracking-wide rounded-md shadow-sm hover:bg-primary/90 transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <Shield className="size-4" /> Panel de Administración
+              </span>
+              <ArrowRight className="size-4" />
+            </Link>
+          )}
+        </div>
+
         {missingProfileData && (
           <div className="mb-6 border border-primary/30 bg-primary/5 p-4 text-sm">
             Completá tus datos para poder comprar y recibir novedades de tus pedidos.

@@ -3,16 +3,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Search, X, Tag, Layers, Power, Percent, Package, AlertTriangle, BadgePercent, Upload, Download, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ImageOff, ExternalLink } from "lucide-react";
+import { Plus, Edit, Trash2, Search, X, Tag, Layers, Power, Percent, Package, AlertTriangle, BadgePercent, Upload, Download, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ImageOff, ExternalLink, ScanBarcode } from "lucide-react";
 import {
   adminListProductos, adminUpsertProducto, adminDeleteProducto, adminToggleProductoActivo,
   adminListCategorias, adminListGrupos, adminBulkProductos,
-  adminExportProductos, adminUpsertGroupWeight
+  adminExportProductos, adminUpsertGroupWeight, adminFindProductoByBarcode
 } from "@/lib/admin.functions";
 import { getGroupWeights } from "@/lib/shipping.functions";
 import { formatARS } from "@/lib/format";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductGalleryAdmin } from "@/components/ProductGalleryAdmin";
+import { BarcodeScannerModal } from "@/components/BarcodeScannerModal";
 
 export const Route = createFileRoute("/_authenticated/admin/productos")({ component: AdminProductos });
 
@@ -44,6 +45,7 @@ function AdminProductos() {
   const exportProductos = useServerFn(adminExportProductos);
   const listCategorias = useServerFn(adminListCategorias);
   const listGrupos = useServerFn(adminListGrupos);
+  const findByBarcode = useServerFn(adminFindProductoByBarcode);
 
   const [exporting, setExporting] = useState(false);
 
@@ -56,6 +58,7 @@ function AdminProductos() {
   const [sortBy, setSortBy] = useState<ProductSortBy>("id");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [editing, setEditing] = useState<ProductoForm | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
   // Persistente entre paginación / búsqueda / filtros
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [bulkOpen, setBulkOpen] = useState<null | BulkKind>(null);
@@ -230,17 +233,27 @@ function AdminProductos() {
             <strong>Atención:</strong> Los productos con números en su <strong>Categoría</strong> o <strong>Grupo</strong> no se muestran en el catálogo público.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => { setConNumeros((prev) => !prev); setPage(1); }}
-          className={`shrink-0 px-3 py-1.5 text-xs font-semibold rounded border transition-colors flex items-center gap-1.5 self-start sm:self-auto ${
-            conNumeros
-              ? "bg-amber-600 text-white border-amber-700 shadow-sm hover:bg-amber-700"
-              : "bg-white text-amber-900 border-amber-300 hover:bg-amber-100"
-          }`}
-        >
-          <span>{conNumeros ? "✓ Mostrando solo con números" : "🔍 Filtrar productos con números"}</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setScannerOpen(true)}
+            className="shrink-0 px-3 py-1.5 text-xs font-semibold rounded border border-primary bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center gap-1.5 shadow-sm"
+          >
+            <ScanBarcode className="size-4" />
+            <span>Escanear código de barras</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setConNumeros((prev) => !prev); setPage(1); }}
+            className={`shrink-0 px-3 py-1.5 text-xs font-semibold rounded border transition-colors flex items-center gap-1.5 ${
+              conNumeros
+                ? "bg-amber-600 text-white border-amber-700 shadow-sm hover:bg-amber-700"
+                : "bg-white text-amber-900 border-amber-300 hover:bg-amber-100"
+            }`}
+          >
+            <span>{conNumeros ? "✓ Mostrando solo con números" : "🔍 Filtrar con números"}</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-2 mb-4 sm:grid-cols-2 lg:grid-cols-[minmax(260px,1fr)_180px_180px_170px_auto_auto_auto] lg:items-center">
@@ -483,6 +496,38 @@ function AdminProductos() {
 
       {editing && <ProductoModal value={editing} categorias={(categorias as string[]) ?? []} grupos={(grupos as string[]) ?? []} onClose={() => setEditing(null)} onSave={save} />}
       {pesosOpen && <PesosGruposModal grupos={(grupos as string[]) ?? []} onClose={() => setPesosOpen(false)} />}
+      {scannerOpen && (
+        <BarcodeScannerModal
+          onClose={() => setScannerOpen(false)}
+          onFindProduct={async (code) => {
+            const res = await findByBarcode({ data: { code } });
+            return res;
+          }}
+          onToggleActivo={async (p) => {
+            await toggleEstado(p);
+          }}
+          onEditProduct={(p) => {
+            setEditing({
+              id: p.id,
+              nombre: p.nombre ?? "",
+              descripcion: p.descripcion ?? "",
+              categoria: p.categoria ?? "",
+              grupo: p.grupo ?? "",
+              sku: p.sku ?? "",
+              precio: Number(p.precio ?? 0),
+              stock: p.stock ?? 0,
+              codigo_fabricante: p.codigo_fabricante ?? "",
+              precio_vta_sin_iva: p.precio_vta_sin_iva != null ? Number(p.precio_vta_sin_iva) : null,
+              image_url: p.image_url ?? "",
+              image_webp: p.image_webp ?? "",
+              activo: p.activo !== false,
+              precio_oferta: p.precio_oferta != null ? Number(p.precio_oferta) : null,
+              oferta_hasta: p.oferta_hasta ?? null,
+              peso_kg: p.peso_kg != null ? Number(p.peso_kg) : null,
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

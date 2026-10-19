@@ -266,6 +266,37 @@ export const adminToggleProductoActivo = createServerFn({ method: "POST" })
     return { ok: true, id: data.id, activo: data.activo };
   });
 
+export const adminFindProductoByBarcode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ code: z.string().trim().min(1).max(120) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context.supabase, context.userId);
+    const code = data.code.trim();
+    const cleanCode = code.replace(/[%_,]/g, "\\$&");
+    
+    // 1. Coincidencia exacta con SKU o Código de Fabricante
+    const { data: exactMatches, error: exactErr } = await context.supabase
+      .from("productos")
+      .select("id, nombre, sku, codigo_fabricante, precio, stock, activo, categoria, grupo, image_url, image_webp")
+      .or(`sku.eq.${code},codigo_fabricante.eq.${code}`)
+      .limit(5);
+
+    if (exactErr) throw new Error(exactErr.message);
+    if (exactMatches && exactMatches.length > 0) {
+      return { matches: exactMatches };
+    }
+
+    // 2. Si no hubo coincidencia exacta, buscar parcial (ilike)
+    const { data: partialMatches, error: partialErr } = await context.supabase
+      .from("productos")
+      .select("id, nombre, sku, codigo_fabricante, precio, stock, activo, categoria, grupo, image_url, image_webp")
+      .or(`sku.ilike.%${cleanCode}%,codigo_fabricante.ilike.%${cleanCode}%`)
+      .limit(5);
+
+    if (partialErr) throw new Error(partialErr.message);
+    return { matches: partialMatches ?? [] };
+  });
+
 // === BULK ACTIONS ===
 
 const bulkSchema = z.discriminatedUnion("action", [
