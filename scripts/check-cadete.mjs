@@ -12,7 +12,9 @@ if (!url || !key) {
 const client = createClient(url, key);
 const { data, error } = await client
   .from("shipping_options")
-  .select("id, transportista, provincia, costo, label, activo, dias_estimados_min, dias_estimados_max")
+  .select(
+    "id, transportista, provincia, costo, label, activo, dias_estimados_min, dias_estimados_max",
+  )
   .order("transportista")
   .order("provincia", { nullsFirst: true });
 
@@ -24,11 +26,14 @@ if (error) {
 console.log("Total filas:", data.length);
 for (const row of data) {
   console.log(
-    `- ${row.transportista.padEnd(16)} | ${String(row.provincia ?? "TODAS").padEnd(12)} | $${row.costo} | activo=${row.activo} | dias=${row.dias_estimados_min}-${row.dias_estimados_max} | ${row.label}`
+    `- ${row.transportista.padEnd(16)} | ${String(row.provincia ?? "TODAS").padEnd(12)} | $${row.costo} | activo=${row.activo} | dias=${row.dias_estimados_min}-${row.dias_estimados_max} | ${row.label}`,
   );
 }
 
 const cadete = data.find((r) => r.transportista === "cadete");
 console.log("\nCadete encontrado:", cadete ? "SI" : "NO");
-console.log("Correo Argentino filas:", data.filter((r) => r.transportista === "correo_argentino").length);
+console.log(
+  "Correo Argentino filas:",
+  data.filter((r) => r.transportista === "correo_argentino").length,
+);
 console.log("Andreani filas:", data.filter((r) => r.transportista === "andreani").length);

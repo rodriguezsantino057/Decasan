@@ -9,11 +9,9 @@ const STORAGE_KEY = "decasan_maintenance_unlocked";
  * - PIN de acceso para pruebas: VITE_MAINTENANCE_PIN (default: "decasan2026")
  * - Acceso directo por URL: https://sitio/?access=<PIN>
  */
-export const MAINTENANCE_ENABLED =
-  (import.meta.env.VITE_MAINTENANCE_MODE ?? "true") !== "false";
+export const MAINTENANCE_ENABLED = (import.meta.env.VITE_MAINTENANCE_MODE ?? "true") !== "false";
 
-export const MAINTENANCE_PIN =
-  import.meta.env.VITE_MAINTENANCE_PIN || "decasan2026";
+export const MAINTENANCE_PIN = import.meta.env.VITE_MAINTENANCE_PIN || "decasan2026";
 
 export function isMaintenanceUnlocked(): boolean {
   if (typeof window === "undefined") return false;

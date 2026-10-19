@@ -58,7 +58,9 @@ export async function sendOrderConfirmationEmail(order: OrderEmailData): Promise
 export async function sendPaidOrderEmail(pedidoId: string) {
   const { data: pedido, error } = await supabaseAdmin
     .from("pedidos")
-    .select("id,email,nombre,telefono,total,subtotal_productos,envio_total,envio_metodo,direccion,confirmation_email_sent_at,pedido_items(nombre,cantidad,precio_unitario,subtotal)")
+    .select(
+      "id,email,nombre,telefono,total,subtotal_productos,envio_total,envio_metodo,direccion,confirmation_email_sent_at,pedido_items(nombre,cantidad,precio_unitario,subtotal)",
+    )
     .eq("id", pedidoId)
     .single();
 

@@ -22,7 +22,9 @@ export const adminListPedidos = createServerFn({ method: "GET" })
     await ensureAdmin(context.supabase, context.userId);
     const { data, error } = await context.supabase
       .from("pedidos")
-      .select("id, estado, total, email, nombre, telefono, direccion, envio_total, costo_envio, envio_metodo, transportista, carrier, tracking_number, andreani_tracking_number, notas, created_at, mp_payment_id, payment_method, pedido_items(id, nombre, cantidad, subtotal)")
+      .select(
+        "id, estado, total, email, nombre, telefono, direccion, envio_total, costo_envio, envio_metodo, transportista, carrier, tracking_number, andreani_tracking_number, notas, created_at, mp_payment_id, payment_method, pedido_items(id, nombre, cantidad, subtotal)",
+      )
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
@@ -31,10 +33,14 @@ export const adminListPedidos = createServerFn({ method: "GET" })
 
 export const adminUpdatePedidoEstado = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({
-    id: z.string().uuid(),
-    estado: z.enum(["pendiente", "pagado", "enviado", "entregado", "cancelado"]),
-  }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        estado: z.enum(["pendiente", "pagado", "enviado", "entregado", "cancelado"]),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
     const { error } = await (supabaseAdmin as any)
@@ -45,7 +51,12 @@ export const adminUpdatePedidoEstado = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-import { getZipnovaLabelBase64, listZipnovaShipments, getZipnovaShipment, getZipnovaShipmentTracking } from "@/lib/zipnova";
+import {
+  getZipnovaLabelBase64,
+  listZipnovaShipments,
+  getZipnovaShipment,
+  getZipnovaShipmentTracking,
+} from "@/lib/zipnova";
 
 export const adminGetShippingLabel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -63,10 +74,14 @@ export const adminGetAndreaniLabel = adminGetShippingLabel;
 
 export const adminListZipnovaShipments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({
-    page: z.number().int().min(1).optional(),
-    perPage: z.number().int().min(1).max(100).optional(),
-  }).parse(d ?? {}))
+  .inputValidator((d) =>
+    z
+      .object({
+        page: z.number().int().min(1).optional(),
+        perPage: z.number().int().min(1).max(100).optional(),
+      })
+      .parse(d ?? {}),
+  )
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
     return listZipnovaShipments(data.page ?? 1, data.perPage ?? 20);
@@ -103,11 +118,14 @@ export const adminListShippingOptions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<AdminShippingRow[]> => {
     await ensureAdmin(context.supabase, context.userId);
-    const selectShippingOptions = (client: any) => client
-      .from("shipping_options")
-      .select("id, transportista, provincia, costo, label, activo, dias_estimados_min, dias_estimados_max")
-      .order("transportista")
-      .order("provincia", { nullsFirst: true });
+    const selectShippingOptions = (client: any) =>
+      client
+        .from("shipping_options")
+        .select(
+          "id, transportista, provincia, costo, label, activo, dias_estimados_min, dias_estimados_max",
+        )
+        .order("transportista")
+        .order("provincia", { nullsFirst: true });
 
     const primary = await selectShippingOptions(context.supabase);
     const result = primary.error ? await selectShippingOptions(supabaseAdmin) : primary;
@@ -124,17 +142,24 @@ export const adminListShippingOptions = createServerFn({ method: "GET" })
 
 export const adminUpdateShippingOption = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({
-    id: z.string().uuid(),
-    costo: z.number().nonnegative().optional(),
-    activo: z.boolean().optional(),
-    dias_estimados_min: z.number().int().min(0).nullable().optional(),
-    dias_estimados_max: z.number().int().min(0).nullable().optional(),
-  }).refine((value) => (
-    value.dias_estimados_min == null
-    || value.dias_estimados_max == null
-    || value.dias_estimados_min <= value.dias_estimados_max
-  ), "El minimo de dias no puede ser mayor al maximo.").parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        costo: z.number().nonnegative().optional(),
+        activo: z.boolean().optional(),
+        dias_estimados_min: z.number().int().min(0).nullable().optional(),
+        dias_estimados_max: z.number().int().min(0).nullable().optional(),
+      })
+      .refine(
+        (value) =>
+          value.dias_estimados_min == null ||
+          value.dias_estimados_max == null ||
+          value.dias_estimados_min <= value.dias_estimados_max,
+        "El minimo de dias no puede ser mayor al maximo.",
+      )
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
     const { id, ...patch } = data;
@@ -145,16 +170,20 @@ export const adminUpdateShippingOption = createServerFn({ method: "POST" })
 
 export const adminListProductos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({
-    q: z.string().max(100).optional().nullable(),
-    page: z.number().int().min(1).max(500).optional(),
-    cat: z.string().max(100).optional().nullable(),
-    grupo: z.string().max(100).optional().nullable(),
-    activo: z.enum(["all", "yes", "no"]).optional(),
-    conNumeros: z.boolean().optional(),
-    sortBy: z.enum(["id", "nombre", "precio", "stock", "erp_updated_at"]).optional(),
-    sortDir: z.enum(["asc", "desc"]).optional(),
-  }).parse(d ?? {}))
+  .inputValidator((d) =>
+    z
+      .object({
+        q: z.string().max(100).optional().nullable(),
+        page: z.number().int().min(1).max(500).optional(),
+        cat: z.string().max(100).optional().nullable(),
+        grupo: z.string().max(100).optional().nullable(),
+        activo: z.enum(["all", "yes", "no"]).optional(),
+        conNumeros: z.boolean().optional(),
+        sortBy: z.enum(["id", "nombre", "precio", "stock", "erp_updated_at"]).optional(),
+        sortDir: z.enum(["asc", "desc"]).optional(),
+      })
+      .parse(d ?? {}),
+  )
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
     const page = data.page ?? 1;
@@ -180,7 +209,9 @@ export const adminListProductos = createServerFn({ method: "GET" })
         .select("*", { count: "exact" })
         .order(sortBy, { ascending: sortDir === "asc", nullsFirst: false });
       if (sortBy !== "id") searchQuery = searchQuery.order("id", { ascending: false });
-      searchQuery = searchQuery.or(`nombre.ilike.%${term}%,sku.ilike.%${term}%,codigo_fabricante.ilike.%${term}%`);
+      searchQuery = searchQuery.or(
+        `nombre.ilike.%${term}%,sku.ilike.%${term}%,codigo_fabricante.ilike.%${term}%`,
+      );
       searchQuery = applyFilters(searchQuery);
       searchQuery = searchQuery.limit(2000);
       const { data: rows, count, error } = await searchQuery;
@@ -240,7 +271,11 @@ export const adminUpsertProducto = createServerFn({ method: "POST" })
       if (error) throw new Error(error.message);
       return { ok: true, id };
     } else {
-      const { data: inserted, error } = await context.supabase.from("productos").insert(rest).select("id").single();
+      const { data: inserted, error } = await context.supabase
+        .from("productos")
+        .insert(rest)
+        .select("id")
+        .single();
       if (error) throw new Error(error.message);
       return { ok: true, id: inserted?.id as number };
     }
@@ -261,7 +296,10 @@ export const adminToggleProductoActivo = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.number().int(), activo: z.boolean() }).parse(d))
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
-    const { error } = await context.supabase.from("productos").update({ activo: data.activo }).eq("id", data.id);
+    const { error } = await context.supabase
+      .from("productos")
+      .update({ activo: data.activo })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true, id: data.id, activo: data.activo };
   });
@@ -269,11 +307,31 @@ export const adminToggleProductoActivo = createServerFn({ method: "POST" })
 // === BULK ACTIONS ===
 
 const bulkSchema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("set_categoria"), ids: z.array(z.number().int()).min(1).max(500), categoria: z.string().max(100).nullable().transform(normalizeCategoryName) }),
-  z.object({ action: z.literal("set_grupo"), ids: z.array(z.number().int()).min(1).max(500), grupo: z.string().max(100).nullable() }),
-  z.object({ action: z.literal("set_activo"), ids: z.array(z.number().int()).min(1).max(500), activo: z.boolean() }),
-  z.object({ action: z.literal("adjust_precio_pct"), ids: z.array(z.number().int()).min(1).max(500), pct: z.number().min(-90).max(500) }),
-  z.object({ action: z.literal("set_stock"), ids: z.array(z.number().int()).min(1).max(500), stock: z.number().int().min(0).max(1_000_000) }),
+  z.object({
+    action: z.literal("set_categoria"),
+    ids: z.array(z.number().int()).min(1).max(500),
+    categoria: z.string().max(100).nullable().transform(normalizeCategoryName),
+  }),
+  z.object({
+    action: z.literal("set_grupo"),
+    ids: z.array(z.number().int()).min(1).max(500),
+    grupo: z.string().max(100).nullable(),
+  }),
+  z.object({
+    action: z.literal("set_activo"),
+    ids: z.array(z.number().int()).min(1).max(500),
+    activo: z.boolean(),
+  }),
+  z.object({
+    action: z.literal("adjust_precio_pct"),
+    ids: z.array(z.number().int()).min(1).max(500),
+    pct: z.number().min(-90).max(500),
+  }),
+  z.object({
+    action: z.literal("set_stock"),
+    ids: z.array(z.number().int()).min(1).max(500),
+    stock: z.number().int().min(0).max(1_000_000),
+  }),
   z.object({
     action: z.literal("set_oferta"),
     ids: z.array(z.number().int()).min(1).max(500),
@@ -293,22 +351,34 @@ export const adminBulkProductos = createServerFn({ method: "POST" })
 
     switch (data.action) {
       case "set_categoria": {
-        const { error } = await sb.from("productos").update({ categoria: data.categoria }).in("id", data.ids);
+        const { error } = await sb
+          .from("productos")
+          .update({ categoria: data.categoria })
+          .in("id", data.ids);
         if (error) throw new Error(error.message);
         return { ok: true, updated: data.ids.length };
       }
       case "set_grupo": {
-        const { error } = await sb.from("productos").update({ grupo: data.grupo }).in("id", data.ids);
+        const { error } = await sb
+          .from("productos")
+          .update({ grupo: data.grupo })
+          .in("id", data.ids);
         if (error) throw new Error(error.message);
         return { ok: true, updated: data.ids.length };
       }
       case "set_activo": {
-        const { error } = await sb.from("productos").update({ activo: data.activo }).in("id", data.ids);
+        const { error } = await sb
+          .from("productos")
+          .update({ activo: data.activo })
+          .in("id", data.ids);
         if (error) throw new Error(error.message);
         return { ok: true, updated: data.ids.length };
       }
       case "set_stock": {
-        const { error } = await sb.from("productos").update({ stock: data.stock }).in("id", data.ids);
+        const { error } = await sb
+          .from("productos")
+          .update({ stock: data.stock })
+          .in("id", data.ids);
         if (error) throw new Error(error.message);
         return { ok: true, updated: data.ids.length };
       }
@@ -316,16 +386,22 @@ export const adminBulkProductos = createServerFn({ method: "POST" })
         if (data.precio_oferta != null && data.precio_oferta < 0) {
           throw new Error("Precio de oferta inválido");
         }
-        const { error } = await sb.from("productos").update({
-          precio_oferta: data.precio_oferta,
-          oferta_hasta: data.oferta_hasta,
-        }).in("id", data.ids);
+        const { error } = await sb
+          .from("productos")
+          .update({
+            precio_oferta: data.precio_oferta,
+            oferta_hasta: data.oferta_hasta,
+          })
+          .in("id", data.ids);
         if (error) throw new Error(error.message);
         return { ok: true, updated: data.ids.length };
       }
       case "adjust_precio_pct": {
         // Read current prices, compute new, update one by one.
-        const { data: rows, error: e1 } = await sb.from("productos").select("id, precio").in("id", data.ids);
+        const { data: rows, error: e1 } = await sb
+          .from("productos")
+          .select("id, precio")
+          .in("id", data.ids);
         if (e1) throw new Error(e1.message);
         const factor = 1 + data.pct / 100;
         let count = 0;
@@ -345,7 +421,10 @@ export const adminBulkProductos = createServerFn({ method: "POST" })
         return { ok: true, updated: data.ids.length };
       }
       case "delete_photos": {
-        const { error: e1 } = await sb.from("productos").update({ image_url: null, image_webp: null }).in("id", data.ids);
+        const { error: e1 } = await sb
+          .from("productos")
+          .update({ image_url: null, image_webp: null })
+          .in("id", data.ids);
         if (e1) throw new Error(e1.message);
         const { error: e2 } = await sb.from("product_images").delete().in("producto_id", data.ids);
         if (e2) throw new Error(e2.message);
@@ -371,25 +450,31 @@ const erpImportRowSchema = z.object({
 
 export const adminImportProductosErp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({
-    rows: z.array(erpImportRowSchema).min(1).max(5000),
-  }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        rows: z.array(erpImportRowSchema).min(1).max(5000),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
     const sb = context.supabase;
     const importId = crypto.randomUUID();
     const now = new Date().toISOString();
     const skus = data.rows.map((row) => row.sku);
-    
+
     // Fetch all necessary fields to compare
     const { data: existing, error: readError } = await sb
       .from("productos")
-      .select("id, sku, nombre, codigo_fabricante, precio_vta_sin_iva, precio, categoria, grupo, stock, descripcion, activo, precio_oferta, oferta_hasta")
+      .select(
+        "id, sku, nombre, codigo_fabricante, precio_vta_sin_iva, precio, categoria, grupo, stock, descripcion, activo, precio_oferta, oferta_hasta",
+      )
       .in("sku", skus);
     if (readError) throw new Error(readError.message);
 
     const bySku = new Map((existing ?? []).map((row: any) => [row.sku, row]));
-    
+
     let created = 0;
     let updated = 0;
     let unchanged = 0;
@@ -406,7 +491,7 @@ export const adminImportProductosErp = createServerFn({ method: "POST" })
 
     for (const row of data.rows) {
       const current = bySku.get(row.sku);
-      
+
       const payload: any = {
         sku: row.sku,
         nombre: row.nombre,
@@ -437,17 +522,45 @@ export const adminImportProductosErp = createServerFn({ method: "POST" })
         // Check if anything changed
         let hasChanges = false;
         if (String(current.nombre ?? "") !== row.nombre) hasChanges = true;
-        if (String(current.codigo_fabricante ?? "") !== String(row.codigo_fabricante ?? "")) hasChanges = true;
+        if (String(current.codigo_fabricante ?? "") !== String(row.codigo_fabricante ?? ""))
+          hasChanges = true;
         if (!sameNumber(current.precio_vta_sin_iva, row.precio_vta_sin_iva)) hasChanges = true;
         if (!sameNumber(current.precio, row.precio)) hasChanges = true;
-        
-        if (row.categoria !== undefined && String(current.categoria ?? "") !== String(row.categoria ?? "")) hasChanges = true;
-        if (row.grupo !== undefined && String(current.grupo ?? "") !== String(row.grupo ?? "")) hasChanges = true;
-        if (row.stock !== undefined && row.stock !== null && Number(current.stock ?? 0) !== Number(row.stock ?? 0)) hasChanges = true;
-        if (row.descripcion !== undefined && String(current.descripcion ?? "") !== String(row.descripcion ?? "")) hasChanges = true;
-        if (row.activo !== undefined && row.activo !== null && Boolean(current.activo) !== Boolean(row.activo)) hasChanges = true;
-        if (row.precio_oferta !== undefined && !sameNumber(current.precio_oferta, row.precio_oferta)) hasChanges = true;
-        if (row.oferta_hasta !== undefined && String(current.oferta_hasta ?? "") !== String(row.oferta_hasta ?? "")) hasChanges = true;
+
+        if (
+          row.categoria !== undefined &&
+          String(current.categoria ?? "") !== String(row.categoria ?? "")
+        )
+          hasChanges = true;
+        if (row.grupo !== undefined && String(current.grupo ?? "") !== String(row.grupo ?? ""))
+          hasChanges = true;
+        if (
+          row.stock !== undefined &&
+          row.stock !== null &&
+          Number(current.stock ?? 0) !== Number(row.stock ?? 0)
+        )
+          hasChanges = true;
+        if (
+          row.descripcion !== undefined &&
+          String(current.descripcion ?? "") !== String(row.descripcion ?? "")
+        )
+          hasChanges = true;
+        if (
+          row.activo !== undefined &&
+          row.activo !== null &&
+          Boolean(current.activo) !== Boolean(row.activo)
+        )
+          hasChanges = true;
+        if (
+          row.precio_oferta !== undefined &&
+          !sameNumber(current.precio_oferta, row.precio_oferta)
+        )
+          hasChanges = true;
+        if (
+          row.oferta_hasta !== undefined &&
+          String(current.oferta_hasta ?? "") !== String(row.oferta_hasta ?? "")
+        )
+          hasChanges = true;
 
         if (hasChanges) {
           payload.id = current.id;
@@ -475,11 +588,13 @@ export const adminImportProductosErp = createServerFn({ method: "POST" })
     const chunkSize = 20;
     for (let i = 0; i < updates.length; i += chunkSize) {
       const chunk = updates.slice(i, i + chunkSize);
-      await Promise.all(chunk.map(async (u) => {
-        const { id, ...updatePayload } = u;
-        const { error } = await sb.from("productos").update(updatePayload).eq("id", id);
-        if (error) throw new Error(`Error actualizando SKU ${u.sku}: ${error.message}`);
-      }));
+      await Promise.all(
+        chunk.map(async (u) => {
+          const { id, ...updatePayload } = u;
+          const { error } = await sb.from("productos").update(updatePayload).eq("id", id);
+          if (error) throw new Error(`Error actualizando SKU ${u.sku}: ${error.message}`);
+        }),
+      );
     }
 
     return { ok: true, importId, processed: data.rows.length, created, updated, unchanged };
@@ -487,21 +602,31 @@ export const adminImportProductosErp = createServerFn({ method: "POST" })
 
 export const adminPreviewImportProductosErp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({
-    rows: z.array(erpImportRowSchema).min(1).max(5000),
-  }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        rows: z.array(erpImportRowSchema).min(1).max(5000),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
     const skus = data.rows.map((row) => row.sku);
     const { data: existing, error } = await context.supabase
       .from("productos")
-      .select("id, sku, nombre, codigo_fabricante, precio_vta_sin_iva, precio, categoria, grupo, stock, descripcion, activo, precio_oferta, oferta_hasta")
+      .select(
+        "id, sku, nombre, codigo_fabricante, precio_vta_sin_iva, precio, categoria, grupo, stock, descripcion, activo, precio_oferta, oferta_hasta",
+      )
       .in("sku", skus);
     if (error) throw new Error(error.message);
 
     const bySku = new Map((existing ?? []).map((row: any) => [row.sku, row]));
     const created: typeof data.rows = [];
-    const updated: Array<{ row: typeof data.rows[number]; current: any; changes: Array<{ field: string; before: any; after: any }> }> = [];
+    const updated: Array<{
+      row: (typeof data.rows)[number];
+      current: any;
+      changes: Array<{ field: string; before: any; after: any }>;
+    }> = [];
     let unchanged = 0;
 
     function sameNumber(a: unknown, b: unknown) {
@@ -518,35 +643,92 @@ export const adminPreviewImportProductosErp = createServerFn({ method: "POST" })
         continue;
       }
       const changes = [
-        { field: "nombre", before: current.nombre, after: row.nombre, same: String(current.nombre ?? "") === row.nombre },
-        { field: "codigo_fabricante", before: current.codigo_fabricante, after: row.codigo_fabricante, same: String(current.codigo_fabricante ?? "") === String(row.codigo_fabricante ?? "") },
-        { field: "precio_vta_sin_iva", before: current.precio_vta_sin_iva, after: row.precio_vta_sin_iva, same: sameNumber(current.precio_vta_sin_iva, row.precio_vta_sin_iva) },
-        { field: "precio", before: current.precio, after: row.precio, same: sameNumber(current.precio, row.precio) },
+        {
+          field: "nombre",
+          before: current.nombre,
+          after: row.nombre,
+          same: String(current.nombre ?? "") === row.nombre,
+        },
+        {
+          field: "codigo_fabricante",
+          before: current.codigo_fabricante,
+          after: row.codigo_fabricante,
+          same: String(current.codigo_fabricante ?? "") === String(row.codigo_fabricante ?? ""),
+        },
+        {
+          field: "precio_vta_sin_iva",
+          before: current.precio_vta_sin_iva,
+          after: row.precio_vta_sin_iva,
+          same: sameNumber(current.precio_vta_sin_iva, row.precio_vta_sin_iva),
+        },
+        {
+          field: "precio",
+          before: current.precio,
+          after: row.precio,
+          same: sameNumber(current.precio, row.precio),
+        },
       ];
 
       if (row.categoria !== undefined) {
-        changes.push({ field: "categoria", before: current.categoria, after: row.categoria, same: String(current.categoria ?? "") === String(row.categoria ?? "") });
+        changes.push({
+          field: "categoria",
+          before: current.categoria,
+          after: row.categoria,
+          same: String(current.categoria ?? "") === String(row.categoria ?? ""),
+        });
       }
       if (row.grupo !== undefined) {
-        changes.push({ field: "grupo", before: current.grupo, after: row.grupo, same: String(current.grupo ?? "") === String(row.grupo ?? "") });
+        changes.push({
+          field: "grupo",
+          before: current.grupo,
+          after: row.grupo,
+          same: String(current.grupo ?? "") === String(row.grupo ?? ""),
+        });
       }
       if (row.stock !== undefined && row.stock !== null) {
-        changes.push({ field: "stock", before: current.stock, after: row.stock, same: Number(current.stock ?? 0) === Number(row.stock ?? 0) });
+        changes.push({
+          field: "stock",
+          before: current.stock,
+          after: row.stock,
+          same: Number(current.stock ?? 0) === Number(row.stock ?? 0),
+        });
       }
       if (row.descripcion !== undefined) {
-        changes.push({ field: "descripcion", before: current.descripcion, after: row.descripcion, same: String(current.descripcion ?? "") === String(row.descripcion ?? "") });
+        changes.push({
+          field: "descripcion",
+          before: current.descripcion,
+          after: row.descripcion,
+          same: String(current.descripcion ?? "") === String(row.descripcion ?? ""),
+        });
       }
       if (row.activo !== undefined && row.activo !== null) {
-        changes.push({ field: "activo", before: current.activo, after: row.activo as any, same: Boolean(current.activo) === Boolean(row.activo) });
+        changes.push({
+          field: "activo",
+          before: current.activo,
+          after: row.activo as any,
+          same: Boolean(current.activo) === Boolean(row.activo),
+        });
       }
       if (row.precio_oferta !== undefined) {
-        changes.push({ field: "precio_oferta", before: current.precio_oferta, after: row.precio_oferta, same: sameNumber(current.precio_oferta, row.precio_oferta) });
+        changes.push({
+          field: "precio_oferta",
+          before: current.precio_oferta,
+          after: row.precio_oferta,
+          same: sameNumber(current.precio_oferta, row.precio_oferta),
+        });
       }
       if (row.oferta_hasta !== undefined) {
-        changes.push({ field: "oferta_hasta", before: current.oferta_hasta, after: row.oferta_hasta, same: String(current.oferta_hasta ?? "") === String(row.oferta_hasta ?? "") });
+        changes.push({
+          field: "oferta_hasta",
+          before: current.oferta_hasta,
+          after: row.oferta_hasta,
+          same: String(current.oferta_hasta ?? "") === String(row.oferta_hasta ?? ""),
+        });
       }
 
-      const filteredChanges = changes.filter((change) => !change.same).map(({ same, ...change }) => change);
+      const filteredChanges = changes
+        .filter((change) => !change.same)
+        .map(({ same, ...change }) => change);
 
       if (filteredChanges.length) updated.push({ row, current, changes: filteredChanges });
       else unchanged++;
@@ -559,13 +741,28 @@ export const adminFetchErpCompareData = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await ensureAdmin(context.supabase, context.userId);
-    const allRows: Array<{ sku: string; nombre: string | null; codigo_fabricante: string | null; precio_vta_sin_iva: number | null; precio: number | null; categoria: string | null; grupo: string | null; stock: number | null; descripcion: string | null; activo: boolean | null; precio_oferta: number | null; oferta_hasta: string | null }> = [];
+    const allRows: Array<{
+      sku: string;
+      nombre: string | null;
+      codigo_fabricante: string | null;
+      precio_vta_sin_iva: number | null;
+      precio: number | null;
+      categoria: string | null;
+      grupo: string | null;
+      stock: number | null;
+      descripcion: string | null;
+      activo: boolean | null;
+      precio_oferta: number | null;
+      oferta_hasta: string | null;
+    }> = [];
     let from = 0;
     const pageSize = 1000;
     while (true) {
       const { data, error } = await context.supabase
         .from("productos")
-        .select("sku, nombre, codigo_fabricante, precio_vta_sin_iva, precio, categoria, grupo, stock, descripcion, activo, precio_oferta, oferta_hasta")
+        .select(
+          "sku, nombre, codigo_fabricante, precio_vta_sin_iva, precio, categoria, grupo, stock, descripcion, activo, precio_oferta, oferta_hasta",
+        )
         .not("sku", "is", null)
         .range(from, from + pageSize - 1);
       if (error) throw new Error(error.message);
@@ -578,19 +775,25 @@ export const adminFetchErpCompareData = createServerFn({ method: "GET" })
 
 export const adminExportProductos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({
-    q: z.string().max(100).optional().nullable(),
-    cat: z.string().max(100).optional().nullable(),
-    grupo: z.string().max(100).optional().nullable(),
-    activo: z.enum(["all", "yes", "no"]).optional(),
-    conNumeros: z.boolean().optional(),
-    ids: z.array(z.number().int()).optional().nullable(),
-  }).parse(d ?? {}))
+  .inputValidator((d) =>
+    z
+      .object({
+        q: z.string().max(100).optional().nullable(),
+        cat: z.string().max(100).optional().nullable(),
+        grupo: z.string().max(100).optional().nullable(),
+        activo: z.enum(["all", "yes", "no"]).optional(),
+        conNumeros: z.boolean().optional(),
+        ids: z.array(z.number().int()).optional().nullable(),
+      })
+      .parse(d ?? {}),
+  )
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
     let q = context.supabase
       .from("productos")
-      .select("id, sku, nombre, codigo_fabricante, precio_vta_sin_iva, precio, stock, categoria, grupo, activo, descripcion, precio_oferta, oferta_hasta, image_url, image_webp")
+      .select(
+        "id, sku, nombre, codigo_fabricante, precio_vta_sin_iva, precio, stock, categoria, grupo, activo, descripcion, precio_oferta, oferta_hasta, image_url, image_webp",
+      )
       .order("id", { ascending: false });
 
     if (data.ids && data.ids.length > 0) {
@@ -639,12 +842,16 @@ export const adminListProductImages = createServerFn({ method: "GET" })
 
 export const adminAddProductImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({
-    producto_id: z.number().int(),
-    url: z.string().max(500).nullable().optional(),
-    url_webp: z.string().max(500).nullable().optional(),
-    alt: z.string().max(255).nullable().optional(),
-  }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        producto_id: z.number().int(),
+        url: z.string().max(500).nullable().optional(),
+        url_webp: z.string().max(500).nullable().optional(),
+        alt: z.string().max(255).nullable().optional(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
     const { data: max } = await context.supabase
@@ -672,10 +879,16 @@ export const adminAddProductImage = createServerFn({ method: "POST" })
 
 export const adminReorderProductImages = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({
-    producto_id: z.number().int(),
-    items: z.array(z.object({ id: z.string().uuid(), orden: z.number().int().min(0).max(1000) })).max(100),
-  }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        producto_id: z.number().int(),
+        items: z
+          .array(z.object({ id: z.string().uuid(), orden: z.number().int().min(0).max(1000) }))
+          .max(100),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
     for (const it of data.items) {
@@ -689,7 +902,10 @@ export const adminReorderProductImages = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-function extractStorageKey(url: string | null | undefined, bucket = "product-images"): string | null {
+function extractStorageKey(
+  url: string | null | undefined,
+  bucket = "product-images",
+): string | null {
   if (!url) return null;
   const marker = `/storage/v1/object/public/${bucket}/`;
   const i = url.indexOf(marker);
@@ -708,10 +924,15 @@ export const adminDeleteProductImage = createServerFn({ method: "POST" })
       .select("url, url_webp")
       .eq("id", data.id)
       .maybeSingle();
-    const keys = [extractStorageKey(row?.url), extractStorageKey(row?.url_webp)].filter(Boolean) as string[];
+    const keys = [extractStorageKey(row?.url), extractStorageKey(row?.url_webp)].filter(
+      Boolean,
+    ) as string[];
     if (keys.length) {
       // Best-effort: si falla la limpieza del storage, igual borramos el registro.
-      await context.supabase.storage.from("product-images").remove(keys).catch(() => {});
+      await context.supabase.storage
+        .from("product-images")
+        .remove(keys)
+        .catch(() => {});
     }
     const { error } = await context.supabase.from("product_images").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -720,11 +941,15 @@ export const adminDeleteProductImage = createServerFn({ method: "POST" })
 
 export const adminUpdateProductImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({
-    id: z.string().uuid(),
-    url: z.string().max(500).nullable().optional(),
-    url_webp: z.string().max(500).nullable().optional(),
-  }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        url: z.string().max(500).nullable().optional(),
+        url_webp: z.string().max(500).nullable().optional(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
     // Leer la fila vieja para limpiar archivos del bucket
@@ -735,9 +960,14 @@ export const adminUpdateProductImage = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!old) throw new Error("Imagen no encontrada");
     // Limpiar archivos viejos del storage (best-effort)
-    const oldKeys = [extractStorageKey(old.url), extractStorageKey(old.url_webp)].filter(Boolean) as string[];
+    const oldKeys = [extractStorageKey(old.url), extractStorageKey(old.url_webp)].filter(
+      Boolean,
+    ) as string[];
     if (oldKeys.length) {
-      await context.supabase.storage.from("product-images").remove(oldKeys).catch(() => {});
+      await context.supabase.storage
+        .from("product-images")
+        .remove(oldKeys)
+        .catch(() => {});
     }
     // Actualizar la fila con las nuevas URLs
     const { error } = await context.supabase
@@ -774,9 +1004,13 @@ export const adminListCategorias = createServerFn({ method: "GET" })
 
 export const adminListGrupos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({
-    cat: z.string().max(100).optional().nullable(),
-  }).parse(d ?? {}))
+  .inputValidator((d) =>
+    z
+      .object({
+        cat: z.string().max(100).optional().nullable(),
+      })
+      .parse(d ?? {}),
+  )
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
     const allGrupos: string[] = [];
@@ -789,25 +1023,27 @@ export const adminListGrupos = createServerFn({ method: "GET" })
         .not("grupo", "is", null)
         .not("grupo", "eq", "");
       if (data.cat) q = q.eq("categoria", data.cat);
-      const { data: rows, error } = await q
-        .order("grupo")
-        .range(from, from + pageSize - 1);
+      const { data: rows, error } = await q.order("grupo").range(from, from + pageSize - 1);
       if (error) throw new Error(error.message);
       allGrupos.push(...(rows ?? []).map((p: any) => p.grupo));
       if (!rows || rows.length < pageSize) break;
       from += pageSize;
     }
     return [...new Set(allGrupos.filter(Boolean))].sort((a, b) =>
-      a.localeCompare(b, "es", { sensitivity: "base" })
+      a.localeCompare(b, "es", { sensitivity: "base" }),
     );
   });
 
 export const adminUpsertGroupWeight = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({
-    grupo: z.string().trim().min(1),
-    peso_kg: z.number().nonnegative(),
-  }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        grupo: z.string().trim().min(1),
+        peso_kg: z.number().nonnegative(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
     const { error } = await (supabaseAdmin as any)
@@ -822,12 +1058,16 @@ export const adminListUsuarios = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await ensureAdmin(context.supabase, context.userId);
     const { data: profiles, error } = await context.supabase
-      .from("profiles").select("id, nombre, telefono, dni, created_at")
-      .order("created_at", { ascending: false }).limit(200);
+      .from("profiles")
+      .select("id, nombre, telefono, dni, created_at")
+      .order("created_at", { ascending: false })
+      .limit(200);
     if (error) throw new Error(error.message);
     const ids = (profiles ?? []).map((p) => p.id);
     const { data: roles } = await context.supabase
-      .from("user_roles").select("user_id, role").in("user_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+      .from("user_roles")
+      .select("user_id, role")
+      .in("user_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
     const roleMap = new Map<string, string[]>();
     (roles ?? []).forEach((r) => {
       const arr = roleMap.get(r.user_id) ?? [];
@@ -839,17 +1079,27 @@ export const adminListUsuarios = createServerFn({ method: "GET" })
 
 export const adminToggleAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({
-    user_id: z.string().uuid(),
-    make_admin: z.boolean(),
-  }).parse(d))
+  .inputValidator((d) =>
+    z
+      .object({
+        user_id: z.string().uuid(),
+        make_admin: z.boolean(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
     if (data.make_admin) {
-      const { error } = await context.supabase.from("user_roles").insert({ user_id: data.user_id, role: "admin" });
+      const { error } = await context.supabase
+        .from("user_roles")
+        .insert({ user_id: data.user_id, role: "admin" });
       if (error && !error.message.includes("duplicate")) throw new Error(error.message);
     } else {
-      const { error } = await context.supabase.from("user_roles").delete().eq("user_id", data.user_id).eq("role", "admin");
+      const { error } = await context.supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", data.user_id)
+        .eq("role", "admin");
       if (error) throw new Error(error.message);
     }
     return { ok: true };
@@ -857,20 +1107,24 @@ export const adminToggleAdmin = createServerFn({ method: "POST" })
 
 export const adminMetrics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({
-    mes: z.number().int().min(1).max(12).optional().nullable(),
-    anio: z.number().int().min(2000).max(2100).optional().nullable(),
-  }).parse(d ?? {}))
+  .inputValidator((d) =>
+    z
+      .object({
+        mes: z.number().int().min(1).max(12).optional().nullable(),
+        anio: z.number().int().min(2000).max(2100).optional().nullable(),
+      })
+      .parse(d ?? {}),
+  )
   .handler(async ({ data, context }) => {
     await ensureAdmin(context.supabase, context.userId);
-    
+
     let startDate: Date;
     let endDate: Date;
     let prevStartDate: Date;
     let prevEndDate: Date;
 
     const now = new Date();
-    
+
     if (data.mes || data.anio) {
       const year = data.anio ?? now.getFullYear();
       if (data.mes) {
@@ -888,12 +1142,12 @@ export const adminMetrics = createServerFn({ method: "GET" })
       endDate = new Date();
       startDate = new Date();
       startDate.setDate(startDate.getDate() - 30);
-      
+
       prevEndDate = new Date(startDate);
       prevStartDate = new Date(startDate);
       prevStartDate.setDate(prevStartDate.getDate() - 30);
     }
-    
+
     const hoyInicio = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     const [
@@ -902,10 +1156,25 @@ export const adminMetrics = createServerFn({ method: "GET" })
       { data: pedidosHoy },
       { count: usuariosCount },
     ] = await Promise.all([
-      context.supabase.from("pedidos").select("id, total, estado, pedido_items(nombre, cantidad)").gte("created_at", startDate.toISOString()).lt("created_at", endDate.toISOString()),
-      context.supabase.from("pedidos").select("id, total, estado").gte("created_at", prevStartDate.toISOString()).lt("created_at", prevEndDate.toISOString()),
-      context.supabase.from("pedidos").select("id, total, estado").gte("created_at", hoyInicio.toISOString()),
-      context.supabase.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", startDate.toISOString()).lt("created_at", endDate.toISOString()),
+      context.supabase
+        .from("pedidos")
+        .select("id, total, estado, pedido_items(nombre, cantidad)")
+        .gte("created_at", startDate.toISOString())
+        .lt("created_at", endDate.toISOString()),
+      context.supabase
+        .from("pedidos")
+        .select("id, total, estado")
+        .gte("created_at", prevStartDate.toISOString())
+        .lt("created_at", prevEndDate.toISOString()),
+      context.supabase
+        .from("pedidos")
+        .select("id, total, estado")
+        .gte("created_at", hoyInicio.toISOString()),
+      context.supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", startDate.toISOString())
+        .lt("created_at", endDate.toISOString()),
     ]);
 
     const pedidosValidos = (pedidosAct ?? []).filter((p) => p.estado !== "cancelado");
@@ -913,8 +1182,12 @@ export const adminMetrics = createServerFn({ method: "GET" })
     const pedidosCount = pedidosValidos.length;
     const ticketPromedio = pedidosCount > 0 ? ventas / pedidosCount : 0;
 
-    const ventasAnterior = (pedidosPrev ?? []).filter((p) => p.estado !== "cancelado").reduce((a, b) => a + Number(b.total), 0);
-    const ventasHoy = (pedidosHoy ?? []).filter((p) => p.estado !== "cancelado").reduce((a, b) => a + Number(b.total), 0);
+    const ventasAnterior = (pedidosPrev ?? [])
+      .filter((p) => p.estado !== "cancelado")
+      .reduce((a, b) => a + Number(b.total), 0);
+    const ventasHoy = (pedidosHoy ?? [])
+      .filter((p) => p.estado !== "cancelado")
+      .reduce((a, b) => a + Number(b.total), 0);
 
     let crecimientoPct = 0;
     if (ventasAnterior > 0) {
@@ -925,11 +1198,11 @@ export const adminMetrics = createServerFn({ method: "GET" })
 
     const productSales: Record<string, number> = {};
     for (const pedido of pedidosValidos) {
-      for (const item of (pedido.pedido_items ?? [])) {
-         productSales[item.nombre] = (productSales[item.nombre] ?? 0) + Number(item.cantidad);
+      for (const item of pedido.pedido_items ?? []) {
+        productSales[item.nombre] = (productSales[item.nombre] ?? 0) + Number(item.cantidad);
       }
     }
-    
+
     const topProductos = Object.entries(productSales)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 103)

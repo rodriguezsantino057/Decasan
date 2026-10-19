@@ -16,12 +16,15 @@ function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const sendPasswordChangedFn = useServerFn(sendPasswordChangedEmail);
 
-  const passChecks = useMemo(() => ({
-    len: password.length >= 8,
-    lower: /[a-z]/.test(password),
-    upper: /[A-Z]/.test(password),
-    num: /\d/.test(password),
-  }), [password]);
+  const passChecks = useMemo(
+    () => ({
+      len: password.length >= 8,
+      lower: /[a-z]/.test(password),
+      upper: /[A-Z]/.test(password),
+      num: /\d/.test(password),
+    }),
+    [password],
+  );
   const passOk = passChecks.len && passChecks.lower && passChecks.upper && passChecks.num;
   const matches = password.length > 0 && password === confirmPassword;
 

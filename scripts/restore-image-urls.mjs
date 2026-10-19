@@ -40,7 +40,9 @@ if (!backupFile) {
 async function main() {
   const backup = JSON.parse(readFileSync(resolve(__dirname, "..", backupFile), "utf8"));
   console.log(`Backup: ${backupFile} (${backup.timestamp})`);
-  console.log(`  productos: ${backup.productos.length} | product_images: ${backup.product_images.length}`);
+  console.log(
+    `  productos: ${backup.productos.length} | product_images: ${backup.product_images.length}`,
+  );
   console.log(DRY_RUN ? "🧪 DRY-RUN: no se modifica nada" : "♻️  RESTAURANDO URLs ORIGINALES...");
 
   let updatedProducts = 0;
@@ -51,7 +53,10 @@ async function main() {
     if (p.image_url !== undefined) patch.image_url = p.image_url;
     if (p.image_webp !== undefined) patch.image_webp = p.image_webp;
     if (Object.keys(patch).length === 0) continue;
-    if (DRY_RUN) { updatedProducts++; continue; }
+    if (DRY_RUN) {
+      updatedProducts++;
+      continue;
+    }
     const { error } = await supabase.from("productos").update(patch).eq("id", p.id);
     if (error) console.error(`  ✗ productos ${p.id}: ${error.message}`);
     else updatedProducts++;
@@ -62,13 +67,18 @@ async function main() {
     if (g.url !== undefined) patch.url = g.url;
     if (g.url_webp !== undefined) patch.url_webp = g.url_webp;
     if (Object.keys(patch).length === 0) continue;
-    if (DRY_RUN) { updatedGallery++; continue; }
+    if (DRY_RUN) {
+      updatedGallery++;
+      continue;
+    }
     const { error } = await supabase.from("product_images").update(patch).eq("id", g.id);
     if (error) console.error(`  ✗ product_images ${g.id}: ${error.message}`);
     else updatedGallery++;
   }
 
-  console.log(`\n✅ Restaurados: ${updatedProducts} productos | ${updatedGallery} filas de galería`);
+  console.log(
+    `\n✅ Restaurados: ${updatedProducts} productos | ${updatedGallery} filas de galería`,
+  );
 }
 
 main().catch((e) => {

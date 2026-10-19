@@ -13,7 +13,9 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`✅ Total: ${result.total} | Página ${result.currentPage}/${result.lastPage} | per_page ${result.perPage}`);
+  console.log(
+    `✅ Total: ${result.total} | Página ${result.currentPage}/${result.lastPage} | per_page ${result.perPage}`,
+  );
   console.log(`   Envíos en esta página: ${result.data.length}`);
   if (result.data.length > 0) {
     console.log("\nPrimer envío normalizado:");

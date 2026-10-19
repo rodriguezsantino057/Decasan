@@ -1,9 +1,6 @@
 // src/server.ts — entry point del servidor para TanStack Start
 import "./lib/error-capture";
-import {
-  createStartHandler,
-  defaultStreamHandler,
-} from "@tanstack/react-start/server";
+import { createStartHandler, defaultStreamHandler } from "@tanstack/react-start/server";
 import type { Register } from "@tanstack/react-router";
 import type { RequestHandler } from "@tanstack/react-start/server";
 
@@ -22,5 +19,3 @@ export function createServerEntry(entry: ServerEntry): ServerEntry {
 export { startInstance } from "./start";
 
 export default createServerEntry({ fetch });
-
-

@@ -3,7 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 const MAX_BYTES = 5 * 1024 * 1024;
 
 /** Sube un Blob ya procesado (recortado y convertido a WebP en browser) al bucket. */
-export async function uploadProductImage(blob: Blob, ext: "webp" | "jpeg" | "jpg" | "png", productoId?: number) {
+export async function uploadProductImage(
+  blob: Blob,
+  ext: "webp" | "jpeg" | "jpg" | "png",
+  productoId?: number,
+) {
   if (blob.size > MAX_BYTES) throw new Error("Imagen procesada demasiado grande (máx 5 MB).");
   const folder = productoId ? `${productoId}` : "misc";
   const key = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;

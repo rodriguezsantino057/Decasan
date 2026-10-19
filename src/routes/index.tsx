@@ -26,15 +26,15 @@ import catElectricos from "@/assets/cat-materiales-electricos.jpg";
 
 const CATEGORY_IMAGES: Record<string, string> = {
   "accesorios y herramientas": catAccesorios,
-  "automotor": catAutomotor,
+  automotor: catAutomotor,
   "h. eléctricas": catElectricas,
   "h. electricas": catElectricas,
   "herramientas eléctricas": catElectricas,
   "sanitarios e instalaciones": catSanitarios,
-  "sanitarios": catSanitarios,
-  "jardín": catJardin,
-  "jardin": catJardin,
-  "materiales": catMateriales,
+  sanitarios: catSanitarios,
+  jardín: catJardin,
+  jardin: catJardin,
+  materiales: catMateriales,
   "materiales eléctricos": catElectricos,
   "materiales electricos": catElectricos,
 };
@@ -91,7 +91,10 @@ function Index() {
   return (
     <Layout>
       {/* HERO CAROUSEL */}
-      <section id="inicio" className="relative bg-secondary text-secondary-foreground overflow-hidden scroll-mt-28">
+      <section
+        id="inicio"
+        className="relative bg-secondary text-secondary-foreground overflow-hidden scroll-mt-28"
+      >
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="flex">
             {slides.map((slide, index) => (
@@ -135,7 +138,6 @@ function Index() {
         </div>
       </section>
 
-
       {/* trust strip */}
       <section className="border-b border-border bg-surface">
         <div className="container-x grid grid-cols-2 md:grid-cols-4 gap-px bg-border">
@@ -145,7 +147,10 @@ function Index() {
             { icon: ShieldCheck, t: "Pago seguro", s: "Mercado Pago" },
             { icon: Headphones, t: "Asesoramiento", s: "WhatsApp directo" },
           ].map(({ icon: Icon, t, s }, idx) => (
-            <div key={t} className={`bg-surface p-5 flex items-center gap-3 animate-fade-in-up animate-delay-${idx * 100}`}>
+            <div
+              key={t}
+              className={`bg-surface p-5 flex items-center gap-3 animate-fade-in-up animate-delay-${idx * 100}`}
+            >
               <Icon className="size-6 text-primary shrink-0" strokeWidth={1.5} />
               <div>
                 <div className="font-display text-sm">{t}</div>
@@ -179,7 +184,11 @@ function Index() {
               >
                 {bgImg ? (
                   <>
-                    <img src={bgImg} alt={c} className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <img
+                      src={bgImg}
+                      alt={c}
+                      className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10 group-hover:from-black/80 transition-colors duration-300" />
                   </>
                 ) : (
@@ -212,7 +221,10 @@ function Index() {
         {featured.isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className={`aspect-[3/4] bg-muted animate-pulse animate-fade-in animate-delay-${i * 100}`} />
+              <div
+                key={i}
+                className={`aspect-[3/4] bg-muted animate-pulse animate-fade-in animate-delay-${i * 100}`}
+              />
             ))}
           </div>
         ) : (

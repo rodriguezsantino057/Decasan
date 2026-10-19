@@ -8,10 +8,11 @@ dotenv.config({ path: resolve(__dirname, "../.env") });
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const groqKey = process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY;
+const groqKey =
+  process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
-const delay = (ms) => new Promise(res => setTimeout(res, ms));
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 const CATEGORIAS_VALIDAS = [
   "Accesorios y Herramientas",
@@ -20,7 +21,7 @@ const CATEGORIAS_VALIDAS = [
   "Sanitarios e instalaciones",
   "Jardín",
   "Materiales",
-  "Materiales Eléctricos"
+  "Materiales Eléctricos",
 ];
 
 async function callAIBatch(products) {
@@ -36,7 +37,7 @@ REGLAS PARA EL GRUPO:
 - Máximo 1 o 2 palabras.
 
 Lista de Productos:
-${products.map(p => `{"id": ${p.id}, "nombre": "${p.nombre.replace(/"/g, '')}"}`).join("\n")}
+${products.map((p) => `{"id": ${p.id}, "nombre": "${p.nombre.replace(/"/g, "")}"}`).join("\n")}
 
 Responde ÚNICAMENTE con un JSON Array. No escribas texto antes ni después. Ejemplo de respuesta correcta:
 [
@@ -46,32 +47,39 @@ Responde ÚNICAMENTE con un JSON Array. No escribas texto antes ni después. Eje
 
   try {
     const modelsRes = await fetch("https://api.groq.com/openai/v1/models", {
-      headers: { "Authorization": `Bearer ${groqKey}` }
+      headers: { Authorization: `Bearer ${groqKey}` },
     });
     const modelsData = await modelsRes.json();
-    const firstTextModel = modelsData.data.find(m => m.id.includes("llama") || m.id.includes("mixtral") || m.id.includes("gemma") || m.id.includes("qwen") || m.id.includes("gpt")).id;
+    const firstTextModel = modelsData.data.find(
+      (m) =>
+        m.id.includes("llama") ||
+        m.id.includes("mixtral") ||
+        m.id.includes("gemma") ||
+        m.id.includes("qwen") ||
+        m.id.includes("gpt"),
+    ).id;
 
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${groqKey}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${groqKey}` },
       body: JSON.stringify({
         model: firstTextModel,
         messages: [{ role: "user", content: prompt }],
         temperature: 0.1,
-        max_tokens: 3000
-      })
+        max_tokens: 3000,
+      }),
     });
-    
+
     const data = await res.json();
     if (data.error) {
       console.error("API Error:", data.error.message);
       return null;
     }
-    
+
     let content = data.choices[0].message.content;
     const match = content.match(/\[[\s\S]*\]/);
     if (match) {
-       return JSON.parse(match[0]);
+      return JSON.parse(match[0]);
     }
     return null;
   } catch (err) {
@@ -81,70 +89,85 @@ Responde ÚNICAMENTE con un JSON Array. No escribas texto antes ni después. Eje
 }
 
 async function main() {
-  console.log("🔍 Buscando TODOS los productos con categoría o grupo numérico para procesarlos INDIVIDUALMENTE...");
-  
+  console.log(
+    "🔍 Buscando TODOS los productos con categoría o grupo numérico para procesarlos INDIVIDUALMENTE...",
+  );
+
   let offset = 0;
   let limit = 1000;
   let toProcess = [];
-  
+
   while (true) {
     const { data, error } = await supabase
       .from("productos")
       .select("id, nombre, categoria, grupo")
       .range(offset, offset + limit - 1);
-      
+
     if (error) {
-       console.error("Error fetching:", error);
-       process.exit(1);
+      console.error("Error fetching:", error);
+      process.exit(1);
     }
-    
+
     if (!data || data.length === 0) break;
-    
+
     for (const p of data) {
-       const catIsNum = /^\d+$/.test(p.categoria || "");
-       const groupIsNum = /^\d+$/.test(p.grupo || "");
-       // Si es null o es numérico, lo procesamos.
-       if (catIsNum || groupIsNum || !p.categoria || !p.grupo) {
-          toProcess.push(p);
-       }
+      const catIsNum = /^\d+$/.test(p.categoria || "");
+      const groupIsNum = /^\d+$/.test(p.grupo || "");
+      // Si es null o es numérico, lo procesamos.
+      if (catIsNum || groupIsNum || !p.categoria || !p.grupo) {
+        toProcess.push(p);
+      }
     }
     offset += limit;
   }
-  
+
   console.log(`✅ Se encontraron ${toProcess.length} productos afectados.`);
-  console.log("Iniciando procesamiento por lotes mediante IA. Esto analizará el nombre exacto de CADA producto.");
-  
-  const BATCH_SIZE = 15; 
-  
+  console.log(
+    "Iniciando procesamiento por lotes mediante IA. Esto analizará el nombre exacto de CADA producto.",
+  );
+
+  const BATCH_SIZE = 15;
+
   for (let i = 0; i < toProcess.length; i += BATCH_SIZE) {
-     const batch = toProcess.slice(i, i + BATCH_SIZE);
-     console.log(`\n📦 Procesando lote ${Math.floor(i/BATCH_SIZE) + 1} de ${Math.ceil(toProcess.length/BATCH_SIZE)} (${batch.length} productos)...`);
-     
-     const results = await callAIBatch(batch);
-     
-     if (results && Array.isArray(results)) {
-        // Enviar las actualizaciones a Supabase
-        const updatePromises = results.map(res => 
-           supabase.from("productos").update({ categoria: res.categoria, grupo: res.grupo }).eq("id", res.id)
+    const batch = toProcess.slice(i, i + BATCH_SIZE);
+    console.log(
+      `\n📦 Procesando lote ${Math.floor(i / BATCH_SIZE) + 1} de ${Math.ceil(toProcess.length / BATCH_SIZE)} (${batch.length} productos)...`,
+    );
+
+    const results = await callAIBatch(batch);
+
+    if (results && Array.isArray(results)) {
+      // Enviar las actualizaciones a Supabase
+      const updatePromises = results.map((res) =>
+        supabase
+          .from("productos")
+          .update({ categoria: res.categoria, grupo: res.grupo })
+          .eq("id", res.id),
+      );
+      await Promise.all(updatePromises);
+
+      // Mostrar algunos de los mapeos para que veamos qué hizo
+      for (let j = 0; j < Math.min(3, results.length); j++) {
+        const original = batch.find((b) => b.id === results[j].id);
+        console.log(
+          `   🔸 ${original?.nombre.substring(0, 30)}... -> Categoria: "${results[j].categoria}" | Grupo: "${results[j].grupo}"`,
         );
-        await Promise.all(updatePromises);
-        
-        // Mostrar algunos de los mapeos para que veamos qué hizo
-        for (let j = 0; j < Math.min(3, results.length); j++) {
-           const original = batch.find(b => b.id === results[j].id);
-           console.log(`   🔸 ${original?.nombre.substring(0, 30)}... -> Categoria: "${results[j].categoria}" | Grupo: "${results[j].grupo}"`);
-        }
-        
-        console.log(`✅ Lote actualizado con éxito.`);
-     } else {
-        console.error("⚠️ La IA no devolvió el formato esperado para este lote. Se reintentará en el futuro.");
-     }
-     
-     // 3 segundos de pausa para no quemar el rate limit gratuito de Groq
-     await delay(3000); 
+      }
+
+      console.log(`✅ Lote actualizado con éxito.`);
+    } else {
+      console.error(
+        "⚠️ La IA no devolvió el formato esperado para este lote. Se reintentará en el futuro.",
+      );
+    }
+
+    // 3 segundos de pausa para no quemar el rate limit gratuito de Groq
+    await delay(3000);
   }
-  
-  console.log("\n🎉 ¡Proceso por lotes finalizado! Toda tu base de datos ahora tiene los plurales y categorías correctas producto por producto.");
+
+  console.log(
+    "\n🎉 ¡Proceso por lotes finalizado! Toda tu base de datos ahora tiene los plurales y categorías correctas producto por producto.",
+  );
 }
 
 main();

@@ -14,8 +14,10 @@ async function main() {
     .select("id, sku, nombre, image_url")
     .not("image_url", "is", null)
     .limit(10);
-    
+
   console.log("=== PRODUCTOS CON IMAGEN ===");
-  data.forEach(p => console.log(`ID: ${p.id} | SKU: ${p.sku} | Nombre: ${p.nombre} | Img: ${p.image_url}`));
+  data.forEach((p) =>
+    console.log(`ID: ${p.id} | SKU: ${p.sku} | Nombre: ${p.nombre} | Img: ${p.image_url}`),
+  );
 }
 main();

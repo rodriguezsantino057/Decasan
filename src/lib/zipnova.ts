@@ -133,7 +133,7 @@ export async function getZipnovaQuote(
   pesoKg = 1,
   valorDeclarado = 1000,
   provincia?: string | null,
-  ciudad?: string | null
+  ciudad?: string | null,
 ): Promise<ZipnovaQuoteResult | null> {
   const isMock = process.env.ZIPNOVA_MOCK === "true";
   const headers = getAuthHeaders();
@@ -203,8 +203,8 @@ export async function getZipnovaQuote(
     const options: any[] = Array.isArray(data.all_results)
       ? data.all_results
       : data.results
-      ? Object.values(data.results)
-      : [];
+        ? Object.values(data.results)
+        : [];
 
     const selected = options.find((opt) => opt.selectable !== false) || options[0];
 
@@ -247,7 +247,10 @@ export async function getZipnovaQuote(
 /**
  * Crea una orden de despacho de envío en Zipnova para un pedido pagado.
  */
-export async function createZipnovaShipping(pedidoId: string, pedidoInfo: ZipnovaShipmentDestination): Promise<string> {
+export async function createZipnovaShipping(
+  pedidoId: string,
+  pedidoInfo: ZipnovaShipmentDestination,
+): Promise<string> {
   const isMock = process.env.ZIPNOVA_MOCK === "true";
   const headers = getAuthHeaders();
 
@@ -322,7 +325,9 @@ export async function createZipnovaShipping(pedidoId: string, pedidoInfo: Zipnov
 /**
  * Obtiene la etiqueta del envío en formato base64 (PDF).
  */
-export async function getZipnovaLabelBase64(shipmentIdOrTracking: string | number): Promise<string> {
+export async function getZipnovaLabelBase64(
+  shipmentIdOrTracking: string | number,
+): Promise<string> {
   const isMock = process.env.ZIPNOVA_MOCK === "true";
   const headers = getAuthHeaders();
   const trackingStr = String(shipmentIdOrTracking);
@@ -421,9 +426,17 @@ function normalizeShipment(raw: any): ZipnovaShipmentSummary {
       zipcode: pick(destination, ["zipcode", "codigo_postal", "postal_code"]),
       street: pick(destination, ["street", "calle"]),
     },
-    trackingNumber: pick(raw, ["carrier_tracking_id", "tracking_number", "tracking", "delivery_id"]),
+    trackingNumber: pick(raw, [
+      "carrier_tracking_id",
+      "tracking_number",
+      "tracking",
+      "delivery_id",
+    ]),
     createdAt: pick(raw, ["created_at", "createdAt", "fecha_creacion"]),
-    price: Number(pick(amounts, ["price_incl_tax", "price", "total"]) ?? pick(raw, ["price", "costo"]) ?? 0) || undefined,
+    price:
+      Number(
+        pick(amounts, ["price_incl_tax", "price", "total"]) ?? pick(raw, ["price", "costo"]) ?? 0,
+      ) || undefined,
     raw,
   };
 }
@@ -432,7 +445,10 @@ function normalizeShipment(raw: any): ZipnovaShipmentSummary {
  * Lista los envíos creados en Zipnova (paginado).
  * Devuelve null si no hay credenciales o la API falla.
  */
-export async function listZipnovaShipments(page = 1, perPage = 20): Promise<ZipnovaShipmentListResult | null> {
+export async function listZipnovaShipments(
+  page = 1,
+  perPage = 20,
+): Promise<ZipnovaShipmentListResult | null> {
   const headers = getAuthHeaders();
   if (!headers) {
     console.warn("[zipnova] Sin credenciales, no se puede listar envíos");
@@ -476,10 +492,13 @@ export async function getZipnovaShipment(id: string | number): Promise<any | nul
   const headers = getAuthHeaders();
   if (!headers) return null;
   try {
-    const response = await fetch(`${ZIPNOVA_API_BASE}/shipments/${encodeURIComponent(String(id))}`, {
-      method: "GET",
-      headers,
-    });
+    const response = await fetch(
+      `${ZIPNOVA_API_BASE}/shipments/${encodeURIComponent(String(id))}`,
+      {
+        method: "GET",
+        headers,
+      },
+    );
     if (!response.ok) {
       const text = await response.text();
       console.warn("[zipnova] Falló detalle de envío:", { status: response.status, text });
@@ -499,10 +518,13 @@ export async function getZipnovaShipmentTracking(id: string | number): Promise<a
   const headers = getAuthHeaders();
   if (!headers) return null;
   try {
-    const response = await fetch(`${ZIPNOVA_API_BASE}/shipments/${encodeURIComponent(String(id))}/tracking`, {
-      method: "GET",
-      headers,
-    });
+    const response = await fetch(
+      `${ZIPNOVA_API_BASE}/shipments/${encodeURIComponent(String(id))}/tracking`,
+      {
+        method: "GET",
+        headers,
+      },
+    );
     if (!response.ok) {
       const text = await response.text();
       console.warn("[zipnova] Falló tracking de envío:", { status: response.status, text });

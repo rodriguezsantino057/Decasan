@@ -25,7 +25,9 @@ async function main() {
   const result = await getZipnovaQuote(cp, 1, 1000, provincia, ciudad);
 
   if (!result) {
-    console.log("❌ getZipnovaQuote devolvió null → NO hay tarifa (sin credenciales, API falló o sin opciones).");
+    console.log(
+      "❌ getZipnovaQuote devolvió null → NO hay tarifa (sin credenciales, API falló o sin opciones).",
+    );
     process.exit(1);
   }
 

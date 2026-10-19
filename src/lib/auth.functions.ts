@@ -4,7 +4,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { escapeHtml, sendTransactionalEmail } from "@/lib/email";
 
-const gmailSchema = z.string().trim().email().regex(/^[a-zA-Z0-9._%+-]+@gmail\.com$/, "Solo se aceptan cuentas Gmail");
+const gmailSchema = z
+  .string()
+  .trim()
+  .email()
+  .regex(/^[a-zA-Z0-9._%+-]+@gmail\.com$/, "Solo se aceptan cuentas Gmail");
 
 export function canonicalGmail(email: string): string {
   const [local] = email.trim().toLowerCase().split("@");
@@ -29,7 +33,9 @@ export const checkGmailAvailability = createServerFn({ method: "POST" })
         throw new Error("No pudimos validar el email. Intentá nuevamente.");
       }
 
-      const exists = users.users.some((user) => user.email && canonicalGmail(user.email) === canonical);
+      const exists = users.users.some(
+        (user) => user.email && canonicalGmail(user.email) === canonical,
+      );
       if (exists) return { available: false, canonical };
       if (users.users.length < 1000) break;
       page += 1;
@@ -106,7 +112,11 @@ async function getAuthUser(userId: string) {
 }
 
 async function getProfileForAuthEmail(userId: string): Promise<{ nombre: string | null } | null> {
-  const { data, error } = await supabaseAdmin.from("profiles").select("nombre").eq("id", userId).maybeSingle();
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("nombre")
+    .eq("id", userId)
+    .maybeSingle();
   if (error) {
     console.warn("[auth-email] profile lookup failed", { userId, error: error.message });
     return null;

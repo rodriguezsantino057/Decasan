@@ -9,10 +9,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: resolve(__dirname, "../.env") });
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; 
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error("Faltan las variables de entorno SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en el .env");
+  console.error(
+    "Faltan las variables de entorno SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en el .env",
+  );
   process.exit(1);
 }
 
@@ -25,8 +27,8 @@ async function main() {
   const rubro = args[0];
 
   if (!rubro) {
-    console.log("Uso: node scripts/auto-images.mjs \"Nombre del Rubro\"");
-    console.log("Ejemplo: node scripts/auto-images.mjs \"Automotor\"");
+    console.log('Uso: node scripts/auto-images.mjs "Nombre del Rubro"');
+    console.log('Ejemplo: node scripts/auto-images.mjs "Automotor"');
     process.exit(1);
   }
 
@@ -46,7 +48,9 @@ async function main() {
   }
 
   if (!productos || productos.length === 0) {
-    console.log(`¡Genial! Todos los productos de "${rubro}" ya tienen imagen (o no se encontraron productos).`);
+    console.log(
+      `¡Genial! Todos los productos de "${rubro}" ya tienen imagen (o no se encontraron productos).`,
+    );
     process.exit(0);
   }
 
@@ -72,7 +76,9 @@ async function main() {
     process.exit(0);
   }
 
-  console.log(`Se encontraron ${sinGaleria.length} productos sin imagen ni galería. Iniciando búsqueda automática...`);
+  console.log(
+    `Se encontraron ${sinGaleria.length} productos sin imagen ni galería. Iniciando búsqueda automática...`,
+  );
 
   let count = 0;
 
@@ -85,69 +91,73 @@ async function main() {
         method: "POST",
         headers: {
           "X-API-KEY": process.env.SERPER_API_KEY,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ q: query })
+        body: JSON.stringify({ q: query }),
       });
-      
+
       const result = await response.json();
-      
+
       if (result.images && result.images.length > 0) {
         // Filtrar imágenes que sean HTTP y que su título coincida en gran parte con el nombre del producto
-        let validImages = result.images.filter(img => {
+        let validImages = result.images.filter((img) => {
           if (!img.imageUrl.startsWith("http")) return false;
           if (!img.title) return true;
-          
+
           const titleWords = img.title.toLowerCase().split(/[\s-]/);
           const nameWords = p.nombre.toLowerCase().split(/[\s-]/);
           let matches = 0;
           for (const w of nameWords) {
-             if (w.length > 2 && titleWords.includes(w)) matches++;
+            if (w.length > 2 && titleWords.includes(w)) matches++;
           }
           return matches >= 2 || (nameWords.length <= 2 && matches >= 1);
         });
 
         // ORDENAMIENTO POR NIVELES (El toque maestro)
         validImages.sort((a, b) => {
-           const getScore = (img) => {
-               const str = (img.link || img.source || img.imageUrl || "").toLowerCase();
-               
-               // Nivel 1: Páginas Oficiales
-               if (str.includes("totalbusiness") || 
-                   str.includes("hamilton") || 
-                   str.includes("brementools") || 
-                   str.includes("lusqtoff") || 
-                   str.includes("milwaukeetool") || 
-                   str.includes("dewalt") || 
-                   str.includes("bosch")) {
-                   return 1;
-               }
-               
-               // Nivel 2: Mercado Libre
-               if (str.includes("mercadolibre") || str.includes("mlstatic")) {
-                   return 2;
-               }
-               
-               // Nivel 3: Resto de internet
-               return 3;
-           };
-           
-           return getScore(a) - getScore(b); // Menor puntaje va primero (Nivel 1 > Nivel 2 > Nivel 3)
+          const getScore = (img) => {
+            const str = (img.link || img.source || img.imageUrl || "").toLowerCase();
+
+            // Nivel 1: Páginas Oficiales
+            if (
+              str.includes("totalbusiness") ||
+              str.includes("hamilton") ||
+              str.includes("brementools") ||
+              str.includes("lusqtoff") ||
+              str.includes("milwaukeetool") ||
+              str.includes("dewalt") ||
+              str.includes("bosch")
+            ) {
+              return 1;
+            }
+
+            // Nivel 2: Mercado Libre
+            if (str.includes("mercadolibre") || str.includes("mlstatic")) {
+              return 2;
+            }
+
+            // Nivel 3: Resto de internet
+            return 3;
+          };
+
+          return getScore(a) - getScore(b); // Menor puntaje va primero (Nivel 1 > Nivel 2 > Nivel 3)
         });
 
         // Finalmente nos quedamos con las 3 mejores
         validImages = validImages.slice(0, 3);
-        
+
         if (validImages.length > 0) {
           const firstImage = validImages[0];
-          console.log(`  -> ¡Encontradas ${validImages.length} imágenes! Principal: ${firstImage.imageUrl}`);
-          
+          console.log(
+            `  -> ¡Encontradas ${validImages.length} imágenes! Principal: ${firstImage.imageUrl}`,
+          );
+
           const { error: updateError } = await supabase
             .from("productos")
-            .update({ 
+            .update({
               image_url: firstImage.imageUrl,
               image_webp: firstImage.imageUrl,
-              erp_updated_at: new Date().toISOString()
+              erp_updated_at: new Date().toISOString(),
             })
             .eq("id", p.id);
 
@@ -157,7 +167,7 @@ async function main() {
             url: img.imageUrl,
             url_webp: img.imageUrl,
             alt: p.nombre,
-            orden: idx
+            orden: idx,
           }));
 
           const { error: galleryError } = await supabase

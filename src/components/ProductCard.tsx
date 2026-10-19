@@ -23,7 +23,9 @@ export function ProductCard({ p }: { p: Producto }) {
         />
         <span
           className={`absolute top-2 left-2 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 ${
-            inStock ? "bg-success text-success-foreground" : "bg-secondary text-secondary-foreground"
+            inStock
+              ? "bg-success text-success-foreground"
+              : "bg-secondary text-secondary-foreground"
           }`}
         >
           {inStock ? "En stock" : "Sin stock"}
@@ -44,9 +46,13 @@ export function ProductCard({ p }: { p: Producto }) {
         </div>
         <div className="mt-auto pt-2">
           {enOferta && (
-            <div className="text-[11px] text-muted-foreground line-through leading-none">{formatARS(p.precio)}</div>
+            <div className="text-[11px] text-muted-foreground line-through leading-none">
+              {formatARS(p.precio)}
+            </div>
           )}
-          <div className="font-display text-lg text-foreground leading-tight">{formatARS(efectivo)}</div>
+          <div className="font-display text-lg text-foreground leading-tight">
+            {formatARS(efectivo)}
+          </div>
         </div>
       </div>
     </Link>

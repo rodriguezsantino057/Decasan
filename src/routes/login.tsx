@@ -218,7 +218,7 @@ function LoginPage() {
                   if (!res.credential) return;
                   setLoading(true);
                   const { error } = await supabase.auth.signInWithIdToken({
-                    provider: 'google',
+                    provider: "google",
                     token: res.credential,
                   });
                   if (error) {

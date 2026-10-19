@@ -5,4 +5,3 @@ export const startInstance = createStart(() => ({
   defaultSsr: false,
   functionMiddleware: [attachSupabaseAuth],
 }));
-

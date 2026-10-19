@@ -7,13 +7,21 @@ export const Route = createFileRoute("/api/public/bootstrap-admin")({
     handlers: {
       POST: async () => {
         const { data: existing } = await supabaseAdmin
-          .from("user_roles").select("user_id").eq("role", "admin").limit(1);
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "admin")
+          .limit(1);
         if (existing && existing.length > 0) {
-          return new Response(JSON.stringify({ ok: false, reason: "admin_exists" }), { status: 410, headers: { "content-type": "application/json" } });
+          return new Response(JSON.stringify({ ok: false, reason: "admin_exists" }), {
+            status: 410,
+            headers: { "content-type": "application/json" },
+          });
         }
 
         const email = "decasanadmin@decasan.com.ar";
-        const password = process.env.BOOTSTRAP_ADMIN_PASSWORD || "Decasan2025!" + Math.random().toString(36).slice(2, 8);
+        const password =
+          process.env.BOOTSTRAP_ADMIN_PASSWORD ||
+          "Decasan2025!" + Math.random().toString(36).slice(2, 8);
 
         const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
           email,
@@ -22,13 +30,17 @@ export const Route = createFileRoute("/api/public/bootstrap-admin")({
           user_metadata: { nombre: "DecasanAdmin" },
         });
         if (error || !created.user) {
-          return new Response(JSON.stringify({ ok: false, error: error?.message }), { status: 500, headers: { "content-type": "application/json" } });
+          return new Response(JSON.stringify({ ok: false, error: error?.message }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
         }
 
         await supabaseAdmin.from("user_roles").insert({ user_id: created.user.id, role: "admin" });
 
         return new Response(JSON.stringify({ ok: true, email, password }), {
-          status: 200, headers: { "content-type": "application/json" },
+          status: 200,
+          headers: { "content-type": "application/json" },
         });
       },
     },

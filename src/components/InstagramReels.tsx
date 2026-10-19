@@ -13,22 +13,19 @@ const FEATURED_REELS: Reel[] = [
     id: "1",
     url: "https://www.instagram.com/reel/DZpsQ2VAO-p/",
     title: "Sorteo Mundialista",
-    thumbnail:
-      "/reel1.png",
+    thumbnail: "/reel1.png",
   },
   {
     id: "2",
     url: "https://www.instagram.com/reel/DZgC5jnCffs/",
     title: "Oferton",
-    thumbnail:
-      "/reel2.png",
+    thumbnail: "/reel2.png",
   },
   {
     id: "3",
     url: "https://www.instagram.com/reel/DZKrarSAEwb/",
     title: "Taladro Total",
-    thumbnail:
-      "/reel3.png",
+    thumbnail: "/reel3.png",
   },
 ];
 
@@ -50,7 +47,7 @@ export function InstagramReels() {
       ([entry]) => {
         if (entry.isIntersecting) setIsVisible(true);
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     if (sectionRef.current) observer.observe(sectionRef.current);
@@ -59,15 +56,11 @@ export function InstagramReels() {
   }, []);
 
   const handlePrev = () => {
-    setCurrentIndex((prev) =>
-      prev === 0 ? FEATURED_REELS.length - 1 : prev - 1
-    );
+    setCurrentIndex((prev) => (prev === 0 ? FEATURED_REELS.length - 1 : prev - 1));
   };
 
   const handleNext = () => {
-    setCurrentIndex((prev) =>
-      prev === FEATURED_REELS.length - 1 ? 0 : prev + 1
-    );
+    setCurrentIndex((prev) => (prev === FEATURED_REELS.length - 1 ? 0 : prev + 1));
   };
 
   const goToSlide = (index: number) => setCurrentIndex(index);
@@ -82,14 +75,10 @@ export function InstagramReels() {
         {/* HEADER */}
         <div
           className={`text-center max-w-3xl mx-auto mb-16 transition-all duration-1000 ${
-            isVisible
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-10"
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
           } animate-fade-in-up`}
         >
-          <h2 className="font-display text-4xl md:text-5xl lg:text-6xl">
-            Seguinos en Instagram
-          </h2>
+          <h2 className="font-display text-4xl md:text-5xl lg:text-6xl">Seguinos en Instagram</h2>
 
           <a
             href="https://www.instagram.com/decasanherramientas/"
@@ -118,9 +107,7 @@ export function InstagramReels() {
                 className="absolute inset-0 w-full h-full object-cover"
               />
 
-              <div className="absolute bottom-0 p-4 text-white">
-                {reel.title}
-              </div>
+              <div className="absolute bottom-0 p-4 text-white">{reel.title}</div>
 
               <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100">
                 <Play className="text-white size-10" />

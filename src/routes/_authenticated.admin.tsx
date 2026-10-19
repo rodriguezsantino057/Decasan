@@ -17,7 +17,13 @@ function AdminLayout() {
   }, [loading, roleLoading, user, isAdmin, navigate]);
 
   if (loading || roleLoading || !isAdmin) {
-    return <Layout><div className="container-x py-20 text-center text-muted-foreground">Verificando permisos...</div></Layout>;
+    return (
+      <Layout>
+        <div className="container-x py-20 text-center text-muted-foreground">
+          Verificando permisos...
+        </div>
+      </Layout>
+    );
   }
 
   const tabs = [
@@ -30,18 +36,26 @@ function AdminLayout() {
   return (
     <Layout>
       <div className="container-x py-5 sm:py-8">
-        <h1 className="font-display text-2xl sm:text-3xl leading-tight mb-1">Panel de administracion</h1>
-        <p className="text-sm text-muted-foreground mb-5 sm:mb-6">Gestion de productos, pedidos y usuarios</p>
+        <h1 className="font-display text-2xl sm:text-3xl leading-tight mb-1">
+          Panel de administracion
+        </h1>
+        <p className="text-sm text-muted-foreground mb-5 sm:mb-6">
+          Gestion de productos, pedidos y usuarios
+        </p>
 
         <div className="-mx-4 flex overflow-x-auto border-y border-border bg-surface-elevated sm:mx-0 sm:mb-8 sm:grid sm:grid-cols-4 sm:border-x">
           {tabs.map((t) => {
-            const active = t.exact ? location.pathname === t.to : location.pathname.startsWith(t.to);
+            const active = t.exact
+              ? location.pathname === t.to
+              : location.pathname.startsWith(t.to);
             return (
               <Link
                 key={t.to}
                 to={t.to}
                 className={`px-4 py-3 text-sm font-medium flex flex-1 items-center justify-center gap-2 whitespace-nowrap border-b-2 sm:border-b-0 sm:border-t-2 ${
-                  active ? "border-primary bg-primary/10 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+                  active
+                    ? "border-primary bg-primary/10 text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <t.icon className="size-4" /> {t.label}

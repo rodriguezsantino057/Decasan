@@ -52,7 +52,10 @@ export function HeaderSearch({ compact = false }: { compact?: boolean }) {
   }
 
   return (
-    <div ref={wrapRef} className={`relative ${compact ? "w-full max-w-[280px]" : "w-full max-w-md"}`}>
+    <div
+      ref={wrapRef}
+      className={`relative ${compact ? "w-full max-w-[280px]" : "w-full max-w-md"}`}
+    >
       <form
         onSubmit={(e) => {
           e.preventDefault();

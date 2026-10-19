@@ -16,10 +16,20 @@ export const Route = createFileRoute("/api/public/mercadopago")({
         if (!MP_TOKEN) return new Response("MP no configurado", { status: 200 });
 
         let payload: any = {};
-        try { payload = await request.json(); } catch { /* MP a veces manda querystring */ }
+        try {
+          payload = await request.json();
+        } catch {
+          /* MP a veces manda querystring */
+        }
         const url = new URL(request.url);
-        const type = payload.type ?? payload.topic ?? url.searchParams.get("type") ?? url.searchParams.get("topic");
-        const dataId = String(payload?.data?.id ?? url.searchParams.get("data.id") ?? url.searchParams.get("id") ?? "");
+        const type =
+          payload.type ??
+          payload.topic ??
+          url.searchParams.get("type") ??
+          url.searchParams.get("topic");
+        const dataId = String(
+          payload?.data?.id ?? url.searchParams.get("data.id") ?? url.searchParams.get("id") ?? "",
+        );
 
         if (type !== "payment" || !dataId) {
           return new Response("ignored", { status: 200 });

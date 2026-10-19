@@ -118,7 +118,10 @@ async function download(url) {
         continue;
       }
       const buf = Buffer.from(await r.arrayBuffer());
-      if (buf.length === 0) { last = { ok: false, status: "EMPTY" }; continue; }
+      if (buf.length === 0) {
+        last = { ok: false, status: "EMPTY" };
+        continue;
+      }
       if (buf.length > MAX_BYTES) return { ok: false, status: "TOO_BIG:" + buf.length };
       return { ok: true, buf, contentType: r.headers.get("content-type") || "" };
     } catch (e) {
@@ -157,7 +160,9 @@ async function mapLimit(items, limit, fn) {
 /* ---------- main ---------- */
 
 async function main() {
-  console.log(DRY_RUN ? "🧪 MODO DRY-RUN (no se modifica nada)" : "🚀 MIGRANDO IMÁGENES A SUPABASE STORAGE");
+  console.log(
+    DRY_RUN ? "🧪 MODO DRY-RUN (no se modifica nada)" : "🚀 MIGRANDO IMÁGENES A SUPABASE STORAGE",
+  );
   console.log("");
 
   // 1. Leer estado actual
@@ -170,8 +175,17 @@ async function main() {
   // 2. Backup del estado original (siempre, incluso en dry-run)
   const backup = {
     timestamp: new Date().toISOString(),
-    productos: productos.map((p) => ({ id: p.id, image_url: p.image_url, image_webp: p.image_webp })),
-    product_images: galeria.map((g) => ({ id: g.id, producto_id: g.producto_id, url: g.url, url_webp: g.url_webp })),
+    productos: productos.map((p) => ({
+      id: p.id,
+      image_url: p.image_url,
+      image_webp: p.image_webp,
+    })),
+    product_images: galeria.map((g) => ({
+      id: g.id,
+      producto_id: g.producto_id,
+      url: g.url,
+      url_webp: g.url_webp,
+    })),
   };
   const backupDir = resolve(__dirname, "backups");
   mkdirSync(backupDir, { recursive: true });
@@ -182,12 +196,16 @@ async function main() {
   // 3. Recolectar referencias a migrar (solo URLs externas)
   const refs = [];
   for (const p of productos) {
-    if (p.image_url && !isSupabaseUrl(p.image_url)) refs.push({ table: "productos", id: p.id, column: "image_url", url: p.image_url });
-    if (p.image_webp && !isSupabaseUrl(p.image_webp)) refs.push({ table: "productos", id: p.id, column: "image_webp", url: p.image_webp });
+    if (p.image_url && !isSupabaseUrl(p.image_url))
+      refs.push({ table: "productos", id: p.id, column: "image_url", url: p.image_url });
+    if (p.image_webp && !isSupabaseUrl(p.image_webp))
+      refs.push({ table: "productos", id: p.id, column: "image_webp", url: p.image_webp });
   }
   for (const g of galeria) {
-    if (g.url && !isSupabaseUrl(g.url)) refs.push({ table: "product_images", id: g.id, column: "url", url: g.url });
-    if (g.url_webp && !isSupabaseUrl(g.url_webp)) refs.push({ table: "product_images", id: g.id, column: "url_webp", url: g.url_webp });
+    if (g.url && !isSupabaseUrl(g.url))
+      refs.push({ table: "product_images", id: g.id, column: "url", url: g.url });
+    if (g.url_webp && !isSupabaseUrl(g.url_webp))
+      refs.push({ table: "product_images", id: g.id, column: "url_webp", url: g.url_webp });
   }
 
   const uniqueUrls = [...new Set(refs.map((r) => r.url))];
@@ -271,7 +289,9 @@ async function main() {
     else updatedGallery++;
   }
 
-  console.log(`\n✅ Actualizados: ${updatedProducts} productos | ${updatedGallery} filas de galería`);
+  console.log(
+    `\n✅ Actualizados: ${updatedProducts} productos | ${updatedGallery} filas de galería`,
+  );
   console.log(`   Backup para revertir: ${backupFile}`);
   console.log(`   Para revertir: node scripts/restore-image-urls.mjs ${backupFile}`);
 }

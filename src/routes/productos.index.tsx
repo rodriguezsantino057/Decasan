@@ -31,7 +31,9 @@ export const Route = createFileRoute("/productos/")({
     grupo: typeof s.grupo === "string" ? s.grupo : undefined,
     min: typeof s.min === "number" ? s.min : s.min ? Number(s.min) || undefined : undefined,
     max: typeof s.max === "number" ? s.max : s.max ? Number(s.max) || undefined : undefined,
-    sort: (["relevance", "price-asc", "price-desc", "name-asc"] as const).includes(s.sort as SortKey)
+    sort: (["relevance", "price-asc", "price-desc", "name-asc"] as const).includes(
+      s.sort as SortKey,
+    )
       ? (s.sort as SortKey)
       : undefined,
     page: typeof s.page === "number" ? s.page : s.page ? Number(s.page) || undefined : undefined,
@@ -44,7 +46,7 @@ const PAGE_SIZE = 24;
 function Catalog() {
   const { user } = useSession();
   const { data: isAdmin } = useIsAdmin(user);
-  
+
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const [qLocal, setQLocal] = useState(search.q ?? "");
@@ -70,10 +72,23 @@ function Catalog() {
   }, [search.q]);
 
   const cats = useQuery({ queryKey: ["cats", isAdmin], queryFn: () => fetchCategorias(isAdmin) });
-  const grupos = useQuery({ queryKey: ["grupos", isAdmin, search.cat], queryFn: () => fetchGrupos(isAdmin, search.cat) });
+  const grupos = useQuery({
+    queryKey: ["grupos", isAdmin, search.cat],
+    queryFn: () => fetchGrupos(isAdmin, search.cat),
+  });
 
   const products = useQuery({
-    queryKey: ["products", search.q, search.cat, search.grupo, search.min, search.max, sort, page, isAdmin],
+    queryKey: [
+      "products",
+      search.q,
+      search.cat,
+      search.grupo,
+      search.min,
+      search.max,
+      sort,
+      page,
+      isAdmin,
+    ],
     queryFn: () =>
       fetchProductos({
         q: search.q,
@@ -103,14 +118,25 @@ function Catalog() {
     navigate({ search: {} });
   }
 
-  const hasFilters = !!(search.q || search.cat || search.grupo || search.min || search.max || search.sort);
+  const hasFilters = !!(
+    search.q ||
+    search.cat ||
+    search.grupo ||
+    search.min ||
+    search.max ||
+    search.sort
+  );
 
   return (
     <Layout>
       <div className="bg-secondary text-secondary-foreground">
         <div className="container-x py-10">
-          <div className="text-xs uppercase tracking-[0.25em] text-primary mb-2 animate-fade-in-down">Catálogo</div>
-          <h1 className="font-display text-3xl md:text-5xl animate-fade-in-up animate-delay-100">{search.cat ?? "Todos los productos"}</h1>
+          <div className="text-xs uppercase tracking-[0.25em] text-primary mb-2 animate-fade-in-down">
+            Catálogo
+          </div>
+          <h1 className="font-display text-3xl md:text-5xl animate-fade-in-up animate-delay-100">
+            {search.cat ?? "Todos los productos"}
+          </h1>
           <p className="text-secondary-foreground/70 mt-2 text-sm animate-fade-in-up animate-delay-200">
             {products.data?.count ?? "—"} productos
           </p>
@@ -128,7 +154,9 @@ function Catalog() {
         </button>
 
         {/* sidebar */}
-        <aside className={`space-y-6 ${showFilters ? "block" : "hidden lg:block"} animate-fade-in-left animate-delay-400`}>
+        <aside
+          className={`space-y-6 ${showFilters ? "block" : "hidden lg:block"} animate-fade-in-left animate-delay-400`}
+        >
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <input
@@ -141,7 +169,9 @@ function Catalog() {
           </div>
 
           <div>
-            <h3 className="font-display text-sm mb-3 uppercase tracking-wider text-muted-foreground">Ordenar</h3>
+            <h3 className="font-display text-sm mb-3 uppercase tracking-wider text-muted-foreground">
+              Ordenar
+            </h3>
             <select
               value={sort}
               onChange={(e) =>
@@ -158,7 +188,9 @@ function Catalog() {
           </div>
 
           <div>
-            <h3 className="font-display text-sm mb-3 uppercase tracking-wider text-muted-foreground">Precio (ARS)</h3>
+            <h3 className="font-display text-sm mb-3 uppercase tracking-wider text-muted-foreground">
+              Precio (ARS)
+            </h3>
             <div className="flex gap-2">
               <input
                 type="number"
@@ -184,7 +216,9 @@ function Catalog() {
           </div>
 
           <div>
-            <h3 className="font-display text-sm mb-3 uppercase tracking-wider text-muted-foreground">Categorías</h3>
+            <h3 className="font-display text-sm mb-3 uppercase tracking-wider text-muted-foreground">
+              Categorías
+            </h3>
             <ul className="space-y-1 text-sm max-h-64 overflow-y-auto pr-1">
               <li>
                 <button
@@ -208,7 +242,9 @@ function Catalog() {
           </div>
 
           <div>
-            <h3 className="font-display text-sm mb-3 uppercase tracking-wider text-muted-foreground">Grupos</h3>
+            <h3 className="font-display text-sm mb-3 uppercase tracking-wider text-muted-foreground">
+              Grupos
+            </h3>
             <ul className="space-y-1 text-sm max-h-64 overflow-y-auto pr-1">
               <li>
                 <button
@@ -247,12 +283,17 @@ function Catalog() {
           {products.isLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
               {Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className={`aspect-[3/4] bg-muted animate-pulse animate-fade-in animate-delay-${i * 100}`} />
+                <div
+                  key={i}
+                  className={`aspect-[3/4] bg-muted animate-pulse animate-fade-in animate-delay-${i * 100}`}
+                />
               ))}
             </div>
           ) : products.data?.items.length === 0 ? (
             <div className="text-center py-20 border border-dashed border-border animate-fade-in-up animate-delay-500">
-              <p className="text-muted-foreground mb-4">No se encontraron productos con esos filtros.</p>
+              <p className="text-muted-foreground mb-4">
+                No se encontraron productos con esos filtros.
+              </p>
               <button
                 onClick={reset}
                 className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-medium"
@@ -264,7 +305,10 @@ function Catalog() {
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
                 {products.data?.items.map((p, idx) => (
-                  <div key={p.id} className={`animate-fade-in-up animate-delay-${Math.min(idx * 100, 900)}`}>
+                  <div
+                    key={p.id}
+                    className={`animate-fade-in-up animate-delay-${Math.min(idx * 100, 900)}`}
+                  >
                     <ProductCard p={p} />
                   </div>
                 ))}

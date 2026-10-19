@@ -2,8 +2,18 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { isCadeteZone, LOCAL_PICKUP_CODE, mapShippingOptionRow, TRANSPORTISTA_LABEL, getLocalPickupOption } from "@/lib/shipping.functions";
-import { assertValidPublicBaseUrl, getMercadoPagoAccessToken, getPublicBaseUrl } from "@/lib/mercadopago";
+import {
+  isCadeteZone,
+  LOCAL_PICKUP_CODE,
+  mapShippingOptionRow,
+  TRANSPORTISTA_LABEL,
+  getLocalPickupOption,
+} from "@/lib/shipping.functions";
+import {
+  assertValidPublicBaseUrl,
+  getMercadoPagoAccessToken,
+  getPublicBaseUrl,
+} from "@/lib/mercadopago";
 import { getZipnovaQuote } from "@/lib/zipnova";
 import { CATEGORY_WEIGHTS, getProductWeight } from "@/lib/shipping.weights";
 
@@ -84,18 +94,27 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
     const ids = [...new Set(data.items.map((item) => item.id))];
     const { data: products, error: productError } = await (supabaseAdmin as any)
       .from("productos")
-      .select("id,nombre,sku,precio,precio_oferta,oferta_hasta,activo,stock,peso_kg,categoria,grupo")
+      .select(
+        "id,nombre,sku,precio,precio_oferta,oferta_hasta,activo,stock,peso_kg,categoria,grupo",
+      )
       .in("id", ids);
 
     if (productError) {
-      console.error("[orders] product validation failed", { requestId, error: productError.message });
+      console.error("[orders] product validation failed", {
+        requestId,
+        error: productError.message,
+      });
       throw new Error("No se pudieron validar los productos");
     }
 
-    const productsById = new Map<number, ProductForOrder>((products ?? []).map((product: any) => [product.id, product as ProductForOrder]));
+    const productsById = new Map<number, ProductForOrder>(
+      (products ?? []).map((product: any) => [product.id, product as ProductForOrder]),
+    );
 
     // Re-calcular el peso en el servidor para mayor seguridad
-    const { data: weightsData } = await (supabaseAdmin as any).from("grupo_pesos").select("grupo, peso_kg");
+    const { data: weightsData } = await (supabaseAdmin as any)
+      .from("grupo_pesos")
+      .select("grupo, peso_kg");
     const dynamicWeights = { ...CATEGORY_WEIGHTS };
     for (const row of weightsData ?? []) {
       if (row.grupo && row.peso_kg != null) {
@@ -114,11 +133,11 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
       data.direccion.codigo_postal,
       data.direccion.provincia,
       data.direccion.ciudad,
-      serverPesoTotalKg
+      serverPesoTotalKg,
     );
     const isLocalPickup = shipping.codigo_servicio === LOCAL_PICKUP_CODE;
     if (!isLocalPickup) validateShippingAddress(data.direccion);
-    
+
     if (data.pago.metodo === "efectivo" && !isLocalPickup) {
       throw new Error("El pago en efectivo solo esta disponible con retiro en local");
     }
@@ -130,13 +149,22 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
         throw new Error("Uno de los productos ya no esta disponible");
       }
       if (product.stock != null && product.stock < item.qty) {
-        console.warn("[orders] insufficient stock", { requestId, productId: item.id, stock: product.stock, qty: item.qty });
+        console.warn("[orders] insufficient stock", {
+          requestId,
+          productId: item.id,
+          stock: product.stock,
+          qty: item.qty,
+        });
         throw new Error(`No hay stock suficiente para ${product.nombre ?? "un producto"}`);
       }
 
       const unitPrice = getEffectivePrice(product);
       if (unitPrice <= 0) {
-        console.warn("[orders] invalid product price", { requestId, productId: item.id, unitPrice });
+        console.warn("[orders] invalid product price", {
+          requestId,
+          productId: item.id,
+          unitPrice,
+        });
         throw new Error(`El producto ${product.nombre ?? item.id} no tiene precio valido`);
       }
 
@@ -150,7 +178,9 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
       };
     });
 
-    const productsSubtotal = roundMoney(validatedItems.reduce((sum, item) => sum + item.subtotal, 0));
+    const productsSubtotal = roundMoney(
+      validatedItems.reduce((sum, item) => sum + item.subtotal, 0),
+    );
     const shippingTotal = roundMoney(shipping.precio);
     const total = roundMoney(productsSubtotal + shippingTotal);
 
@@ -204,7 +234,11 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
     }));
     const { error: itemError } = await supabase.from("pedido_items").insert(orderItems);
     if (itemError) {
-      console.error("[orders] order items insert failed", { requestId, pedidoId: pedido.id, error: itemError.message });
+      console.error("[orders] order items insert failed", {
+        requestId,
+        pedidoId: pedido.id,
+        error: itemError.message,
+      });
       throw new Error(itemError.message);
     }
 
@@ -235,16 +269,13 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
     // Configure exclusions to force bank transfer (debin/QR) or cards
     const paymentMethodsConfig: any = {};
     if (data.pago.metodo === "tarjeta") {
-      paymentMethodsConfig.excluded_payment_types = [
-        { id: "bank_transfer" },
-        { id: "ticket" }
-      ];
+      paymentMethodsConfig.excluded_payment_types = [{ id: "bank_transfer" }, { id: "ticket" }];
     } else if (data.pago.metodo === "transferencia_mp") {
       paymentMethodsConfig.excluded_payment_types = [
         { id: "credit_card" },
         { id: "debit_card" },
         { id: "prepaid_card" },
-        { id: "ticket" }
+        { id: "ticket" },
       ];
     }
 
@@ -290,7 +321,12 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
     });
     if (!resp.ok) {
       const text = await resp.text();
-      console.error("[orders] MP preference error", { requestId, pedidoId: pedido.id, status: resp.status, body: text });
+      console.error("[orders] MP preference error", {
+        requestId,
+        pedidoId: pedido.id,
+        status: resp.status,
+        body: text,
+      });
       return {
         pedidoId: pedido.id,
         total,
@@ -303,9 +339,16 @@ export const createOrderAndPreference = createServerFn({ method: "POST" })
     }
 
     const pref = await resp.json();
-    await (supabaseAdmin as any).from("pedidos").update({ mp_preference_id: pref.id }).eq("id", pedido.id);
+    await (supabaseAdmin as any)
+      .from("pedidos")
+      .update({ mp_preference_id: pref.id })
+      .eq("id", pedido.id);
 
-    console.info("[orders] MP preference created", { requestId, pedidoId: pedido.id, preferenceId: pref.id });
+    console.info("[orders] MP preference created", {
+      requestId,
+      pedidoId: pedido.id,
+      preferenceId: pref.id,
+    });
 
     return {
       pedidoId: pedido.id,
@@ -322,7 +365,7 @@ async function getActiveShippingOption(
   codigoPostal?: string | null,
   provincia?: string | null,
   ciudad?: string | null,
-  pesoTotalKg?: number | null
+  pesoTotalKg?: number | null,
 ) {
   if (id === LOCAL_PICKUP_CODE) {
     return getLocalPickupOption();
@@ -360,13 +403,15 @@ async function getActiveShippingOption(
 async function getCadeteOptionById(
   id: string,
   codigoPostal?: string | null,
-  ciudad?: string | null
+  ciudad?: string | null,
 ) {
   if (!isCadeteZone(codigoPostal, ciudad)) return null;
   try {
     const { data } = await supabaseAdmin
       .from("shipping_options")
-      .select("id, transportista, provincia, costo, label, activo, dias_estimados_min, dias_estimados_max")
+      .select(
+        "id, transportista, provincia, costo, label, activo, dias_estimados_min, dias_estimados_max",
+      )
       .eq("id", id)
       .eq("transportista", "cadete")
       .eq("activo", true)
@@ -400,7 +445,10 @@ function roundMoney(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-function buildOrderNotes(paymentMethod: keyof typeof PAYMENT_LABELS, notes: string | null | undefined) {
+function buildOrderNotes(
+  paymentMethod: keyof typeof PAYMENT_LABELS,
+  notes: string | null | undefined,
+) {
   const paymentNote = `Metodo de pago: ${PAYMENT_LABELS[paymentMethod]}`;
   const trimmedNotes = notes?.trim();
   return trimmedNotes ? `${paymentNote}\n${trimmedNotes}` : paymentNote;

@@ -19,7 +19,7 @@ async function getAndreaniToken(): Promise<string> {
   const loginUrl = process.env.ANDREANI_LOGIN_URL || "https://apis.andreani.com/login";
 
   const tokenBase64 = Buffer.from(`${username}:${password}`).toString("base64");
-  
+
   const response = await fetch(loginUrl, {
     headers: {
       Authorization: `Basic ${tokenBase64}`,
@@ -34,7 +34,7 @@ async function getAndreaniToken(): Promise<string> {
 
   const token = response.headers.get("x-authorization-token");
   if (!token) throw new Error("No se recibio token de Andreani");
-  
+
   return token;
 }
 
@@ -43,19 +43,22 @@ export async function getAndreaniQuote(cpDestino: string): Promise<AndreaniQuote
     const client = getEnvOrThrow("ANDREANI_CLIENT");
     const contract = getEnvOrThrow("ANDREANI_CONTRACT");
     const cpOrigen = getEnvOrThrow("SHIPPING_ORIGIN_CP");
-    
+
     // Convert to query params
     const params = new URLSearchParams({
-      "cliente": client,
-      "contrato": contract,
-      "cpDestino": cpDestino,
-      "cpOrigen": cpOrigen,
-      "bultos[0].kilos": "1", 
+      cliente: client,
+      contrato: contract,
+      cpDestino: cpDestino,
+      cpOrigen: cpOrigen,
+      "bultos[0].kilos": "1",
       "bultos[0].volumen": "1000",
       "bultos[0].valorDeclarado": process.env.SHIPPING_DECLARED_VALUE || "1000",
     });
 
-    const quoteUrl = (process.env.ANDREANI_QUOTE_URL || "https://apis.andreani.com/v1/tarifas") + "?" + params.toString();
+    const quoteUrl =
+      (process.env.ANDREANI_QUOTE_URL || "https://apis.andreani.com/v1/tarifas") +
+      "?" +
+      params.toString();
 
     const response = await fetch(quoteUrl, {
       method: "GET",
@@ -102,7 +105,7 @@ export async function createAndreaniShipping(pedidoId: string, pedidoInfo: any) 
         numero: "123",
         localidad: getEnvOrThrow("SHIPPING_ORIGIN_CITY"),
         region: "Córdoba",
-      }
+      },
     },
     destino: {
       postal: {
@@ -111,27 +114,27 @@ export async function createAndreaniShipping(pedidoId: string, pedidoInfo: any) 
         numero: pedidoInfo.direccion?.numero || "S/N",
         localidad: pedidoInfo.direccion?.ciudad || "Destino",
         region: pedidoInfo.direccion?.provincia || "Destino",
-      }
+      },
     },
     remitente: {
       nombreCompleto: "Decasan",
       email: "ventas@decasan.com.ar",
-      telefonos: [{ numero: "11111111", tipo: 1 }]
+      telefonos: [{ numero: "11111111", tipo: 1 }],
     },
     destinatario: [
       {
         nombreCompleto: pedidoInfo.nombre,
         email: pedidoInfo.email,
-        telefonos: [{ numero: pedidoInfo.telefono || "000", tipo: 1 }]
-      }
+        telefonos: [{ numero: pedidoInfo.telefono || "000", tipo: 1 }],
+      },
     ],
     bultos: [
       {
         kilos: 1,
         volumen: 1000,
-        valorDeclarado: Number(pedidoInfo.total)
-      }
-    ]
+        valorDeclarado: Number(pedidoInfo.total),
+      },
+    ],
   };
 
   const response = await fetch(ordersUrl, {
@@ -166,7 +169,11 @@ export async function getAndreaniLabelBase64(trackingNumber: string): Promise<st
 
   if (!response.ok) {
     const text = await response.text();
-    console.error("[andreani] Falló obtener etiqueta", { trackingNumber, status: response.status, text });
+    console.error("[andreani] Falló obtener etiqueta", {
+      trackingNumber,
+      status: response.status,
+      text,
+    });
     throw new Error("No se pudo obtener la etiqueta de Andreani");
   }
 
