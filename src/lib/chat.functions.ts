@@ -34,10 +34,19 @@ function cleanEnv(val?: string | null): string {
   return val.trim().replace(/^['"]|['"]$/g, "");
 }
 
-const BASE_URL = cleanEnv(process.env.PUBLIC_BASE_URL || process.env.VITE_PUBLIC_BASE_URL || "https://decasan.vercel.app").replace(/\/+$/, "");
+const BASE_URL = cleanEnv(
+  process.env.PUBLIC_BASE_URL || process.env.VITE_PUBLIC_BASE_URL || "https://decasan.vercel.app",
+).replace(/\/+$/, "");
 const WHATSAPP_PHONE = "5493548592127";
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_PHONE}`;
-const ALLOWED_LINK_HOSTS = new Set(["decasan.vercel.app", "decasan.com.ar", "decasan.lovable.app", "wa.me", "www.instagram.com", "web.facebook.com"]);
+const ALLOWED_LINK_HOSTS = new Set([
+  "decasan.vercel.app",
+  "decasan.com.ar",
+  "decasan.lovable.app",
+  "wa.me",
+  "www.instagram.com",
+  "web.facebook.com",
+]);
 
 const SYSTEM_PROMPT = `Sos "Decabot", el asistente virtual inteligente de Decasan Home Center, un centro integral de hogar, construcción y ferretería de La Falda, Córdoba con más de 60 años de trayectoria. Atendés con tono amable, cálido, profesional y bien argentino (usá "vos").
 
@@ -58,7 +67,8 @@ Reglas de respuesta:
 export const chatWithBot = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }) => {
-    const lastUserMessage = [...data.messages].reverse().find((m) => m.role === "user")?.content ?? "";
+    const lastUserMessage =
+      [...data.messages].reverse().find((m) => m.role === "user")?.content ?? "";
     const catalogContext = await buildCatalogContext(lastUserMessage);
     const fullSystemPrompt = `${SYSTEM_PROMPT}\n\n${catalogContext.prompt}`;
 
@@ -89,7 +99,11 @@ export const chatWithBot = createServerFn({ method: "POST" })
     };
   });
 
-async function callGemini(apiKey: string, systemPrompt: string, messages: { role: string; content: string }[]): Promise<string | null> {
+async function callGemini(
+  apiKey: string,
+  systemPrompt: string,
+  messages: { role: string; content: string }[],
+): Promise<string | null> {
   try {
     const history = messages
       .filter((m) => m.role !== "system" && m.content?.trim())
@@ -143,13 +157,25 @@ async function callGemini(apiKey: string, systemPrompt: string, messages: { role
   }
 }
 
-async function callGroq(apiKey: string, systemPrompt: string, messages: { role: string; content: string }[]): Promise<string | null> {
+async function callGroq(
+  apiKey: string,
+  systemPrompt: string,
+  messages: { role: string; content: string }[],
+): Promise<string | null> {
   try {
     const modelsRes = await fetch("https://api.groq.com/openai/v1/models", {
       headers: { Authorization: `Bearer ${apiKey}` },
     });
     const modelsData = await modelsRes.json();
-    const firstTextModel = modelsData.data.find((m: any) => m.id.includes("llama") || m.id.includes("mixtral") || m.id.includes("gemma") || m.id.includes("qwen") || m.id.includes("gpt"))?.id ?? "qwen-3.6-27b";
+    const firstTextModel =
+      modelsData.data.find(
+        (m: any) =>
+          m.id.includes("llama") ||
+          m.id.includes("mixtral") ||
+          m.id.includes("gemma") ||
+          m.id.includes("qwen") ||
+          m.id.includes("gpt"),
+      )?.id ?? "qwen-3.6-27b";
 
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -182,7 +208,11 @@ async function callGroq(apiKey: string, systemPrompt: string, messages: { role: 
   }
 }
 
-async function callOpenAI(apiKey: string, systemPrompt: string, messages: { role: string; content: string }[]): Promise<string | null> {
+async function callOpenAI(
+  apiKey: string,
+  systemPrompt: string,
+  messages: { role: string; content: string }[],
+): Promise<string | null> {
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -215,7 +245,11 @@ async function callOpenAI(apiKey: string, systemPrompt: string, messages: { role
   }
 }
 
-async function callLovableGateway(apiKey: string, systemPrompt: string, messages: { role: string; content: string }[]): Promise<string | null> {
+async function callLovableGateway(
+  apiKey: string,
+  systemPrompt: string,
+  messages: { role: string; content: string }[],
+): Promise<string | null> {
   try {
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -249,7 +283,8 @@ async function buildCatalogContext(query: string) {
   const productLines = products.map((p) => {
     const price = formatARS(getPrecioEfectivo(p));
     const saleInfo = tieneOferta(p) ? " (EN OFERTA)" : "";
-    const stock = Number(p.stock ?? 0) > 0 ? `stock disponible (${p.stock} u.)` : "consultar disponibilidad";
+    const stock =
+      Number(p.stock ?? 0) > 0 ? `stock disponible (${p.stock} u.)` : "consultar disponibilidad";
     const categoryLabel = p.categoria ? `categoría: ${p.categoria}` : "";
     const group = p.grupo ? `grupo: ${p.grupo}` : "";
     return `- ID ${p.id}: "${p.nombre ?? "Producto"}" | ${group} | ${categoryLabel} | ${price}${saleInfo} | ${stock} | link: ${BASE_URL}/productos/${p.id}`;
@@ -266,11 +301,16 @@ Recordatorio: Solo podés citar o recomendar productos que figuren en esta lista
   return { products, prompt };
 }
 
-async function searchCatalogProducts(terms: string[], category: string | null): Promise<CatalogProduct[]> {
+async function searchCatalogProducts(
+  terms: string[],
+  category: string | null,
+): Promise<CatalogProduct[]> {
   try {
     let query = supabaseAdmin
       .from("productos")
-      .select("id,nombre,descripcion,categoria,grupo,sku,precio,precio_oferta,oferta_hasta,stock,image_url,image_webp")
+      .select(
+        "id,nombre,descripcion,categoria,grupo,sku,precio,precio_oferta,oferta_hasta,stock,image_url,image_webp",
+      )
       .eq("activo", true)
       .limit(60);
 
@@ -392,9 +432,38 @@ function normalizeText(value?: string | null): string {
 
 function extractSearchTerms(input: string): string[] {
   const stopwords = new Set([
-    "hola", "buenas", "buen", "dia", "tarde", "noche", "quiero", "necesito", "busco", "tenes",
-    "tienen", "para", "con", "una", "uno", "los", "las", "del", "que", "cual", "cuanto", "precio",
-    "producto", "catalogo", "donde", "estan", "cuanto", "sale", "venden", "favor", "gracias", "decasan",
+    "hola",
+    "buenas",
+    "buen",
+    "dia",
+    "tarde",
+    "noche",
+    "quiero",
+    "necesito",
+    "busco",
+    "tenes",
+    "tienen",
+    "para",
+    "con",
+    "una",
+    "uno",
+    "los",
+    "las",
+    "del",
+    "que",
+    "cual",
+    "cuanto",
+    "precio",
+    "producto",
+    "catalogo",
+    "donde",
+    "estan",
+    "cuanto",
+    "sale",
+    "venden",
+    "favor",
+    "gracias",
+    "decasan",
   ]);
 
   return normalizeText(input)
@@ -436,13 +505,22 @@ function detectCategory(input: string): string | null {
 
   const rules: Array<[string, RegExp]> = [
     ["Jardín", /\b(jardin|manguera|riego|poda|cesped|desmalezadora|cortadora)/],
-    ["Sanitarios e instalaciones", /\b(sanitario|canilla|griferia|bano|agua|instalacion|termofusion|valvula|plomeria)/],
+    [
+      "Sanitarios e instalaciones",
+      /\b(sanitario|canilla|griferia|bano|agua|instalacion|termofusion|valvula|plomeria)/,
+    ],
     ["H. Eléctricas", /\b(bateria|inalambric|cargador|litio|20v|18v|12v)/],
-    ["H. Eléctricas", /\b(electrica|taladro|amoladora|sierra|lijadora|rotomartillo|sensitiva|soldadora|lustradora)/],
+    [
+      "H. Eléctricas",
+      /\b(electrica|taladro|amoladora|sierra|lijadora|rotomartillo|sensitiva|soldadora|lustradora)/,
+    ],
     ["Automotor", /\b(auto|automotor|bujia|aceite|gato|llave cruz|compresor)/],
     ["Materiales", /\b(cemento|arena|ladrillo|material|adhesivo|sellador|membrana)/],
     ["Materiales", /\bcal\b/],
-    ["Accesorios y Herramientas", /\b(accesorio|herramienta|destornillador|pinza|llave|martillo|disco|mecha|bocallave)/],
+    [
+      "Accesorios y Herramientas",
+      /\b(accesorio|herramienta|destornillador|pinza|llave|martillo|disco|mecha|bocallave)/,
+    ],
   ];
 
   for (const [category, regex] of rules) {
@@ -477,7 +555,11 @@ function buildFallbackReply(userQuery: string, context: { products: CatalogProdu
   }
 
   // 4. Medios de pago / Cuotas
-  if (/\b(pago|pagos|tarjeta|tarjetas|cuotas|transferencia|efectivo|mercadopago|mercado pago|interes)\b/.test(norm)) {
+  if (
+    /\b(pago|pagos|tarjeta|tarjetas|cuotas|transferencia|efectivo|mercadopago|mercado pago|interes)\b/.test(
+      norm,
+    )
+  ) {
     return `💳 **Medios de Pago Disponibles:**\n• **Mercado Pago:** Tarjetas de crédito, débito y dinero en cuenta.\n• **Efectivo** al retirar en nuestro local.\n\nTodos los pagos se procesan de forma 100% segura.`;
   }
 
@@ -518,8 +600,13 @@ function sanitizeHref(href: string): string | null {
   try {
     const url = new URL(href);
     if (!ALLOWED_LINK_HOSTS.has(url.hostname)) return null;
-    if (url.hostname === "decasan.lovable.app" || url.hostname === "decasan.vercel.app" || url.hostname === "decasan.com.ar") {
-      if (url.pathname === "/productos" || url.pathname === "/productos/") return `${BASE_URL}/productos`;
+    if (
+      url.hostname === "decasan.lovable.app" ||
+      url.hostname === "decasan.vercel.app" ||
+      url.hostname === "decasan.com.ar"
+    ) {
+      if (url.pathname === "/productos" || url.pathname === "/productos/")
+        return `${BASE_URL}/productos`;
       if (/^\/productos\/\d+$/.test(url.pathname)) return `${BASE_URL}${url.pathname}`;
       return null;
     }

@@ -79,7 +79,9 @@ export async function applyMercadoPagoPayment(payment: MercadoPagoPayment) {
 
   const { data: pedido, error: readError } = await supabaseAdmin
     .from("pedidos")
-    .select("id,total,mp_preference_id,confirmation_email_sent_at,transportista,carrier,tracking_number,email,nombre,telefono,direccion,andreani_tracking_number")
+    .select(
+      "id,total,mp_preference_id,confirmation_email_sent_at,transportista,carrier,tracking_number,email,nombre,telefono,direccion,andreani_tracking_number",
+    )
     .eq("id", pedidoId)
     .single();
 
@@ -88,7 +90,11 @@ export async function applyMercadoPagoPayment(payment: MercadoPagoPayment) {
     return { ok: false, reason: "order_not_found" };
   }
 
-  if (payment.preference_id && pedido.mp_preference_id && payment.preference_id !== pedido.mp_preference_id) {
+  if (
+    payment.preference_id &&
+    pedido.mp_preference_id &&
+    payment.preference_id !== pedido.mp_preference_id
+  ) {
     console.error("[mp] preference mismatch", {
       pedidoId,
       expectedPreferenceId: pedido.mp_preference_id,
@@ -116,7 +122,10 @@ export async function applyMercadoPagoPayment(payment: MercadoPagoPayment) {
   }
 
   if (estado === "pagado") {
-    const isShippingOrder = (pedido as any).carrier === "zipnova" || pedido.transportista === "zipnova" || pedido.transportista === "andreani";
+    const isShippingOrder =
+      (pedido as any).carrier === "zipnova" ||
+      pedido.transportista === "zipnova" ||
+      pedido.transportista === "andreani";
     const existingTracking = (pedido as any).tracking_number || pedido.andreani_tracking_number;
 
     if (isShippingOrder && !existingTracking) {

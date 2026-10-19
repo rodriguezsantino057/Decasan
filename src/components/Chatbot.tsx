@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { MessageCircle, X, Send, Loader2, Sparkles, ExternalLink, ShoppingBag, PhoneCall } from "lucide-react";
+import {
+  MessageCircle,
+  X,
+  Send,
+  Loader2,
+  Sparkles,
+  ExternalLink,
+  ShoppingBag,
+  PhoneCall,
+} from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Link, useLocation } from "@tanstack/react-router";
 import { chatWithBot, type CatalogProduct } from "@/lib/chat.functions";
@@ -13,7 +22,14 @@ const WA_URL = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(
   "Hola Decasan, tengo una consulta a realizar.",
 )}`;
 const SITE_URL = "https://decasan.vercel.app";
-const SAFE_LINK_HOSTS = new Set(["decasan.vercel.app", "decasan.lovable.app", "decasan.com.ar", "wa.me", "www.instagram.com", "web.facebook.com"]);
+const SAFE_LINK_HOSTS = new Set([
+  "decasan.vercel.app",
+  "decasan.lovable.app",
+  "decasan.com.ar",
+  "wa.me",
+  "www.instagram.com",
+  "web.facebook.com",
+]);
 
 type Msg = {
   role: "user" | "assistant";
@@ -23,7 +39,10 @@ type Msg = {
 
 const QUICK_REPLIES = [
   { label: "🔍 Buscar herramientas", prompt: "Quiero buscar herramientas en el catálogo." },
-  { label: "📍 Ubicación y horarios", prompt: "¿Dónde están ubicados y cuáles son los horarios de atención?" },
+  {
+    label: "📍 Ubicación y horarios",
+    prompt: "¿Dónde están ubicados y cuáles son los horarios de atención?",
+  },
   { label: "💳 Medios de pago", prompt: "¿Qué medios de pago y tarjetas aceptan?" },
   { label: "🚚 Envíos y retiros", prompt: "¿Cómo son los envíos y cuánto tardan?" },
   { label: "🏷️ Ofertas destacadas", prompt: "¿Cuáles son las ofertas o promociones de la semana?" },
@@ -153,7 +172,10 @@ export function Chatbot() {
           </div>
 
           {/* Messages */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-surface scroll-smooth">
+          <div
+            ref={scrollRef}
+            className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-surface scroll-smooth"
+          >
             {messages.map((m, i) => (
               <Bubble key={i} msg={m} />
             ))}
@@ -219,7 +241,10 @@ export function Chatbot() {
 
           {/* Bottom Bar */}
           <div className="text-[11px] text-center text-muted-foreground py-2 bg-surface-elevated border-t border-border flex items-center justify-center gap-3">
-            <Link to="/productos" className="hover:text-primary transition-colors flex items-center gap-1 font-medium">
+            <Link
+              to="/productos"
+              className="hover:text-primary transition-colors flex items-center gap-1 font-medium"
+            >
               <ShoppingBag className="size-3" /> Ver catálogo
             </Link>
             <span className="text-border">•</span>
@@ -255,7 +280,12 @@ function Bubble({ msg }: { msg: Msg }) {
             <ReactMarkdown
               components={{
                 a: ({ href, children }) => (
-                  <a href={safeChatHref(href)} target="_blank" rel="noreferrer" className="underline hover:opacity-80">
+                  <a
+                    href={safeChatHref(href)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline hover:opacity-80"
+                  >
                     {children}
                   </a>
                 ),
@@ -322,9 +352,7 @@ function MiniProductCard({ product }: { product: CatalogProduct }) {
 
         <div className="flex items-center justify-between gap-1 pt-1">
           <div className="flex items-baseline gap-1.5">
-            <span className="text-xs font-bold text-primary">
-              {formatARS(effectivePrice)}
-            </span>
+            <span className="text-xs font-bold text-primary">{formatARS(effectivePrice)}</span>
             {onSale && (
               <span className="text-[9px] bg-red-500/15 text-red-600 font-bold px-1 rounded">
                 Oferta

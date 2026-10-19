@@ -30,14 +30,25 @@ export function Layout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 border-b border-border bg-surface-elevated/90 backdrop-blur">
         <div className="container-x grid grid-cols-[auto_1fr_auto] items-center gap-2 py-3 sm:flex sm:gap-4 sm:py-4">
           <Link to="/" className="shrink-0 flex items-center">
-            <img src="/logo.png" alt="Decasan Home Center" className="h-7 sm:h-8 md:h-9 w-auto object-contain transition-opacity hover:opacity-90" />
+            <img
+              src="/logo.png"
+              alt="Decasan Home Center"
+              className="h-7 sm:h-8 md:h-9 w-auto object-contain transition-opacity hover:opacity-90"
+            />
           </Link>
 
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium ml-6">
-            <Link to="/productos" className="hover:text-primary">Catálogo</Link>
-            <Link to="/faq" className="hover:text-primary">Preguntas frecuentes</Link>
+            <Link to="/productos" className="hover:text-primary">
+              Catálogo
+            </Link>
+            <Link to="/faq" className="hover:text-primary">
+              Preguntas frecuentes
+            </Link>
             {isAdmin && (
-              <Link to="/admin" className="text-primary hover:text-primary/80 flex items-center gap-1">
+              <Link
+                to="/admin"
+                className="text-primary hover:text-primary/80 flex items-center gap-1"
+              >
                 <Shield className="size-4" /> Admin
               </Link>
             )}
@@ -48,28 +59,36 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex items-center justify-end gap-0.5 sm:contents">
-          {user ? (
-            <>
-              <Link to="/cuenta" className="p-2 hover:text-primary" aria-label="Mi cuenta">
-                <User className="size-5" />
+            {user ? (
+              <>
+                <Link to="/cuenta" className="p-2 hover:text-primary" aria-label="Mi cuenta">
+                  <User className="size-5" />
+                </Link>
+                <button
+                  onClick={signOut}
+                  className="p-2 hover:text-primary"
+                  aria-label="Cerrar sesión"
+                >
+                  <LogOut className="size-5" />
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                search={{ redirect: "/cuenta", mode: "login" } as never}
+                className="p-2 hover:text-primary text-sm font-medium"
+              >
+                Ingresar
               </Link>
-              <button onClick={signOut} className="p-2 hover:text-primary" aria-label="Cerrar sesión">
-                <LogOut className="size-5" />
-              </button>
-            </>
-          ) : (
-            <Link to="/login" search={{ redirect: "/cuenta", mode: "login" } as never} className="p-2 hover:text-primary text-sm font-medium">
-              Ingresar
-            </Link>
-          )}
-          <Link to="/carrito" className="relative p-2 hover:text-primary" aria-label="Carrito">
-            <ShoppingCart className="size-5" />
-            {count > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full size-4 grid place-items-center">
-                {count}
-              </span>
             )}
-          </Link>
+            <Link to="/carrito" className="relative p-2 hover:text-primary" aria-label="Carrito">
+              <ShoppingCart className="size-5" />
+              {count > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold rounded-full size-4 grid place-items-center">
+                  {count}
+                </span>
+              )}
+            </Link>
           </div>
         </div>
       </header>

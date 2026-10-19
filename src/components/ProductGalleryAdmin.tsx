@@ -2,18 +2,44 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
-import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Plus, Trash2, GripVertical, Edit3 } from "lucide-react";
-import { adminListProductImages, adminAddProductImage, adminUpdateProductImage, adminReorderProductImages, adminDeleteProductImage } from "@/lib/admin.functions";
+import {
+  adminListProductImages,
+  adminAddProductImage,
+  adminUpdateProductImage,
+  adminReorderProductImages,
+  adminDeleteProductImage,
+} from "@/lib/admin.functions";
 import { ProductImage } from "./ProductImage";
 import { ImageCropper } from "./ImageCropper";
 import { uploadProductImage, fileToDataUrl } from "@/lib/image-upload";
 
 type Props = { productoId: number };
 
-type Row = { id: string; url: string | null; url_webp: string | null; alt: string | null; orden: number };
+type Row = {
+  id: string;
+  url: string | null;
+  url_webp: string | null;
+  alt: string | null;
+  orden: number;
+};
 
 export function ProductGalleryAdmin({ productoId }: Props) {
   const qc = useQueryClient();
@@ -52,7 +78,9 @@ export function ProductGalleryAdmin({ productoId }: Props) {
     const next = arrayMove(items, oldIndex, newIndex).map((it, i) => ({ ...it, orden: i }));
     setItems(next);
     try {
-      await reorder({ data: { producto_id: productoId, items: next.map(({ id, orden }) => ({ id, orden })) } });
+      await reorder({
+        data: { producto_id: productoId, items: next.map(({ id, orden }) => ({ id, orden })) },
+      });
       qc.invalidateQueries({ queryKey: ["product-images", productoId] });
     } catch (e: any) {
       toast.error(e?.message ?? "Error al reordenar");
@@ -79,20 +107,24 @@ export function ProductGalleryAdmin({ productoId }: Props) {
 
       if (editingId) {
         // Estamos editando una imagen existente → actualizar en vez de agregar
-        await update({ data: {
-          id: editingId,
-          url: isWebp ? null : url,
-          url_webp: isWebp ? url : null,
-        } });
+        await update({
+          data: {
+            id: editingId,
+            url: isWebp ? null : url,
+            url_webp: isWebp ? url : null,
+          },
+        });
         toast.success("Imagen actualizada");
         setEditingId(null);
       } else {
         // Imagen nueva → agregar
-        await add({ data: {
-          producto_id: productoId,
-          url: isWebp ? null : url,
-          url_webp: isWebp ? url : null,
-        } });
+        await add({
+          data: {
+            producto_id: productoId,
+            url: isWebp ? null : url,
+            url_webp: isWebp ? url : null,
+          },
+        });
         toast.success("Imagen agregada");
       }
 
@@ -143,7 +175,10 @@ export function ProductGalleryAdmin({ productoId }: Props) {
             multiple
             className="hidden"
             disabled={busy}
-            onChange={(e) => { onFiles(e.target.files); e.currentTarget.value = ""; }}
+            onChange={(e) => {
+              onFiles(e.target.files);
+              e.currentTarget.value = "";
+            }}
           />
         </label>
       </div>
@@ -171,7 +206,8 @@ export function ProductGalleryAdmin({ productoId }: Props) {
       </DndContext>
 
       <div className="text-[11px] text-muted-foreground">
-        Arrastrá para reordenar. La <strong>primera</strong> imagen es la principal y se usa en el catálogo.
+        Arrastrá para reordenar. La <strong>primera</strong> imagen es la principal y se usa en el
+        catálogo.
       </div>
 
       {queue.length > 0 && (
@@ -187,18 +223,39 @@ export function ProductGalleryAdmin({ productoId }: Props) {
   );
 }
 
-function SortableThumb({ item, isPrincipal, onDelete, onEdit }: {
-  item: Row; isPrincipal: boolean; onDelete: () => void; onEdit: () => void;
+function SortableThumb({
+  item,
+  isPrincipal,
+  onDelete,
+  onEdit,
+}: {
+  item: Row;
+  isPrincipal: boolean;
+  onDelete: () => void;
+  onEdit: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+  });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : 1,
   };
   return (
-    <div ref={setNodeRef} style={style} className="relative group aspect-square border border-border bg-muted overflow-hidden">
-      <ProductImage webp={item.url_webp} src={item.url} alt={item.alt ?? ""} className="size-full" iconClassName="size-8" sizes="200px" />
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative group aspect-square border border-border bg-muted overflow-hidden"
+    >
+      <ProductImage
+        webp={item.url_webp}
+        src={item.url}
+        alt={item.alt ?? ""}
+        className="size-full"
+        iconClassName="size-8"
+        sizes="200px"
+      />
       {isPrincipal && (
         <span className="absolute top-1 left-1 bg-primary text-primary-foreground text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5">
           Principal
@@ -216,7 +273,10 @@ function SortableThumb({ item, isPrincipal, onDelete, onEdit }: {
       <div className="absolute bottom-1 right-1 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onEdit(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
           className="size-7 sm:size-6 grid place-items-center bg-background/90 border border-border hover:text-primary"
           aria-label="Editar recorte"
         >
@@ -224,7 +284,10 @@ function SortableThumb({ item, isPrincipal, onDelete, onEdit }: {
         </button>
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
           className="size-7 sm:size-6 grid place-items-center bg-background/90 border border-border hover:text-destructive"
           aria-label="Eliminar"
         >

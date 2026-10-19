@@ -2,15 +2,20 @@
 // Server-side Supabase client with service role key - bypasses RLS.
 // Use this for admin operations in server functions and server routes only.
 // For user-authenticated queries (with RLS), use the auth middleware instead.
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from './types';
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "./types";
 
 function createSupabaseAdminClient() {
-  const SUPABASE_URL = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
-  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key';
+  const SUPABASE_URL =
+    process.env.SUPABASE_URL ||
+    import.meta.env.VITE_SUPABASE_URL ||
+    "https://placeholder.supabase.co";
+  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key";
 
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.warn('[Supabase Admin] Missing SUPABASE_SERVICE_ROLE_KEY environment variable. Please add it in Vercel settings.');
+    console.warn(
+      "[Supabase Admin] Missing SUPABASE_SERVICE_ROLE_KEY environment variable. Please add it in Vercel settings.",
+    );
   }
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -18,7 +23,7 @@ function createSupabaseAdminClient() {
       storage: undefined,
       persistSession: false,
       autoRefreshToken: false,
-    }
+    },
   });
 }
 

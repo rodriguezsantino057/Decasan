@@ -32,7 +32,9 @@ export type SortKey = "relevance" | "price-asc" | "price-desc" | "name-asc";
 
 const SEARCH_FIELDS = ["nombre", "sku", "grupo", "categoria", "descripcion"] as const;
 
-export function getPrecioEfectivo(p: Pick<Producto, "precio" | "precio_oferta" | "oferta_hasta">): number {
+export function getPrecioEfectivo(
+  p: Pick<Producto, "precio" | "precio_oferta" | "oferta_hasta">,
+): number {
   const base = Number(p.precio ?? 0);
   if (
     p.precio_oferta != null &&
@@ -44,7 +46,9 @@ export function getPrecioEfectivo(p: Pick<Producto, "precio" | "precio_oferta" |
   return base;
 }
 
-export function tieneOferta(p: Pick<Producto, "precio" | "precio_oferta" | "oferta_hasta">): boolean {
+export function tieneOferta(
+  p: Pick<Producto, "precio" | "precio_oferta" | "oferta_hasta">,
+): boolean {
   return getPrecioEfectivo(p) < Number(p.precio ?? 0);
 }
 
@@ -77,7 +81,7 @@ export async function fetchProductos(opts: {
 
   const limit = opts.limit ?? 24;
   const offset = opts.offset ?? 0;
-  
+
   // Fetch up to 2000 items to allow in-memory grouping of in-stock vs out-of-stock
   query = query.limit(2000);
 
@@ -110,12 +114,15 @@ export async function fetchProductos(opts: {
     }
   }
 
-  const hasOnlyNumbers = (str: string | null) => str ? /^\d+$/.test(str.trim()) : false;
-  let filteredRows = opts.isAdmin 
-    ? rows 
+  const hasOnlyNumbers = (str: string | null) => (str ? /^\d+$/.test(str.trim()) : false);
+  let filteredRows = opts.isAdmin
+    ? rows
     : rows.filter((r) => !hasOnlyNumbers(r.categoria) && !hasOnlyNumbers(r.grupo));
 
-  let ranked = filteredRows.map((item) => ({ item, score: searchTokens.length ? scoreProductSearch(item, searchTokens) : 1 }));
+  let ranked = filteredRows.map((item) => ({
+    item,
+    score: searchTokens.length ? scoreProductSearch(item, searchTokens) : 1,
+  }));
   if (searchTokens.length) {
     ranked = ranked.filter((entry) => entry.score > 0);
   }
@@ -124,13 +131,27 @@ export async function fetchProductos(opts: {
 
   switch (opts.sort) {
     case "price-asc":
-      ranked.sort((a, b) => hasStock(b.item) - hasStock(a.item) || getPrecioEfectivo(a.item) - getPrecioEfectivo(b.item) || b.score - a.score);
+      ranked.sort(
+        (a, b) =>
+          hasStock(b.item) - hasStock(a.item) ||
+          getPrecioEfectivo(a.item) - getPrecioEfectivo(b.item) ||
+          b.score - a.score,
+      );
       break;
     case "price-desc":
-      ranked.sort((a, b) => hasStock(b.item) - hasStock(a.item) || getPrecioEfectivo(b.item) - getPrecioEfectivo(a.item) || b.score - a.score);
+      ranked.sort(
+        (a, b) =>
+          hasStock(b.item) - hasStock(a.item) ||
+          getPrecioEfectivo(b.item) - getPrecioEfectivo(a.item) ||
+          b.score - a.score,
+      );
       break;
     case "name-asc":
-      ranked.sort((a, b) => hasStock(b.item) - hasStock(a.item) || (a.item.nombre ?? "").localeCompare(b.item.nombre ?? "", "es"));
+      ranked.sort(
+        (a, b) =>
+          hasStock(b.item) - hasStock(a.item) ||
+          (a.item.nombre ?? "").localeCompare(b.item.nombre ?? "", "es"),
+      );
       break;
     default:
       ranked.sort(
@@ -236,9 +257,7 @@ export async function fetchGrupos(isAdmin?: boolean, cat?: string): Promise<stri
     q = q.or("activo.eq.true,activo.is.null");
     if (cat) q = q.eq("categoria", normalizeCategoryName(cat) as string);
 
-    const { data, error } = await q
-      .order("grupo")
-      .range(from, from + pageSize - 1);
+    const { data, error } = await q.order("grupo").range(from, from + pageSize - 1);
     if (error) throw error;
     allGrupos.push(...(data ?? []).map((p: any) => p.grupo));
     if (!data || data.length < pageSize) break;
@@ -246,9 +265,7 @@ export async function fetchGrupos(isAdmin?: boolean, cat?: string): Promise<stri
   }
   let groups = [...new Set(allGrupos.filter(Boolean))];
   groups = groups.filter((g) => !/^\d+$/.test(g.trim()));
-  return groups.sort((a, b) =>
-    a.localeCompare(b, "es", { sensitivity: "base" })
-  );
+  return groups.sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
 }
 
 export async function fetchPriceRange(isAdmin?: boolean): Promise<{ min: number; max: number }> {

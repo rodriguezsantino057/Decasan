@@ -22,9 +22,23 @@ const FIELD_ALIASES = {
   categoria: ["categoria", "categoría", "cat", "rubro", "seccion", "sección"],
   grupo: ["grupo", "marca", "linea", "línea", "subcategoria", "subcategoría"],
   stock: ["stock", "cantidad", "cant", "existencia", "existencias", "stock_actual"],
-  descripcion: ["descripcion", "descripción", "detalle_largo", "info", "informacion", "información"],
+  descripcion: [
+    "descripcion",
+    "descripción",
+    "detalle_largo",
+    "info",
+    "informacion",
+    "información",
+  ],
   activo: ["activo", "estado", "visible", "habilitado", "publicado"],
-  precio_oferta: ["precio_oferta", "oferta", "precio_promocion", "precio_promo", "promocion", "promo"],
+  precio_oferta: [
+    "precio_oferta",
+    "oferta",
+    "precio_promocion",
+    "precio_promo",
+    "promocion",
+    "promo",
+  ],
   oferta_hasta: ["oferta_hasta", "vencimiento_oferta", "fin_oferta", "oferta_fin"],
 } as const;
 
@@ -67,10 +81,24 @@ function parseBoolean(value: unknown): boolean | null {
   if (value == null || value === "") return null;
   if (typeof value === "boolean") return value;
   const str = String(value).trim().toLowerCase();
-  if (str === "1" || str === "true" || str === "si" || str === "sí" || str === "yes" || str === "activo" || str === "habilitado") {
+  if (
+    str === "1" ||
+    str === "true" ||
+    str === "si" ||
+    str === "sí" ||
+    str === "yes" ||
+    str === "activo" ||
+    str === "habilitado"
+  ) {
     return true;
   }
-  if (str === "0" || str === "false" || str === "no" || str === "inactivo" || str === "deshabilitado") {
+  if (
+    str === "0" ||
+    str === "false" ||
+    str === "no" ||
+    str === "inactivo" ||
+    str === "deshabilitado"
+  ) {
     return false;
   }
   return null;
@@ -150,7 +178,8 @@ export async function parseErpProductFile(file: File): Promise<ErpImportRow[]> {
       parsedRow.precio_oferta = parseMoney(getValue(row, FIELD_ALIASES.precio_oferta));
     }
     if (hasField(row, FIELD_ALIASES.oferta_hasta)) {
-      parsedRow.oferta_hasta = String(getValue(row, FIELD_ALIASES.oferta_hasta) ?? "").trim() || null;
+      parsedRow.oferta_hasta =
+        String(getValue(row, FIELD_ALIASES.oferta_hasta) ?? "").trim() || null;
     }
 
     parsed.push(parsedRow);

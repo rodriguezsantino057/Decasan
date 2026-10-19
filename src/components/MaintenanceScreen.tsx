@@ -51,9 +51,8 @@ export function MaintenanceScreen({ onUnlock }: { onUnlock: () => void }) {
       </h1>
 
       <p className="mb-10 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
-        Estamos preparando el catálogo con los primeros productos. Muy pronto vas a poder
-        comprar online en{" "}
-        <span className="font-semibold text-foreground">Decasan Home Center</span>.
+        Estamos preparando el catálogo con los primeros productos. Muy pronto vas a poder comprar
+        online en <span className="font-semibold text-foreground">Decasan Home Center</span>.
       </p>
 
       <div className="w-full max-w-xs">
@@ -78,9 +77,7 @@ export function MaintenanceScreen({ onUnlock }: { onUnlock: () => void }) {
               autoFocus
               className="text-center"
             />
-            {error && (
-              <p className="text-xs text-destructive">PIN incorrecto, intentá de nuevo.</p>
-            )}
+            {error && <p className="text-xs text-destructive">PIN incorrecto, intentá de nuevo.</p>}
             <Button type="submit" className="w-full">
               Ingresar
             </Button>

@@ -33,9 +33,7 @@ export const useCart = create<CartState>()(
           const existing = s.items.find((i) => i.id === item.id);
           if (existing) {
             return {
-              items: s.items.map((i) =>
-                i.id === item.id ? { ...i, qty: i.qty + qty } : i,
-              ),
+              items: s.items.map((i) => (i.id === item.id ? { ...i, qty: i.qty + qty } : i)),
             };
           }
           return { items: [...s.items, { ...item, qty }] };
@@ -43,9 +41,7 @@ export const useCart = create<CartState>()(
       remove: (id) => set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
       setQty: (id, qty) =>
         set((s) => ({
-          items: s.items
-            .map((i) => (i.id === id ? { ...i, qty } : i))
-            .filter((i) => i.qty > 0),
+          items: s.items.map((i) => (i.id === id ? { ...i, qty } : i)).filter((i) => i.qty > 0),
         })),
       clear: () => set({ items: [] }),
       count: () => get().items.reduce((a, b) => a + b.qty, 0),

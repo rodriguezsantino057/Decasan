@@ -1,5 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Clock, CreditCard, MapPin, MessageCircle, ShieldCheck, Truck } from "lucide-react";
+import {
+  ArrowRight,
+  Clock,
+  CreditCard,
+  MapPin,
+  MessageCircle,
+  ShieldCheck,
+  Truck,
+} from "lucide-react";
 import { Layout } from "@/components/Layout";
 
 export const Route = createFileRoute("/faq")({
@@ -9,15 +17,18 @@ export const Route = createFileRoute("/faq")({
 const faqs = [
   {
     question: "Donde esta ubicado el local?",
-    answer: "Estamos en Av. Pres. Kennedy 270, La Falda, Cordoba. Podes comprar online y retirar por el local.",
+    answer:
+      "Estamos en Av. Pres. Kennedy 270, La Falda, Cordoba. Podes comprar online y retirar por el local.",
   },
   {
     question: "Hacen envios a todo el pais?",
-    answer: "Si. Trabajamos para enviar a todo Argentina desde La Falda. En el checkout vas a poder cotizar el envio ingresando tu codigo postal.",
+    answer:
+      "Si. Trabajamos para enviar a todo Argentina desde La Falda. En el checkout vas a poder cotizar el envio ingresando tu codigo postal.",
   },
   {
     question: "Como se calcula el envio?",
-    answer: "El sistema cotiza el envio con Zipnova usando el codigo postal de destino, origen La Falda y datos del paquete. Si un destino no se puede cotizar, podes consultarnos por WhatsApp.",
+    answer:
+      "El sistema cotiza el envio con Zipnova usando el codigo postal de destino, origen La Falda y datos del paquete. Si un destino no se puede cotizar, podes consultarnos por WhatsApp.",
   },
   {
     question: "Puedo retirar mi compra en el local?",
@@ -25,15 +36,18 @@ const faqs = [
   },
   {
     question: "Que medios de pago aceptan?",
-    answer: "Podes pagar con Mercado Pago (tarjeta de crédito, débito o dinero en cuenta). Tambien podes coordinar el pago por WhatsApp o abonar en efectivo al retirar en el local.",
+    answer:
+      "Podes pagar con Mercado Pago (tarjeta de crédito, débito o dinero en cuenta). Tambien podes coordinar el pago por WhatsApp o abonar en efectivo al retirar en el local.",
   },
   {
     question: "Los productos tienen garantia?",
-    answer: "Trabajamos con productos originales y marcas reconocidas. La garantia depende del fabricante y del tipo de producto.",
+    answer:
+      "Trabajamos con productos originales y marcas reconocidas. La garantia depende del fabricante y del tipo de producto.",
   },
   {
     question: "Puedo consultar antes de comprar?",
-    answer: "Si. Si tenes dudas sobre medidas, compatibilidad, stock o que herramienta elegir, escribinos por WhatsApp y te asesoramos.",
+    answer:
+      "Si. Si tenes dudas sobre medidas, compatibilidad, stock o que herramienta elegir, escribinos por WhatsApp y te asesoramos.",
   },
 ];
 
@@ -46,12 +60,10 @@ function FaqPage() {
             <div className="text-xs uppercase tracking-[0.25em] text-primary font-medium mb-4">
               Nosotros
             </div>
-            <h1 className="font-display text-4xl md:text-6xl leading-none">
-              Preguntas frecuentes
-            </h1>
+            <h1 className="font-display text-4xl md:text-6xl leading-none">Preguntas frecuentes</h1>
             <p className="mt-5 text-secondary-foreground/80 leading-relaxed max-w-2xl">
-              Somos Decasan Home Center, una ferreteria de La Falda con atencion personal,
-              catalogo online y envios a todo el pais.
+              Somos Decasan Home Center, una ferreteria de La Falda con atencion personal, catalogo
+              online y envios a todo el pais.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -72,7 +84,6 @@ function FaqPage() {
           </div>
         </div>
       </section>
-
 
       <section className="container-x py-14 md:py-20">
         <div className="grid lg:grid-cols-[320px_1fr] gap-10">

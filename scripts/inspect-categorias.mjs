@@ -36,13 +36,13 @@ async function main() {
   console.log("=== CATEGORIAS ===");
   for (const [cat, items] of catMap.entries()) {
     console.log(`Categoría "${cat}":`);
-    items.forEach(i => console.log(`  - ${i}`));
+    items.forEach((i) => console.log(`  - ${i}`));
   }
 
   console.log("\n=== GRUPOS ===");
   for (const [grupo, items] of groupMap.entries()) {
     console.log(`Grupo "${grupo}":`);
-    items.forEach(i => console.log(`  - ${i}`));
+    items.forEach((i) => console.log(`  - ${i}`));
   }
 }
 

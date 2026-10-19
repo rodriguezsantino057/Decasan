@@ -2,7 +2,15 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BadgeCheck, Banknote, CreditCard, Landmark, MessageCircle, Store, Truck } from "lucide-react";
+import {
+  BadgeCheck,
+  Banknote,
+  CreditCard,
+  Landmark,
+  MessageCircle,
+  Store,
+  Truck,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Layout } from "@/components/Layout";
@@ -31,7 +39,10 @@ function CheckoutPage() {
   const getWeightsFn = useServerFn(getGroupWeights);
 
   const profile = useQuery({ queryKey: ["profile"], queryFn: () => profileFn(), enabled: !!user });
-  const { data: dynamicWeights } = useQuery({ queryKey: ["group-weights"], queryFn: () => getWeightsFn() });
+  const { data: dynamicWeights } = useQuery({
+    queryKey: ["group-weights"],
+    queryFn: () => getWeightsFn(),
+  });
 
   const [form, setForm] = useState({
     email: "",
@@ -55,7 +66,10 @@ function CheckoutPage() {
   const finalTotal = total + shippingTotal;
 
   const pesoTotalKg = useMemo(() => {
-    return items.reduce((acc, item) => acc + getProductWeight(item as any, dynamicWeights) * item.qty, 0);
+    return items.reduce(
+      (acc, item) => acc + getProductWeight(item as any, dynamicWeights) * item.qty,
+      0,
+    );
   }, [items, dynamicWeights]);
 
   function setProvincia(provincia: string) {
@@ -71,7 +85,8 @@ function CheckoutPage() {
   }
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/login", search: { redirect: "/checkout", mode: "login" } });
+    if (!loading && !user)
+      navigate({ to: "/login", search: { redirect: "/checkout", mode: "login" } });
   }, [loading, user, navigate]);
 
   useEffect(() => {
@@ -116,7 +131,10 @@ function CheckoutPage() {
       <Layout>
         <div className="container-x py-20 max-w-md text-center">
           <h1 className="font-display text-3xl">Tu carrito esta vacio</h1>
-          <Link to="/productos" className="inline-block mt-6 bg-primary text-primary-foreground px-5 py-2.5 font-display tracking-wide hover:bg-primary/90">
+          <Link
+            to="/productos"
+            className="inline-block mt-6 bg-primary text-primary-foreground px-5 py-2.5 font-display tracking-wide hover:bg-primary/90"
+          >
             Ver productos
           </Link>
         </div>
@@ -186,20 +204,64 @@ function CheckoutPage() {
           <div className="space-y-6 min-w-0">
             <Section title="Datos de contacto">
               <Grid>
-                <Field label="Nombre completo" value={form.nombre} onChange={(v) => setForm({ ...form, nombre: v })} required />
-                <Field label="Email" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} required />
-                <Field label="Telefono" value={form.telefono} onChange={(v) => setForm({ ...form, telefono: v })} required />
+                <Field
+                  label="Nombre completo"
+                  value={form.nombre}
+                  onChange={(v) => setForm({ ...form, nombre: v })}
+                  required
+                />
+                <Field
+                  label="Email"
+                  type="email"
+                  value={form.email}
+                  onChange={(v) => setForm({ ...form, email: v })}
+                  required
+                />
+                <Field
+                  label="Telefono"
+                  value={form.telefono}
+                  onChange={(v) => setForm({ ...form, telefono: v })}
+                  required
+                />
               </Grid>
             </Section>
 
             <Section title="Entrega">
               <Grid>
-                <Field label="Calle" value={form.calle} onChange={(v) => setForm({ ...form, calle: v })} required={!isLocalPickup} />
-                <Field label="Numero" value={form.numero} onChange={(v) => setForm({ ...form, numero: v })} />
-                <Field label="Piso/Depto" value={form.piso} onChange={(v) => setForm({ ...form, piso: v })} />
-                <Field label="Codigo postal" value={form.codigo_postal} onChange={(v) => setForm({ ...form, codigo_postal: v })} required={!isLocalPickup} />
-                <Field label="Ciudad" value={form.ciudad} onChange={(v) => setForm({ ...form, ciudad: v })} required={!isLocalPickup} />
-                <ProvinceField label="Provincia" value={form.provincia} onChange={setProvincia} required={!isLocalPickup} />
+                <Field
+                  label="Calle"
+                  value={form.calle}
+                  onChange={(v) => setForm({ ...form, calle: v })}
+                  required={!isLocalPickup}
+                />
+                <Field
+                  label="Numero"
+                  value={form.numero}
+                  onChange={(v) => setForm({ ...form, numero: v })}
+                />
+                <Field
+                  label="Piso/Depto"
+                  value={form.piso}
+                  onChange={(v) => setForm({ ...form, piso: v })}
+                />
+                <Field
+                  label="Codigo postal"
+                  value={form.codigo_postal}
+                  onChange={(v) => setForm({ ...form, codigo_postal: v })}
+                  required={!isLocalPickup}
+                />
+                <Field
+                  label="Ciudad"
+                  value={form.ciudad}
+                  onChange={(v) => setForm({ ...form, ciudad: v })}
+                  required={!isLocalPickup}
+                />
+                <ProvinceField
+                  label="Provincia"
+                  value={form.provincia}
+                  onChange={setProvincia}
+                  required={!isLocalPickup}
+                />
               </Grid>
               <div className="mt-4">
                 <ShippingCalculator
@@ -238,15 +300,28 @@ function CheckoutPage() {
             <ul className="space-y-2 text-sm border-b border-border pb-3">
               {items.map((i) => (
                 <li key={i.id} className="flex justify-between gap-3">
-                  <span className="line-clamp-1">{i.qty}x {i.nombre}</span>
+                  <span className="line-clamp-1">
+                    {i.qty}x {i.nombre}
+                  </span>
                   <span className="shrink-0">{formatARS(i.precio * i.qty)}</span>
                 </li>
               ))}
             </ul>
-            <div className="flex justify-between text-sm"><span>Subtotal</span><span>{formatARS(total)}</span></div>
             <div className="flex justify-between text-sm">
-              <span className="flex items-center gap-1"><Truck className="size-3" /> Envio</span>
-              <span>{selectedShipping ? selectedShipping.precio === 0 ? "Sin costo" : formatARS(selectedShipping.precio) : "A coordinar"}</span>
+              <span>Subtotal</span>
+              <span>{formatARS(total)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="flex items-center gap-1">
+                <Truck className="size-3" /> Envio
+              </span>
+              <span>
+                {selectedShipping
+                  ? selectedShipping.precio === 0
+                    ? "Sin costo"
+                    : formatARS(selectedShipping.precio)
+                  : "A coordinar"}
+              </span>
             </div>
             <div className="flex justify-between font-display text-xl pt-3 border-t border-border">
               <span>Total final</span>
@@ -257,14 +332,20 @@ function CheckoutPage() {
               disabled={busy || !selectedShipping}
               className="w-full bg-primary text-primary-foreground py-3 font-display tracking-wide hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              <CreditCard className="size-4" /> {busy ? "Procesando..." : getSubmitLabel(paymentMethod)}
+              <CreditCard className="size-4" />{" "}
+              {busy ? "Procesando..." : getSubmitLabel(paymentMethod)}
             </button>
             <p className="text-xs text-muted-foreground text-center">
               {paymentMethod === "efectivo"
                 ? "El servidor valida precios, retiro y total antes de crear el pedido."
                 : "El servidor valida precios, envio y total antes de redirigirte a Mercado Pago."}
             </p>
-            <a href="https://wa.me/5493548592127" target="_blank" rel="noreferrer" className="text-xs text-muted-foreground hover:text-primary text-center flex items-center justify-center gap-1">
+            <a
+              href="https://wa.me/5493548592127"
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-muted-foreground hover:text-primary text-center flex items-center justify-center gap-1"
+            >
               <MessageCircle className="size-3" /> Pagar por transferencia / consultar
             </a>
           </aside>
@@ -277,7 +358,9 @@ function CheckoutPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="font-display text-sm tracking-wide uppercase text-muted-foreground mb-3">{title}</h2>
+      <h2 className="font-display text-sm tracking-wide uppercase text-muted-foreground mb-3">
+        {title}
+      </h2>
       {children}
     </section>
   );
@@ -302,7 +385,9 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </span>
       <input
         type={type ?? "text"}
         value={value}
@@ -371,14 +456,18 @@ function PaymentMethodSelector({
               disabled={isDisabled}
               onClick={() => onChange(option.value)}
               className={`border px-4 py-3 text-left min-h-24 transition-colors disabled:opacity-45 disabled:cursor-not-allowed ${
-                selected ? "border-primary bg-primary/10" : "border-border bg-background hover:border-primary/60"
+                selected
+                  ? "border-primary bg-primary/10"
+                  : "border-border bg-background hover:border-primary/60"
               }`}
             >
               <span className="flex items-center gap-2 font-medium text-sm">
                 <Icon className="size-4 text-primary" />
                 {option.title}
               </span>
-              <span className="mt-2 block text-xs text-muted-foreground leading-relaxed">{option.subtitle}</span>
+              <span className="mt-2 block text-xs text-muted-foreground leading-relaxed">
+                {option.subtitle}
+              </span>
             </button>
           );
         })}
@@ -391,7 +480,8 @@ function PaymentMethodSelector({
             Transferencia por Mercado Pago
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Al confirmar, te redirigiremos a Mercado Pago para generar tu QR de pago o realizar la transferencia directa desde tu app.
+            Al confirmar, te redirigiremos a Mercado Pago para generar tu QR de pago o realizar la
+            transferencia directa desde tu app.
           </p>
         </div>
       )}
@@ -403,7 +493,8 @@ function PaymentMethodSelector({
             Pago con Tarjeta por Mercado Pago
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Al confirmar, te redirigiremos a Mercado Pago para completar tu pago de forma segura con tarjeta de crédito o débito.
+            Al confirmar, te redirigiremos a Mercado Pago para completar tu pago de forma segura con
+            tarjeta de crédito o débito.
           </p>
         </div>
       )}
@@ -415,7 +506,8 @@ function PaymentMethodSelector({
             Coordinar pago en el local
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Al confirmar tu pedido, reservaremos tus productos. Podés abonar en efectivo, débito o crédito directamente cuando retires en el local.
+            Al confirmar tu pedido, reservaremos tus productos. Podés abonar en efectivo, débito o
+            crédito directamente cuando retires en el local.
           </p>
         </div>
       )}
@@ -447,7 +539,9 @@ function ProvinceField({
 }) {
   return (
     <label className="block">
-      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}

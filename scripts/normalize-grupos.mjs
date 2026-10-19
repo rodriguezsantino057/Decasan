@@ -15,46 +15,46 @@ function capitalize(str) {
 
 async function run() {
   console.log("Fetching unique groups...");
-  
+
   const allGroups = new Set();
   const limit = 1000;
   let offset = 0;
-  
+
   while (true) {
     const { data, error } = await supabase
-      .from('productos')
-      .select('grupo')
-      .not('grupo', 'is', null)
+      .from("productos")
+      .select("grupo")
+      .not("grupo", "is", null)
       .range(offset, offset + limit - 1);
-      
+
     if (error) {
       console.error("Error fetching products:", error);
       process.exit(1);
     }
-    
+
     if (!data || data.length === 0) break;
-    
-    data.forEach(p => {
+
+    data.forEach((p) => {
       if (p.grupo) allGroups.add(p.grupo);
     });
-    
+
     offset += limit;
   }
-  
+
   const uniqueGroups = [...allGroups];
   console.log(`Found ${uniqueGroups.length} unique groups.`);
-  
+
   let count = 0;
   for (const g of uniqueGroups) {
     if (!g) continue;
     const normalized = capitalize(g.trim());
-    
+
     if (normalized !== g) {
       const { error: updateError } = await supabase
-        .from('productos')
+        .from("productos")
         .update({ grupo: normalized })
-        .eq('grupo', g);
-        
+        .eq("grupo", g);
+
       if (updateError) {
         console.error(`Error updating group "${g}":`, updateError);
       } else {

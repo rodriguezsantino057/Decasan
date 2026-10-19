@@ -18,8 +18,8 @@ async function fetchAll(table, columns) {
       .select(columns)
       .range(offset, offset + limit - 1);
     if (error) {
-       console.error("Error:", error);
-       process.exit(1);
+      console.error("Error:", error);
+      process.exit(1);
     }
     if (!data || data.length === 0) break;
     allData.push(...data);
@@ -30,52 +30,58 @@ async function fetchAll(table, columns) {
 
 async function main() {
   console.log("🛠️ FORZANDO SINCRONIZACIÓN DE PORTADAS DESDE LA GALERÍA...");
-  
+
   // 1. Obtener toda la galería, ordenada por producto y orden
   const images = await fetchAll("product_images", "producto_id, url, orden");
   images.sort((a, b) => a.producto_id - b.producto_id || a.orden - b.orden);
-  
+
   // Agrupar la primera imagen CON URL VÁLIDA para cada producto
   const productToImageMap = new Map();
   for (const img of images) {
-     if (img.producto_id && img.url && !productToImageMap.has(img.producto_id)) {
-        productToImageMap.set(img.producto_id, img.url);
-     }
+    if (img.producto_id && img.url && !productToImageMap.has(img.producto_id)) {
+      productToImageMap.set(img.producto_id, img.url);
+    }
   }
-  
-  console.log(`Se encontraron imágenes válidas para ${productToImageMap.size} productos distintos.`);
-  
+
+  console.log(
+    `Se encontraron imágenes válidas para ${productToImageMap.size} productos distintos.`,
+  );
+
   // 2. Obtener los productos que deberían tener imagen
   const prods = await fetchAll("productos", "id, nombre, image_url");
-  
+
   let restoredCount = 0;
   const BATCH_SIZE = 50;
   let updates = [];
-  
+
   for (const p of prods) {
-     const coverUrl = productToImageMap.get(p.id);
-     if (coverUrl) {
-         // Si el producto no tiene portada, o su portada es distinta a la de su propia galería, lo forzamos
-         if (!p.image_url || p.image_url !== coverUrl) {
-             updates.push({ id: p.id, url: coverUrl });
-         }
-     }
+    const coverUrl = productToImageMap.get(p.id);
+    if (coverUrl) {
+      // Si el producto no tiene portada, o su portada es distinta a la de su propia galería, lo forzamos
+      if (!p.image_url || p.image_url !== coverUrl) {
+        updates.push({ id: p.id, url: coverUrl });
+      }
+    }
   }
-  
-  console.log(`Hay ${updates.length} productos que tienen galería pero les falta la portada principal.`);
+
+  console.log(
+    `Hay ${updates.length} productos que tienen galería pero les falta la portada principal.`,
+  );
   console.log(`Restaurando...`);
-  
+
   for (let i = 0; i < updates.length; i += BATCH_SIZE) {
-      const batch = updates.slice(i, i + BATCH_SIZE);
-      const promises = batch.map(b => 
-          supabase.from("productos").update({ image_url: b.url, image_webp: b.url }).eq("id", b.id)
-      );
-      await Promise.all(promises);
-      restoredCount += batch.length;
-      process.stdout.write(`✅ Restauradas ${restoredCount}... `);
+    const batch = updates.slice(i, i + BATCH_SIZE);
+    const promises = batch.map((b) =>
+      supabase.from("productos").update({ image_url: b.url, image_webp: b.url }).eq("id", b.id),
+    );
+    await Promise.all(promises);
+    restoredCount += batch.length;
+    process.stdout.write(`✅ Restauradas ${restoredCount}... `);
   }
-  
-  console.log(`\n🎉 ¡Portadas sincronizadas a la fuerza! Las amoladoras (y todo lo demás) ya deberían verse.`);
+
+  console.log(
+    `\n🎉 ¡Portadas sincronizadas a la fuerza! Las amoladoras (y todo lo demás) ya deberían verse.`,
+  );
 }
 
 main();

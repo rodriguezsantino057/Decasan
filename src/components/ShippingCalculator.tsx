@@ -27,7 +27,11 @@ export function ShippingCalculator({
   const [localSelected, setLocalSelected] = useState<string>(selectedShipping || "");
   const canShowRates = !!codigoPostal && codigoPostal.trim().length > 0;
 
-  const { data: opciones, isLoading, error } = useQuery({
+  const {
+    data: opciones,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["shipping-options", provincia, codigoPostal, ciudad, pesoTotalKg],
     queryFn: () => shippingFn({ data: { provincia, codigoPostal, ciudad, pesoTotalKg } }),
     enabled: true,
@@ -73,11 +77,14 @@ export function ShippingCalculator({
           Ingresa un código postal para cotizar tu envío, o retirá por el local.
         </p>
       )}
-      {canShowRates && shippingOptions.length === 1 && shippingOptions[0].id === LOCAL_PICKUP_CODE && (
-        <p className="text-xs text-muted-foreground">
-          No hay tarifas disponibles para ese código postal. Probá con retiro en local o consultanos por WhatsApp.
-        </p>
-      )}
+      {canShowRates &&
+        shippingOptions.length === 1 &&
+        shippingOptions[0].id === LOCAL_PICKUP_CODE && (
+          <p className="text-xs text-muted-foreground">
+            No hay tarifas disponibles para ese código postal. Probá con retiro en local o
+            consultanos por WhatsApp.
+          </p>
+        )}
       <div className="space-y-2">
         {shippingOptions.map((opcion) => (
           <label
@@ -101,7 +108,8 @@ export function ShippingCalculator({
                 <span className="truncate">{opcion.descripcion}</span>
               </p>
               <p className="text-xs text-muted-foreground">
-                {formatDias(opcion.dias_estimados_min, opcion.dias_estimados_max) || "Entrega a coordinar"}
+                {formatDias(opcion.dias_estimados_min, opcion.dias_estimados_max) ||
+                  "Entrega a coordinar"}
               </p>
             </div>
             <p className="font-semibold text-sm whitespace-nowrap">

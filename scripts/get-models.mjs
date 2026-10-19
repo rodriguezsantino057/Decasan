@@ -9,10 +9,16 @@ const groqKey = process.env.GROQ_API_KEY;
 
 async function getModels() {
   const res = await fetch("https://api.groq.com/openai/v1/models", {
-    headers: { "Authorization": `Bearer ${groqKey}` }
+    headers: { Authorization: `Bearer ${groqKey}` },
   });
   const data = await res.json();
-  console.log(JSON.stringify(data.data.map(m => m.id), null, 2));
+  console.log(
+    JSON.stringify(
+      data.data.map((m) => m.id),
+      null,
+      2,
+    ),
+  );
 }
 
 getModels();

@@ -20,7 +20,14 @@ type Props = {
  * Modal de recorte y normalización a WebP en el browser.
  * No depende de sharp ni de procesamiento server-side (runtime Cloudflare Worker).
  */
-export function ImageCropper({ src, aspect = 1, maxSize = 1200, quality = 0.85, onCancel, onConfirm }: Props) {
+export function ImageCropper({
+  src,
+  aspect = 1,
+  maxSize = 1200,
+  quality = 0.85,
+  onCancel,
+  onConfirm,
+}: Props) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [area, setArea] = useState<Area | null>(null);
@@ -48,7 +55,9 @@ export function ImageCropper({ src, aspect = 1, maxSize = 1200, quality = 0.85, 
       <div className="bg-background border border-border w-full max-w-2xl flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h3 className="font-display text-lg">Encuadrar imagen</h3>
-          <button type="button" onClick={onCancel} className="p-1 hover:text-primary"><X className="size-5" /></button>
+          <button type="button" onClick={onCancel} className="p-1 hover:text-primary">
+            <X className="size-5" />
+          </button>
         </div>
         <div className="relative w-full aspect-square bg-black/60">
           <Cropper
@@ -65,12 +74,18 @@ export function ImageCropper({ src, aspect = 1, maxSize = 1200, quality = 0.85, 
         <div className="px-4 py-3 border-t border-border flex items-center gap-3">
           <RotateCcw className="size-4 text-muted-foreground" />
           <input
-            type="range" min={1} max={4} step={0.05}
-            value={zoom} onChange={(e) => setZoom(Number(e.target.value))}
+            type="range"
+            min={1}
+            max={4}
+            step={0.05}
+            value={zoom}
+            onChange={(e) => setZoom(Number(e.target.value))}
             className="flex-1 accent-primary"
             aria-label="Zoom"
           />
-          <button type="button" onClick={onCancel} className="px-3 py-2 text-sm">Cancelar</button>
+          <button type="button" onClick={onCancel} className="px-3 py-2 text-sm">
+            Cancelar
+          </button>
           <button
             type="button"
             onClick={confirm}
@@ -81,7 +96,8 @@ export function ImageCropper({ src, aspect = 1, maxSize = 1200, quality = 0.85, 
           </button>
         </div>
         <div className="px-4 pb-3 text-[11px] text-muted-foreground">
-          Se exporta a <strong>.webp</strong> · ratio {aspect === 1 ? "1:1" : aspect.toFixed(2)} · máx {maxSize}px.
+          Se exporta a <strong>.webp</strong> · ratio {aspect === 1 ? "1:1" : aspect.toFixed(2)} ·
+          máx {maxSize}px.
         </div>
       </div>
     </div>
@@ -121,6 +137,10 @@ async function renderCroppedBlob(src: string, area: Area, maxSize: number, quali
   return { blob: jpeg, ext: "jpeg" as const };
 }
 
-function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob | null> {
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  type: string,
+  quality: number,
+): Promise<Blob | null> {
   return new Promise((resolve) => canvas.toBlob((b) => resolve(b), type, quality));
 }

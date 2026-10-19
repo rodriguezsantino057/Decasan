@@ -20,7 +20,14 @@ import {
 import { Layout } from "@/components/Layout";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductGallery } from "@/components/ProductGallery";
-import { fetchProducto, fetchProductoImagenes, fetchProductos, getPrecioEfectivo, tieneOferta, type Producto } from "@/lib/products";
+import {
+  fetchProducto,
+  fetchProductoImagenes,
+  fetchProductos,
+  getPrecioEfectivo,
+  tieneOferta,
+  type Producto,
+} from "@/lib/products";
 import { formatARS, slugify } from "@/lib/format";
 import { useCart } from "@/lib/cart";
 import { useSession, useIsAdmin } from "@/lib/auth";
@@ -31,36 +38,43 @@ export const Route = createFileRoute("/productos/$id")({
   loader: async ({ params }) => {
     const productId = parseInt(params.id, 10);
     if (isNaN(productId)) return { product: null, images: [] };
-    
+
     const [product, images] = await Promise.all([
       fetchProducto(productId).catch(() => null),
-      fetchProductoImagenes(productId).catch(() => [])
+      fetchProductoImagenes(productId).catch(() => []),
     ]);
-    
+
     return { product, images };
   },
   head: ({ loaderData, params }) => {
     const product = loaderData?.product;
     const images = loaderData?.images;
-    
+
     // Si no tenemos el producto cargado aún (ej. pre-render), sacamos el nombre del slug de la URL
-    const slugParts = params.id.split('-');
+    const slugParts = params.id.split("-");
     const probableId = slugParts[0];
-    const rawSlugName = slugParts.length > 1 ? slugParts.slice(1).join(' ').replace(/-/g, ' ') : `Producto #${probableId}`;
+    const rawSlugName =
+      slugParts.length > 1
+        ? slugParts.slice(1).join(" ").replace(/-/g, " ")
+        : `Producto #${probableId}`;
     const fallbackName = rawSlugName.charAt(0).toUpperCase() + rawSlugName.slice(1);
-    
-    const title = product?.nombre ? `${product.nombre} — Decasan Home Center` : `${fallbackName} — Decasan Home Center`;
-    const defaultDesc = "Comprá herramientas, maquinaria y productos industriales con asesoramiento profesional y envíos a todo el país.";
-    
+
+    const title = product?.nombre
+      ? `${product.nombre} — Decasan Home Center`
+      : `${fallbackName} — Decasan Home Center`;
+    const defaultDesc =
+      "Comprá herramientas, maquinaria y productos industriales con asesoramiento profesional y envíos a todo el país.";
+
     // We remove HTML tags if any, and truncate to ~155 chars for SEO description
     let desc = defaultDesc;
     if (product?.descripcion) {
-      const cleanDesc = product.descripcion.replace(/<[^>]*>?/gm, '').trim();
+      const cleanDesc = product.descripcion.replace(/<[^>]*>?/gm, "").trim();
       desc = cleanDesc.length > 155 ? cleanDesc.slice(0, 155) + "..." : cleanDesc;
     }
-      
+
     // Find the best image
-    const imageUrl = images?.[0]?.url_webp || images?.[0]?.url || product?.image_webp || product?.image_url;
+    const imageUrl =
+      images?.[0]?.url_webp || images?.[0]?.url || product?.image_webp || product?.image_url;
 
     const meta = [
       { key: "title", title },
@@ -69,7 +83,7 @@ export const Route = createFileRoute("/productos/$id")({
       { key: "og:description", property: "og:description", content: desc },
       { key: "og:type", property: "og:type", content: "product" },
     ];
-    
+
     if (imageUrl) {
       meta.push({ key: "og:image", property: "og:image", content: imageUrl });
       meta.push({ key: "twitter:card", name: "twitter:card", content: "summary_large_image" });
@@ -113,7 +127,7 @@ function ProductDetail() {
     queryFn: () =>
       fetchProductos({
         grupo: product.data?.grupo ?? undefined,
-        cat: product.data?.grupo ? undefined : product.data?.categoria ?? undefined,
+        cat: product.data?.grupo ? undefined : (product.data?.categoria ?? undefined),
         limit: 12,
         isAdmin,
       }),
@@ -137,7 +151,7 @@ function ProductDetail() {
 
   if (!product.data) throw notFound();
   const p = product.data;
-  
+
   // Si no es admin y el producto es inactivo, forzamos 404
   if (!isAdmin && p.activo === false) {
     throw notFound();
@@ -187,19 +201,35 @@ function ProductDetail() {
       {/* breadcrumb */}
       <div className="border-b border-border bg-surface">
         <div className="container-x py-3 flex items-center gap-1.5 text-xs text-muted-foreground overflow-x-auto whitespace-nowrap">
-          <Link to="/" className="hover:text-primary">Inicio</Link>
+          <Link to="/" className="hover:text-primary">
+            Inicio
+          </Link>
           <ChevronRight className="size-3" />
-          <Link to="/productos" className="hover:text-primary">Catálogo</Link>
+          <Link to="/productos" className="hover:text-primary">
+            Catálogo
+          </Link>
           {p.categoria && (
             <>
               <ChevronRight className="size-3" />
-              <Link to="/productos" search={{ cat: p.categoria } as never} className="hover:text-primary">{p.categoria}</Link>
+              <Link
+                to="/productos"
+                search={{ cat: p.categoria } as never}
+                className="hover:text-primary"
+              >
+                {p.categoria}
+              </Link>
             </>
           )}
           {p.grupo && (
             <>
               <ChevronRight className="size-3" />
-              <Link to="/productos" search={{ cat: p.categoria, grupo: p.grupo } as never} className="hover:text-primary">{p.grupo}</Link>
+              <Link
+                to="/productos"
+                search={{ cat: p.categoria, grupo: p.grupo } as never}
+                className="hover:text-primary"
+              >
+                {p.grupo}
+              </Link>
             </>
           )}
           <ChevronRight className="size-3" />
@@ -264,7 +294,9 @@ function ProductDetail() {
             {/* Price block */}
             <div className="mt-6 border-t border-b border-border py-6">
               {enOferta && (
-                <div className="text-base text-muted-foreground line-through leading-none mb-1">{formatARS(p.precio)}</div>
+                <div className="text-base text-muted-foreground line-through leading-none mb-1">
+                  {formatARS(p.precio)}
+                </div>
               )}
               <div className="font-display text-4xl md:text-5xl text-foreground">
                 {formatARS(precioEfectivo)}
@@ -280,7 +312,8 @@ function ProductDetail() {
                 </span>
               </div>
               <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-success font-medium">
-                <Truck className="size-3.5" /> Envío gratis a todo el país en compras superiores a $200.000
+                <Truck className="size-3.5" /> Envío gratis a todo el país en compras superiores a
+                $200.000
               </div>
             </div>
 
@@ -332,15 +365,26 @@ function ProductDetail() {
                     Otras opciones de esta línea
                   </div>
                   <div className="flex items-center gap-1">
-                    <button onClick={() => scroll("left")} className="p-1 hover:bg-muted text-muted-foreground hover:text-primary rounded-full transition-colors" aria-label="Anterior">
+                    <button
+                      onClick={() => scroll("left")}
+                      className="p-1 hover:bg-muted text-muted-foreground hover:text-primary rounded-full transition-colors"
+                      aria-label="Anterior"
+                    >
                       <ChevronLeft className="size-4" />
                     </button>
-                    <button onClick={() => scroll("right")} className="p-1 hover:bg-muted text-muted-foreground hover:text-primary rounded-full transition-colors" aria-label="Siguiente">
+                    <button
+                      onClick={() => scroll("right")}
+                      className="p-1 hover:bg-muted text-muted-foreground hover:text-primary rounded-full transition-colors"
+                      aria-label="Siguiente"
+                    >
                       <ChevronRight className="size-4" />
                     </button>
                   </div>
                 </div>
-                <div ref={scrollRef} className="flex overflow-x-auto gap-4 pb-4 snap-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div
+                  ref={scrollRef}
+                  className="flex overflow-x-auto gap-4 pb-4 snap-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                >
                   {variantes.map((v) => (
                     <Link
                       key={v.id}
@@ -349,14 +393,17 @@ function ProductDetail() {
                       className="group w-48 shrink-0 snap-start flex flex-col gap-3"
                     >
                       <div className="aspect-square bg-white border border-border flex items-center justify-center overflow-hidden p-3 group-hover:border-primary transition-colors">
-                        <img 
-                          src={v.image_webp || v.image_url || "/placeholder.png"} 
+                        <img
+                          src={v.image_webp || v.image_url || "/placeholder.png"}
                           alt={v.nombre ?? ""}
-                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" 
+                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                         />
                       </div>
                       <div>
-                        <div className="text-sm leading-tight text-muted-foreground group-hover:text-primary transition-colors line-clamp-2" title={v.nombre ?? ""}>
+                        <div
+                          className="text-sm leading-tight text-muted-foreground group-hover:text-primary transition-colors line-clamp-2"
+                          title={v.nombre ?? ""}
+                        >
                           {v.nombre}
                         </div>
                         <div className="font-display text-base text-foreground mt-1.5">
@@ -377,7 +424,10 @@ function ProductDetail() {
                 { i: CreditCard, t: "Pago seguro", s: "Mercado Pago" },
                 { i: ShieldCheck, t: "Garantía oficial", s: "Productos originales" },
               ].map(({ i: Icon, t, s }) => (
-                <div key={t} className="bg-surface-elevated p-4 md:p-5 flex flex-col items-center text-center gap-2">
+                <div
+                  key={t}
+                  className="bg-surface-elevated p-4 md:p-5 flex flex-col items-center text-center gap-2"
+                >
                   <Icon className="size-6 text-primary shrink-0" />
                   <div>
                     <div className="text-sm font-semibold leading-tight">{t}</div>

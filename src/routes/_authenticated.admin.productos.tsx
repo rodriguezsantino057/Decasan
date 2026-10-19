@@ -3,34 +3,84 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Search, X, Tag, Layers, Power, Percent, Package, AlertTriangle, BadgePercent, Upload, Download, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ImageOff, ExternalLink } from "lucide-react";
 import {
-  adminListProductos, adminUpsertProducto, adminDeleteProducto, adminToggleProductoActivo,
-  adminListCategorias, adminListGrupos, adminBulkProductos,
-  adminExportProductos, adminUpsertGroupWeight
+  Plus,
+  Edit,
+  Trash2,
+  Search,
+  X,
+  Tag,
+  Layers,
+  Power,
+  Percent,
+  Package,
+  AlertTriangle,
+  BadgePercent,
+  Upload,
+  Download,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  ChevronDown,
+  ImageOff,
+  ExternalLink,
+} from "lucide-react";
+import {
+  adminListProductos,
+  adminUpsertProducto,
+  adminDeleteProducto,
+  adminToggleProductoActivo,
+  adminListCategorias,
+  adminListGrupos,
+  adminBulkProductos,
+  adminExportProductos,
+  adminUpsertGroupWeight,
 } from "@/lib/admin.functions";
 import { getGroupWeights } from "@/lib/shipping.functions";
 import { formatARS } from "@/lib/format";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductGalleryAdmin } from "@/components/ProductGalleryAdmin";
 
-export const Route = createFileRoute("/_authenticated/admin/productos")({ component: AdminProductos });
+export const Route = createFileRoute("/_authenticated/admin/productos")({
+  component: AdminProductos,
+});
 
 type ProductoForm = {
-  id?: number; nombre: string; descripcion: string; categoria: string; grupo: string;
-  sku: string; precio: number; stock: number;
-  codigo_fabricante: string; precio_vta_sin_iva: number | null;
-  image_url: string; image_webp: string;
-  activo: boolean; precio_oferta: number | null; oferta_hasta: string | null;
+  id?: number;
+  nombre: string;
+  descripcion: string;
+  categoria: string;
+  grupo: string;
+  sku: string;
+  precio: number;
+  stock: number;
+  codigo_fabricante: string;
+  precio_vta_sin_iva: number | null;
+  image_url: string;
+  image_webp: string;
+  activo: boolean;
+  precio_oferta: number | null;
+  oferta_hasta: string | null;
   peso_kg: number | null;
 };
 type ProductSortBy = "id" | "nombre" | "precio" | "stock" | "erp_updated_at";
 type SortDir = "asc" | "desc";
 
 const empty: ProductoForm = {
-  nombre: "", descripcion: "", categoria: "", grupo: "", sku: "", precio: 0, stock: 0,
-  codigo_fabricante: "", precio_vta_sin_iva: null,
-  image_url: "", image_webp: "", activo: true, precio_oferta: null, oferta_hasta: null,
+  nombre: "",
+  descripcion: "",
+  categoria: "",
+  grupo: "",
+  sku: "",
+  precio: 0,
+  stock: 0,
+  codigo_fabricante: "",
+  precio_vta_sin_iva: null,
+  image_url: "",
+  image_webp: "",
+  activo: true,
+  precio_oferta: null,
+  oferta_hasta: null,
   peso_kg: null,
 };
 
@@ -63,10 +113,25 @@ function AdminProductos() {
 
   const { data } = useQuery({
     queryKey: ["admin-productos", q, page, cat, grupo, activo, conNumeros, sortBy, sortDir],
-    queryFn: () => list({ data: { q: q || null, page, cat: cat || null, grupo: grupo || null, activo, conNumeros: conNumeros || undefined, sortBy, sortDir } }),
+    queryFn: () =>
+      list({
+        data: {
+          q: q || null,
+          page,
+          cat: cat || null,
+          grupo: grupo || null,
+          activo,
+          conNumeros: conNumeros || undefined,
+          sortBy,
+          sortDir,
+        },
+      }),
   });
 
-  const { data: categorias } = useQuery({ queryKey: ["admin-categorias"], queryFn: () => listCategorias() });
+  const { data: categorias } = useQuery({
+    queryKey: ["admin-categorias"],
+    queryFn: () => listCategorias(),
+  });
   const { data: grupos } = useQuery({ queryKey: ["admin-grupos"], queryFn: () => listGrupos() });
   const { data: gruposFiltrados } = useQuery({
     queryKey: ["admin-grupos-filtrados", cat],
@@ -88,15 +153,18 @@ function AdminProductos() {
   function toggleOne(id: number) {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
-  function clearSelection() { setSelected(new Set()); }
+  function clearSelection() {
+    setSelected(new Set());
+  }
   function changeSort(nextSortBy: ProductSortBy) {
     setPage(1);
     if (sortBy === nextSortBy) {
-      setSortDir((prev) => prev === "asc" ? "desc" : "asc");
+      setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
       setSortBy(nextSortBy);
       setSortDir(nextSortBy === "nombre" ? "asc" : "desc");
@@ -106,8 +174,12 @@ function AdminProductos() {
   async function handleExport() {
     try {
       setExporting(true);
-      toast.info(selected.size > 0 ? `Exportando ${selected.size} productos seleccionados...` : "Exportando productos...");
-      
+      toast.info(
+        selected.size > 0
+          ? `Exportando ${selected.size} productos seleccionados...`
+          : "Exportando productos...",
+      );
+
       const payload: any = {};
       if (selected.size > 0) {
         payload.ids = Array.from(selected);
@@ -157,20 +229,26 @@ function AdminProductos() {
   async function save(v: ProductoForm) {
     try {
       const { image_url: _imageUrl, image_webp: _imageWebp, ...producto } = v;
-      const res = await upsert({ data: {
-        ...producto,
-        descripcion: producto.descripcion || null,
-        categoria: producto.categoria || null,
-        grupo: producto.grupo || null,
-        sku: producto.sku || null,
-        precio: Number(producto.precio),
-        stock: Number(producto.stock),
-        codigo_fabricante: producto.codigo_fabricante || null,
-        precio_vta_sin_iva: producto.precio_vta_sin_iva != null ? Number(producto.precio_vta_sin_iva) : null,
-        precio_oferta: producto.precio_oferta != null && producto.precio_oferta > 0 ? Number(producto.precio_oferta) : null,
-        oferta_hasta: producto.oferta_hasta || null,
-        peso_kg: producto.peso_kg != null ? Number(producto.peso_kg) : null,
-      } });
+      const res = await upsert({
+        data: {
+          ...producto,
+          descripcion: producto.descripcion || null,
+          categoria: producto.categoria || null,
+          grupo: producto.grupo || null,
+          sku: producto.sku || null,
+          precio: Number(producto.precio),
+          stock: Number(producto.stock),
+          codigo_fabricante: producto.codigo_fabricante || null,
+          precio_vta_sin_iva:
+            producto.precio_vta_sin_iva != null ? Number(producto.precio_vta_sin_iva) : null,
+          precio_oferta:
+            producto.precio_oferta != null && producto.precio_oferta > 0
+              ? Number(producto.precio_oferta)
+              : null,
+          oferta_hasta: producto.oferta_hasta || null,
+          peso_kg: producto.peso_kg != null ? Number(producto.peso_kg) : null,
+        },
+      });
       toast.success("Producto guardado");
       // Si era nuevo, dejamos abierto para subir imágenes
       if (!v.id && res?.id) {
@@ -188,7 +266,11 @@ function AdminProductos() {
     if (!confirm("¿Eliminar producto?")) return;
     await del({ data: { id } });
     toast.success("Eliminado");
-    setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
+    setSelected((prev) => {
+      const n = new Set(prev);
+      n.delete(id);
+      return n;
+    });
     qc.invalidateQueries({ queryKey: ["admin-productos"] });
   }
 
@@ -219,27 +301,35 @@ function AdminProductos() {
     }
   }
 
-  const hasNumber = (str: string | null | undefined) => str ? /[0-9]/.test(str) : false;
+  const hasNumber = (str: string | null | undefined) => (str ? /[0-9]/.test(str) : false);
 
   return (
     <div className="pb-32">
-      <div className={`mb-4 p-3 border text-sm rounded-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${conNumeros ? "bg-amber-100 border-amber-400 text-amber-950" : "bg-amber-50 border-amber-200 text-amber-900"}`}>
+      <div
+        className={`mb-4 p-3 border text-sm rounded-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${conNumeros ? "bg-amber-100 border-amber-400 text-amber-950" : "bg-amber-50 border-amber-200 text-amber-900"}`}
+      >
         <div className="flex items-center gap-2">
           <AlertTriangle className="size-4 shrink-0 text-amber-600" />
           <p>
-            <strong>Atención:</strong> Los productos con números en su <strong>Categoría</strong> o <strong>Grupo</strong> no se muestran en el catálogo público.
+            <strong>Atención:</strong> Los productos con números en su <strong>Categoría</strong> o{" "}
+            <strong>Grupo</strong> no se muestran en el catálogo público.
           </p>
         </div>
         <button
           type="button"
-          onClick={() => { setConNumeros((prev) => !prev); setPage(1); }}
+          onClick={() => {
+            setConNumeros((prev) => !prev);
+            setPage(1);
+          }}
           className={`shrink-0 px-3 py-1.5 text-xs font-semibold rounded border transition-colors flex items-center gap-1.5 self-start sm:self-auto ${
             conNumeros
               ? "bg-amber-600 text-white border-amber-700 shadow-sm hover:bg-amber-700"
               : "bg-white text-amber-900 border-amber-300 hover:bg-amber-100"
           }`}
         >
-          <span>{conNumeros ? "✓ Mostrando solo con números" : "🔍 Filtrar productos con números"}</span>
+          <span>
+            {conNumeros ? "✓ Mostrando solo con números" : "🔍 Filtrar productos con números"}
+          </span>
         </button>
       </div>
 
@@ -249,7 +339,10 @@ function AdminProductos() {
           <input
             placeholder="Buscar por nombre, SKU o código fabricante..."
             value={q}
-            onChange={(e) => { setQ(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setPage(1);
+            }}
             className="w-full pl-9 pr-3 py-2 border border-border bg-background outline-none focus:border-primary text-sm"
           />
         </div>
@@ -257,27 +350,46 @@ function AdminProductos() {
           placeholder="Buscar categoría..."
           options={(categorias as string[]) ?? []}
           value={cat}
-          onChange={(c) => { setCat(c); setPage(1); }}
+          onChange={(c) => {
+            setCat(c);
+            setPage(1);
+          }}
         />
         <SearchSelect
           placeholder="Buscar Grupos..."
           options={(gruposFiltrados as string[]) ?? []}
           value={grupo}
-          onChange={(g) => { setGrupo(g); setPage(1); }}
+          onChange={(g) => {
+            setGrupo(g);
+            setPage(1);
+          }}
         />
-        <select value={activo} onChange={(e) => { setActivo(e.target.value as any); setPage(1); }} className="w-full border border-border bg-background px-3 py-2 text-sm">
+        <select
+          value={activo}
+          onChange={(e) => {
+            setActivo(e.target.value as any);
+            setPage(1);
+          }}
+          className="w-full border border-border bg-background px-3 py-2 text-sm"
+        >
           <option value="all">Activos e inactivos</option>
           <option value="yes">Solo activos</option>
           <option value="no">Solo inactivos</option>
         </select>
         <div className="relative w-full border border-border bg-background focus-within:border-primary">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground pointer-events-none uppercase tracking-wide">Ordenar:</span>
-          <select value={`${sortBy}-${sortDir}`} onChange={(e) => { 
-            const [by, dir] = e.target.value.split('-'); 
-            setSortBy(by as any); 
-            setSortDir(dir as any); 
-            setPage(1); 
-          }} className="w-full bg-transparent pl-[84px] pr-8 py-2 text-sm outline-none cursor-pointer appearance-none">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground pointer-events-none uppercase tracking-wide">
+            Ordenar:
+          </span>
+          <select
+            value={`${sortBy}-${sortDir}`}
+            onChange={(e) => {
+              const [by, dir] = e.target.value.split("-");
+              setSortBy(by as any);
+              setSortDir(dir as any);
+              setPage(1);
+            }}
+            className="w-full bg-transparent pl-[84px] pr-8 py-2 text-sm outline-none cursor-pointer appearance-none"
+          >
             <option value="nombre-asc">Nombre A-Z</option>
             <option value="id-desc">Últimos Agregados</option>
             <option value="erp_updated_at-desc">Últimos Modificados</option>
@@ -286,11 +398,14 @@ function AdminProductos() {
           </select>
           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
         </div>
-        <button onClick={() => setPesosOpen(true)} className="w-full justify-center border border-border px-4 py-2 text-sm font-medium flex items-center gap-2 hover:border-primary whitespace-nowrap">
+        <button
+          onClick={() => setPesosOpen(true)}
+          className="w-full justify-center border border-border px-4 py-2 text-sm font-medium flex items-center gap-2 hover:border-primary whitespace-nowrap"
+        >
           <Layers className="size-4" /> Pesos de Grupos
         </button>
-        <button 
-          onClick={handleExport} 
+        <button
+          onClick={handleExport}
           disabled={exporting}
           className="w-full justify-center border border-border px-4 py-2 text-sm font-medium flex items-center gap-2 hover:border-primary disabled:opacity-50 whitespace-nowrap"
         >
@@ -306,25 +421,50 @@ function AdminProductos() {
                 <input
                   type="checkbox"
                   checked={allOnPageSelected}
-                  ref={(el) => { if (el) el.indeterminate = !allOnPageSelected && someOnPageSelected; }}
+                  ref={(el) => {
+                    if (el) el.indeterminate = !allOnPageSelected && someOnPageSelected;
+                  }}
                   onChange={togglePage}
                   aria-label="Seleccionar página"
                 />
               </th>
               <th className="text-left px-3 py-2 w-12"></th>
               <th className="text-left px-3 py-2 w-1/3">
-                <SortHeader label="Nombre" active={sortBy === "nombre"} dir={sortDir} onClick={() => changeSort("nombre")} />
+                <SortHeader
+                  label="Nombre"
+                  active={sortBy === "nombre"}
+                  dir={sortDir}
+                  onClick={() => changeSort("nombre")}
+                />
               </th>
               <th className="text-left px-3 py-2 hidden md:table-cell whitespace-nowrap">SKU</th>
-              <th className="text-left px-3 py-2 hidden xl:table-cell whitespace-nowrap">Cód. fabricante</th>
-              <th className="text-left px-3 py-2 hidden lg:table-cell whitespace-nowrap">Categoría</th>
+              <th className="text-left px-3 py-2 hidden xl:table-cell whitespace-nowrap">
+                Cód. fabricante
+              </th>
+              <th className="text-left px-3 py-2 hidden lg:table-cell whitespace-nowrap">
+                Categoría
+              </th>
               <th className="text-left px-3 py-2 hidden xl:table-cell whitespace-nowrap">Grupo</th>
-              <th className="text-right px-3 py-2 hidden xl:table-cell whitespace-nowrap">Sin IVA</th>
-              <th className="text-right px-3 py-2 whitespace-nowrap">
-                <SortHeader label="Precio" active={sortBy === "precio"} dir={sortDir} align="right" onClick={() => changeSort("precio")} />
+              <th className="text-right px-3 py-2 hidden xl:table-cell whitespace-nowrap">
+                Sin IVA
               </th>
               <th className="text-right px-3 py-2 whitespace-nowrap">
-                <SortHeader label="Stock" active={sortBy === "stock"} dir={sortDir} align="right" onClick={() => changeSort("stock")} />
+                <SortHeader
+                  label="Precio"
+                  active={sortBy === "precio"}
+                  dir={sortDir}
+                  align="right"
+                  onClick={() => changeSort("precio")}
+                />
+              </th>
+              <th className="text-right px-3 py-2 whitespace-nowrap">
+                <SortHeader
+                  label="Stock"
+                  active={sortBy === "stock"}
+                  dir={sortDir}
+                  align="right"
+                  onClick={() => changeSort("stock")}
+                />
               </th>
               <th className="px-3 py-2 hidden md:table-cell whitespace-nowrap">Estado</th>
               <th className="px-3 py-2 min-w-[140px]"></th>
@@ -333,53 +473,93 @@ function AdminProductos() {
           <tbody>
             {data?.rows.map((p: any) => {
               const isSel = selected.has(p.id);
-              const enOferta = p.precio_oferta && Number(p.precio_oferta) > 0 && (!p.oferta_hasta || new Date(p.oferta_hasta) > new Date());
+              const enOferta =
+                p.precio_oferta &&
+                Number(p.precio_oferta) > 0 &&
+                (!p.oferta_hasta || new Date(p.oferta_hasta) > new Date());
               const catHasNum = hasNumber(p.categoria);
               const groupHasNum = hasNumber(p.grupo);
               const isHidden = catHasNum || groupHasNum;
               return (
-                <tr key={p.id} className={`border-t border-border ${isSel ? "bg-accent/30" : ""} ${isHidden ? "bg-amber-50/50" : ""}`}>
+                <tr
+                  key={p.id}
+                  className={`border-t border-border ${isSel ? "bg-accent/30" : ""} ${isHidden ? "bg-amber-50/50" : ""}`}
+                >
                   <td className="px-3 py-2 text-center">
-                    <input type="checkbox" checked={isSel} onChange={() => toggleOne(p.id)} aria-label={`Seleccionar ${p.nombre}`} />
+                    <input
+                      type="checkbox"
+                      checked={isSel}
+                      onChange={() => toggleOne(p.id)}
+                      aria-label={`Seleccionar ${p.nombre}`}
+                    />
                   </td>
                   <td className="px-3 py-2">
                     <div className="size-10 bg-muted overflow-hidden">
-                      <ProductImage webp={p.image_webp} src={p.image_url} alt={p.nombre ?? ""} className="size-full" iconClassName="size-5" />
+                      <ProductImage
+                        webp={p.image_webp}
+                        src={p.image_url}
+                        alt={p.nombre ?? ""}
+                        className="size-full"
+                        iconClassName="size-5"
+                      />
                     </div>
                   </td>
                   <td className="px-3 py-2">
                     {p.nombre}
-                    {enOferta && <BadgePercent className="inline-block size-3.5 ml-1.5 text-primary" />}
+                    {enOferta && (
+                      <BadgePercent className="inline-block size-3.5 ml-1.5 text-primary" />
+                    )}
                   </td>
                   <td className="px-3 py-2 hidden md:table-cell text-muted-foreground">{p.sku}</td>
-                  <td className="px-3 py-2 hidden xl:table-cell text-muted-foreground">{p.codigo_fabricante || "-"}</td>
+                  <td className="px-3 py-2 hidden xl:table-cell text-muted-foreground">
+                    {p.codigo_fabricante || "-"}
+                  </td>
                   <td className="px-3 py-2 hidden lg:table-cell">
-                    <div className={`text-xs ${catHasNum ? "text-amber-700 font-semibold" : "text-muted-foreground"}`}>
+                    <div
+                      className={`text-xs ${catHasNum ? "text-amber-700 font-semibold" : "text-muted-foreground"}`}
+                    >
                       {p.categoria ?? "-"}
                       {catHasNum && " ⚠️"}
                     </div>
                   </td>
                   <td className="px-3 py-2 hidden xl:table-cell">
-                    <div className={`text-xs truncate max-w-[120px] ${groupHasNum ? "text-amber-700 font-semibold" : "text-muted-foreground"}`} title={p.grupo ?? ""}>
+                    <div
+                      className={`text-xs truncate max-w-[120px] ${groupHasNum ? "text-amber-700 font-semibold" : "text-muted-foreground"}`}
+                      title={p.grupo ?? ""}
+                    >
                       {p.grupo ?? "-"}
                       {groupHasNum && " ⚠️"}
                     </div>
                   </td>
-                  <td className="px-3 py-2 hidden xl:table-cell text-right text-muted-foreground">{p.precio_vta_sin_iva != null ? formatARS(Number(p.precio_vta_sin_iva)) : "-"}</td>
+                  <td className="px-3 py-2 hidden xl:table-cell text-right text-muted-foreground">
+                    {p.precio_vta_sin_iva != null ? formatARS(Number(p.precio_vta_sin_iva)) : "-"}
+                  </td>
                   <td className="px-3 py-2 text-right">
                     {enOferta ? (
                       <span>
-                        <span className="line-through text-muted-foreground text-xs mr-1">{formatARS(Number(p.precio ?? 0))}</span>
+                        <span className="line-through text-muted-foreground text-xs mr-1">
+                          {formatARS(Number(p.precio ?? 0))}
+                        </span>
                         {formatARS(Number(p.precio_oferta))}
                       </span>
-                    ) : formatARS(Number(p.precio ?? 0))}
+                    ) : (
+                      formatARS(Number(p.precio ?? 0))
+                    )}
                   </td>
-                  <td className={`px-3 py-2 text-right ${(p.stock ?? 0) <= 5 ? "text-warning" : ""}`}>{p.stock ?? 0}</td>
+                  <td
+                    className={`px-3 py-2 text-right ${(p.stock ?? 0) <= 5 ? "text-warning" : ""}`}
+                  >
+                    {p.stock ?? 0}
+                  </td>
                   <td className="px-3 py-2 hidden md:table-cell text-center">
                     <button
                       type="button"
                       onClick={() => toggleEstado(p)}
-                      title={p.activo === false ? "Hacer clic para activar" : "Hacer clic para desactivar"}
+                      title={
+                        p.activo === false
+                          ? "Hacer clic para activar"
+                          : "Hacer clic para desactivar"
+                      }
                       className={`text-[10px] uppercase px-2 py-0.5 cursor-pointer transition-opacity hover:opacity-70 ${p.activo === false ? "bg-muted text-muted-foreground" : "bg-success/15 text-success"}`}
                     >
                       {p.activo === false ? "Inactivo" : "Activo"}
@@ -387,22 +567,51 @@ function AdminProductos() {
                   </td>
                   <td className="px-3 py-2 flex gap-1 justify-end items-center">
                     {isHidden && (
-                      <span className="text-amber-600 text-[10px] uppercase font-bold flex items-center mr-1" title="Oculto en web por números">
+                      <span
+                        className="text-amber-600 text-[10px] uppercase font-bold flex items-center mr-1"
+                        title="Oculto en web por números"
+                      >
                         Oculto
                       </span>
                     )}
-                    <a href={`/productos/${p.id}`} target="_blank" rel="noopener noreferrer" className="p-1.5 hover:text-primary" title="Ver producto en la tienda"><ExternalLink className="size-4" /></a>
-                    <button onClick={() => setEditing({
-                      id: p.id, nombre: p.nombre ?? "", descripcion: p.descripcion ?? "", categoria: p.categoria ?? "",
-                      grupo: p.grupo ?? "", sku: p.sku ?? "", precio: Number(p.precio ?? 0), stock: p.stock ?? 0,
-                      codigo_fabricante: p.codigo_fabricante ?? "", precio_vta_sin_iva: p.precio_vta_sin_iva != null ? Number(p.precio_vta_sin_iva) : null,
-                      image_url: p.image_url ?? "", image_webp: p.image_webp ?? "",
-                      activo: p.activo !== false,
-                      precio_oferta: p.precio_oferta != null ? Number(p.precio_oferta) : null,
-                      oferta_hasta: p.oferta_hasta ?? null,
-                      peso_kg: p.peso_kg != null ? Number(p.peso_kg) : null,
-                    })} className="p-1.5 hover:text-primary"><Edit className="size-4" /></button>
-                    <button onClick={() => remove(p.id)} className="p-1.5 hover:text-destructive"><Trash2 className="size-4" /></button>
+                    <a
+                      href={`/productos/${p.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 hover:text-primary"
+                      title="Ver producto en la tienda"
+                    >
+                      <ExternalLink className="size-4" />
+                    </a>
+                    <button
+                      onClick={() =>
+                        setEditing({
+                          id: p.id,
+                          nombre: p.nombre ?? "",
+                          descripcion: p.descripcion ?? "",
+                          categoria: p.categoria ?? "",
+                          grupo: p.grupo ?? "",
+                          sku: p.sku ?? "",
+                          precio: Number(p.precio ?? 0),
+                          stock: p.stock ?? 0,
+                          codigo_fabricante: p.codigo_fabricante ?? "",
+                          precio_vta_sin_iva:
+                            p.precio_vta_sin_iva != null ? Number(p.precio_vta_sin_iva) : null,
+                          image_url: p.image_url ?? "",
+                          image_webp: p.image_webp ?? "",
+                          activo: p.activo !== false,
+                          precio_oferta: p.precio_oferta != null ? Number(p.precio_oferta) : null,
+                          oferta_hasta: p.oferta_hasta ?? null,
+                          peso_kg: p.peso_kg != null ? Number(p.peso_kg) : null,
+                        })
+                      }
+                      className="p-1.5 hover:text-primary"
+                    >
+                      <Edit className="size-4" />
+                    </button>
+                    <button onClick={() => remove(p.id)} className="p-1.5 hover:text-destructive">
+                      <Trash2 className="size-4" />
+                    </button>
                   </td>
                 </tr>
               );
@@ -414,7 +623,10 @@ function AdminProductos() {
       <div className="grid gap-3 lg:hidden">
         {data?.rows.map((p: any) => {
           const isSel = selected.has(p.id);
-          const enOferta = p.precio_oferta && Number(p.precio_oferta) > 0 && (!p.oferta_hasta || new Date(p.oferta_hasta) > new Date());
+          const enOferta =
+            p.precio_oferta &&
+            Number(p.precio_oferta) > 0 &&
+            (!p.oferta_hasta || new Date(p.oferta_hasta) > new Date());
           return (
             <ProductAdminCard
               key={p.id}
@@ -422,16 +634,27 @@ function AdminProductos() {
               selected={isSel}
               enOferta={Boolean(enOferta)}
               onToggle={() => toggleOne(p.id)}
-              onEdit={() => setEditing({
-                id: p.id, nombre: p.nombre ?? "", descripcion: p.descripcion ?? "", categoria: p.categoria ?? "",
-                grupo: p.grupo ?? "", sku: p.sku ?? "", precio: Number(p.precio ?? 0), stock: p.stock ?? 0,
-                codigo_fabricante: p.codigo_fabricante ?? "", precio_vta_sin_iva: p.precio_vta_sin_iva != null ? Number(p.precio_vta_sin_iva) : null,
-                image_url: p.image_url ?? "", image_webp: p.image_webp ?? "",
-                activo: p.activo !== false,
-                precio_oferta: p.precio_oferta != null ? Number(p.precio_oferta) : null,
-                oferta_hasta: p.oferta_hasta ?? null,
-                peso_kg: p.peso_kg != null ? Number(p.peso_kg) : null,
-              })}
+              onEdit={() =>
+                setEditing({
+                  id: p.id,
+                  nombre: p.nombre ?? "",
+                  descripcion: p.descripcion ?? "",
+                  categoria: p.categoria ?? "",
+                  grupo: p.grupo ?? "",
+                  sku: p.sku ?? "",
+                  precio: Number(p.precio ?? 0),
+                  stock: p.stock ?? 0,
+                  codigo_fabricante: p.codigo_fabricante ?? "",
+                  precio_vta_sin_iva:
+                    p.precio_vta_sin_iva != null ? Number(p.precio_vta_sin_iva) : null,
+                  image_url: p.image_url ?? "",
+                  image_webp: p.image_webp ?? "",
+                  activo: p.activo !== false,
+                  precio_oferta: p.precio_oferta != null ? Number(p.precio_oferta) : null,
+                  oferta_hasta: p.oferta_hasta ?? null,
+                  peso_kg: p.peso_kg != null ? Number(p.peso_kg) : null,
+                })
+              }
               onDelete={() => remove(p.id)}
               onToggleEstado={() => toggleEstado(p)}
             />
@@ -441,11 +664,25 @@ function AdminProductos() {
 
       {data && data.count > data.pageSize && (
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mt-4 text-sm">
-          <span className="text-muted-foreground">{data.count} productos · {selected.size} seleccionados</span>
+          <span className="text-muted-foreground">
+            {data.count} productos · {selected.size} seleccionados
+          </span>
           <div className="flex items-center justify-between gap-2 sm:justify-end">
-            <button disabled={page === 1} onClick={() => setPage(page - 1)} className="px-3 py-1 border border-border disabled:opacity-30">Anterior</button>
+            <button
+              disabled={page === 1}
+              onClick={() => setPage(page - 1)}
+              className="px-3 py-1 border border-border disabled:opacity-30"
+            >
+              Anterior
+            </button>
             <span className="px-3 py-1">Pág {page}</span>
-            <button disabled={page * data.pageSize >= data.count} onClick={() => setPage(page + 1)} className="px-3 py-1 border border-border disabled:opacity-30">Siguiente</button>
+            <button
+              disabled={page * data.pageSize >= data.count}
+              onClick={() => setPage(page + 1)}
+              className="px-3 py-1 border border-border disabled:opacity-30"
+            >
+              Siguiente
+            </button>
           </div>
         </div>
       )}
@@ -456,15 +693,53 @@ function AdminProductos() {
           <span className="text-xs font-semibold pr-2 border-r border-background/30 mr-1 whitespace-nowrap">
             {selected.size} seleccionado{selected.size === 1 ? "" : "s"}
           </span>
-          <BulkBtn icon={<Tag className="size-3.5" />} label="Categoría" onClick={() => setBulkOpen("categoria")} />
-          <BulkBtn icon={<Layers className="size-3.5" />} label="Marca" onClick={() => setBulkOpen("grupo")} />
-          <BulkBtn icon={<Power className="size-3.5" />} label="Estado" onClick={() => setBulkOpen("activo")} />
-          <BulkBtn icon={<Percent className="size-3.5" />} label="Precio %" onClick={() => setBulkOpen("precio")} />
-          <BulkBtn icon={<Package className="size-3.5" />} label="Stock" onClick={() => setBulkOpen("stock")} />
-          <BulkBtn icon={<BadgePercent className="size-3.5" />} label="Oferta" onClick={() => setBulkOpen("oferta")} />
-          <BulkBtn icon={<ImageOff className="size-3.5" />} label="Borrar fotos" danger onClick={() => setBulkOpen("delete_photos")} />
-          <BulkBtn icon={<Trash2 className="size-3.5" />} label="Eliminar" danger onClick={() => setBulkOpen("delete")} />
-          <button onClick={clearSelection} className="ml-2 p-1 hover:text-primary" aria-label="Limpiar selección">
+          <BulkBtn
+            icon={<Tag className="size-3.5" />}
+            label="Categoría"
+            onClick={() => setBulkOpen("categoria")}
+          />
+          <BulkBtn
+            icon={<Layers className="size-3.5" />}
+            label="Marca"
+            onClick={() => setBulkOpen("grupo")}
+          />
+          <BulkBtn
+            icon={<Power className="size-3.5" />}
+            label="Estado"
+            onClick={() => setBulkOpen("activo")}
+          />
+          <BulkBtn
+            icon={<Percent className="size-3.5" />}
+            label="Precio %"
+            onClick={() => setBulkOpen("precio")}
+          />
+          <BulkBtn
+            icon={<Package className="size-3.5" />}
+            label="Stock"
+            onClick={() => setBulkOpen("stock")}
+          />
+          <BulkBtn
+            icon={<BadgePercent className="size-3.5" />}
+            label="Oferta"
+            onClick={() => setBulkOpen("oferta")}
+          />
+          <BulkBtn
+            icon={<ImageOff className="size-3.5" />}
+            label="Borrar fotos"
+            danger
+            onClick={() => setBulkOpen("delete_photos")}
+          />
+          <BulkBtn
+            icon={<Trash2 className="size-3.5" />}
+            label="Eliminar"
+            danger
+            onClick={() => setBulkOpen("delete")}
+          />
+          <button
+            onClick={clearSelection}
+            className="ml-2 p-1 hover:text-primary"
+            aria-label="Limpiar selección"
+          >
             <X className="size-4" />
           </button>
         </div>
@@ -481,13 +756,33 @@ function AdminProductos() {
         />
       )}
 
-      {editing && <ProductoModal value={editing} categorias={(categorias as string[]) ?? []} grupos={(grupos as string[]) ?? []} onClose={() => setEditing(null)} onSave={save} />}
-      {pesosOpen && <PesosGruposModal grupos={(grupos as string[]) ?? []} onClose={() => setPesosOpen(false)} />}
+      {editing && (
+        <ProductoModal
+          value={editing}
+          categorias={(categorias as string[]) ?? []}
+          grupos={(grupos as string[]) ?? []}
+          onClose={() => setEditing(null)}
+          onSave={save}
+        />
+      )}
+      {pesosOpen && (
+        <PesosGruposModal grupos={(grupos as string[]) ?? []} onClose={() => setPesosOpen(false)} />
+      )}
     </div>
   );
 }
 
-function BulkBtn({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
+function BulkBtn({
+  icon,
+  label,
+  onClick,
+  danger,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+}) {
   return (
     <button
       onClick={onClick}
@@ -498,7 +793,13 @@ function BulkBtn({ icon, label, onClick, danger }: { icon: React.ReactNode; labe
   );
 }
 
-function SortHeader({ label, active, dir, onClick, align = "left" }: {
+function SortHeader({
+  label,
+  active,
+  dir,
+  onClick,
+  align = "left",
+}: {
   label: string;
   active: boolean;
   dir: SortDir;
@@ -519,7 +820,15 @@ function SortHeader({ label, active, dir, onClick, align = "left" }: {
   );
 }
 
-function ProductAdminCard({ product: p, selected, enOferta, onToggle, onEdit, onDelete, onToggleEstado }: {
+function ProductAdminCard({
+  product: p,
+  selected,
+  enOferta,
+  onToggle,
+  onEdit,
+  onDelete,
+  onToggleEstado,
+}: {
   product: any;
   selected: boolean;
   enOferta: boolean;
@@ -529,13 +838,26 @@ function ProductAdminCard({ product: p, selected, enOferta, onToggle, onEdit, on
   onToggleEstado: () => void;
 }) {
   return (
-    <article className={`border border-border bg-surface-elevated p-3 ${selected ? "ring-1 ring-primary bg-accent/30" : ""}`}>
+    <article
+      className={`border border-border bg-surface-elevated p-3 ${selected ? "ring-1 ring-primary bg-accent/30" : ""}`}
+    >
       <div className="flex gap-3">
         <label className="pt-1">
-          <input type="checkbox" checked={selected} onChange={onToggle} aria-label={`Seleccionar ${p.nombre}`} />
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={onToggle}
+            aria-label={`Seleccionar ${p.nombre}`}
+          />
         </label>
         <div className="size-16 shrink-0 bg-muted overflow-hidden">
-          <ProductImage webp={p.image_webp} src={p.image_url} alt={p.nombre ?? ""} className="size-full" iconClassName="size-6" />
+          <ProductImage
+            webp={p.image_webp}
+            src={p.image_url}
+            alt={p.nombre ?? ""}
+            className="size-full"
+            iconClassName="size-6"
+          />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
@@ -563,23 +885,38 @@ function ProductAdminCard({ product: p, selected, enOferta, onToggle, onEdit, on
             </div>
             <div>
               <dt className="text-muted-foreground">Precio</dt>
-              <dd className="font-medium">{formatARS(Number(enOferta ? p.precio_oferta : p.precio ?? 0))}</dd>
+              <dd className="font-medium">
+                {formatARS(Number(enOferta ? p.precio_oferta : (p.precio ?? 0)))}
+              </dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Stock</dt>
-              <dd className={(p.stock ?? 0) <= 5 ? "font-medium text-warning" : "font-medium"}>{p.stock ?? 0}</dd>
+              <dd className={(p.stock ?? 0) <= 5 ? "font-medium text-warning" : "font-medium"}>
+                {p.stock ?? 0}
+              </dd>
             </div>
           </dl>
         </div>
       </div>
       <div className="mt-3 flex justify-end gap-2 border-t border-border pt-3">
-        <a href={`/productos/${p.id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 border border-border px-3 py-1.5 text-xs font-medium hover:border-primary hover:text-primary">
+        <a
+          href={`/productos/${p.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 border border-border px-3 py-1.5 text-xs font-medium hover:border-primary hover:text-primary"
+        >
           <ExternalLink className="size-3.5" /> Ver
         </a>
-        <button onClick={onEdit} className="inline-flex items-center gap-1.5 border border-border px-3 py-1.5 text-xs font-medium hover:border-primary hover:text-primary">
+        <button
+          onClick={onEdit}
+          className="inline-flex items-center gap-1.5 border border-border px-3 py-1.5 text-xs font-medium hover:border-primary hover:text-primary"
+        >
           <Edit className="size-3.5" /> Editar
         </button>
-        <button onClick={onDelete} className="inline-flex items-center gap-1.5 border border-border px-3 py-1.5 text-xs font-medium hover:border-destructive hover:text-destructive">
+        <button
+          onClick={onDelete}
+          className="inline-flex items-center gap-1.5 border border-border px-3 py-1.5 text-xs font-medium hover:border-destructive hover:text-destructive"
+        >
           <Trash2 className="size-3.5" /> Eliminar
         </button>
       </div>
@@ -587,15 +924,23 @@ function ProductAdminCard({ product: p, selected, enOferta, onToggle, onEdit, on
   );
 }
 
-
-
 // === BULK DIALOG ===
 
-type BulkKind = "categoria" | "grupo" | "activo" | "precio" | "stock" | "oferta" | "delete" | "delete_photos";
+type BulkKind =
+  "categoria" | "grupo" | "activo" | "precio" | "stock" | "oferta" | "delete" | "delete_photos";
 
-function BulkDialog({ kind, count, categorias, grupos, onClose, onConfirm }: {
-  kind: BulkKind; count: number;
-  categorias: string[]; grupos: string[];
+function BulkDialog({
+  kind,
+  count,
+  categorias,
+  grupos,
+  onClose,
+  onConfirm,
+}: {
+  kind: BulkKind;
+  count: number;
+  categorias: string[];
+  grupos: string[];
   onClose: () => void;
   onConfirm: (payload: any) => Promise<void>;
 }) {
@@ -607,13 +952,19 @@ function BulkDialog({ kind, count, categorias, grupos, onClose, onConfirm }: {
   const [precioOferta, setPrecioOferta] = useState<number | "">("");
   const [ofertaHasta, setOfertaHasta] = useState("");
   const [busy, setBusy] = useState(false);
-  const [confirm, setConfirm] = useState(kind === "delete" || kind === "precio" || kind === "delete_photos");
+  const [confirm, setConfirm] = useState(
+    kind === "delete" || kind === "precio" || kind === "delete_photos",
+  );
   const [acked, setAcked] = useState(false);
 
   const titles: Record<BulkKind, string> = {
-    categoria: "Cambiar categoría", grupo: "Cambiar marca / grupo", activo: "Activar / desactivar",
-    precio: "Ajuste de precio por porcentaje", stock: "Establecer stock",
-    oferta: "Crear / quitar oferta", delete: "Eliminar productos",
+    categoria: "Cambiar categoría",
+    grupo: "Cambiar marca / grupo",
+    activo: "Activar / desactivar",
+    precio: "Ajuste de precio por porcentaje",
+    stock: "Establecer stock",
+    oferta: "Crear / quitar oferta",
+    delete: "Eliminar productos",
     delete_photos: "Borrar fotos",
   };
 
@@ -622,13 +973,26 @@ function BulkDialog({ kind, count, categorias, grupos, onClose, onConfirm }: {
     try {
       let payload: any = null;
       switch (kind) {
-        case "categoria": payload = { action: "set_categoria", categoria: categoria || null }; break;
-        case "grupo": payload = { action: "set_grupo", grupo: grupo || null }; break;
-        case "activo": payload = { action: "set_activo", activo }; break;
+        case "categoria":
+          payload = { action: "set_categoria", categoria: categoria || null };
+          break;
+        case "grupo":
+          payload = { action: "set_grupo", grupo: grupo || null };
+          break;
+        case "activo":
+          payload = { action: "set_activo", activo };
+          break;
         case "precio":
-          if (!isFinite(pct) || pct === 0) { toast.error("Ingresá un porcentaje distinto de 0"); setBusy(false); return; }
-          payload = { action: "adjust_precio_pct", pct }; break;
-        case "stock": payload = { action: "set_stock", stock }; break;
+          if (!isFinite(pct) || pct === 0) {
+            toast.error("Ingresá un porcentaje distinto de 0");
+            setBusy(false);
+            return;
+          }
+          payload = { action: "adjust_precio_pct", pct };
+          break;
+        case "stock":
+          payload = { action: "set_stock", stock };
+          break;
         case "oferta":
           payload = {
             action: "set_oferta",
@@ -636,63 +1000,153 @@ function BulkDialog({ kind, count, categorias, grupos, onClose, onConfirm }: {
             oferta_hasta: ofertaHasta ? new Date(ofertaHasta).toISOString() : null,
           };
           break;
-        case "delete": payload = { action: "delete" }; break;
-        case "delete_photos": payload = { action: "delete_photos" }; break;
+        case "delete":
+          payload = { action: "delete" };
+          break;
+        case "delete_photos":
+          payload = { action: "delete_photos" };
+          break;
       }
       await onConfirm(payload);
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 grid place-items-end sm:place-items-center p-2 sm:p-4" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="bg-background border border-border max-w-md w-full max-h-[92vh] overflow-auto p-4 sm:p-6">
+    <div
+      className="fixed inset-0 z-50 bg-black/50 grid place-items-end sm:place-items-center p-2 sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-background border border-border max-w-md w-full max-h-[92vh] overflow-auto p-4 sm:p-6"
+      >
         <h3 className="font-display text-lg mb-1">{titles[kind]}</h3>
-        <p className="text-xs text-muted-foreground mb-4">Se aplicará a <strong>{count}</strong> producto{count === 1 ? "" : "s"} seleccionado{count === 1 ? "" : "s"}.</p>
+        <p className="text-xs text-muted-foreground mb-4">
+          Se aplicará a <strong>{count}</strong> producto{count === 1 ? "" : "s"} seleccionado
+          {count === 1 ? "" : "s"}.
+        </p>
 
         {kind === "categoria" && (
           <label className="block mb-4">
-            <span className="text-xs uppercase font-medium text-muted-foreground">Nueva categoría</span>
-            <input list="cats-bulk" value={categoria} onChange={(e) => setCategoria(e.target.value)} className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm" placeholder="Dejar vacío para limpiar" />
-            <datalist id="cats-bulk">{categorias.map((c) => <option key={c} value={c} />)}</datalist>
+            <span className="text-xs uppercase font-medium text-muted-foreground">
+              Nueva categoría
+            </span>
+            <input
+              list="cats-bulk"
+              value={categoria}
+              onChange={(e) => setCategoria(e.target.value)}
+              className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm"
+              placeholder="Dejar vacío para limpiar"
+            />
+            <datalist id="cats-bulk">
+              {categorias.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
           </label>
         )}
         {kind === "grupo" && (
           <label className="block mb-4">
-            <span className="text-xs uppercase font-medium text-muted-foreground">Nueva marca / grupo</span>
-            <input list="grupos-bulk" value={grupo} onChange={(e) => setGrupo(e.target.value)} className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm" placeholder="Dejar vacío para limpiar" />
-            <datalist id="grupos-bulk">{grupos.map((g) => <option key={g} value={g} />)}</datalist>
+            <span className="text-xs uppercase font-medium text-muted-foreground">
+              Nueva marca / grupo
+            </span>
+            <input
+              list="grupos-bulk"
+              value={grupo}
+              onChange={(e) => setGrupo(e.target.value)}
+              className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm"
+              placeholder="Dejar vacío para limpiar"
+            />
+            <datalist id="grupos-bulk">
+              {grupos.map((g) => (
+                <option key={g} value={g} />
+              ))}
+            </datalist>
           </label>
         )}
         {kind === "activo" && (
           <div className="mb-4 grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => setActivo(true)} className={`border px-3 py-2 text-sm ${activo ? "border-success bg-success/10 text-success" : "border-border"}`}>Activar</button>
-            <button type="button" onClick={() => setActivo(false)} className={`border px-3 py-2 text-sm ${!activo ? "border-foreground bg-muted" : "border-border"}`}>Desactivar</button>
+            <button
+              type="button"
+              onClick={() => setActivo(true)}
+              className={`border px-3 py-2 text-sm ${activo ? "border-success bg-success/10 text-success" : "border-border"}`}
+            >
+              Activar
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivo(false)}
+              className={`border px-3 py-2 text-sm ${!activo ? "border-foreground bg-muted" : "border-border"}`}
+            >
+              Desactivar
+            </button>
           </div>
         )}
         {kind === "precio" && (
           <>
             <label className="block mb-2">
-              <span className="text-xs uppercase font-medium text-muted-foreground">Porcentaje (+ o −)</span>
-              <input type="number" step="0.1" min={-90} max={500} value={pct} onChange={(e) => setPct(Number(e.target.value))} className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm" />
+              <span className="text-xs uppercase font-medium text-muted-foreground">
+                Porcentaje (+ o −)
+              </span>
+              <input
+                type="number"
+                step="0.1"
+                min={-90}
+                max={500}
+                value={pct}
+                onChange={(e) => setPct(Number(e.target.value))}
+                className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm"
+              />
             </label>
-            <p className="text-xs text-muted-foreground mb-4">Ej: <code>10</code> aumenta 10%, <code>-15</code> rebaja 15%. Productos con precio 0 se omiten.</p>
+            <p className="text-xs text-muted-foreground mb-4">
+              Ej: <code>10</code> aumenta 10%, <code>-15</code> rebaja 15%. Productos con precio 0
+              se omiten.
+            </p>
           </>
         )}
         {kind === "stock" && (
           <label className="block mb-4">
-            <span className="text-xs uppercase font-medium text-muted-foreground">Stock (absoluto)</span>
-            <input type="number" min={0} value={stock} onChange={(e) => setStock(Number(e.target.value))} className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm" />
+            <span className="text-xs uppercase font-medium text-muted-foreground">
+              Stock (absoluto)
+            </span>
+            <input
+              type="number"
+              min={0}
+              value={stock}
+              onChange={(e) => setStock(Number(e.target.value))}
+              className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm"
+            />
           </label>
         )}
         {kind === "oferta" && (
           <>
             <label className="block mb-3">
-              <span className="text-xs uppercase font-medium text-muted-foreground">Precio de oferta (vacío = quitar oferta)</span>
-              <input type="number" min={0} step="0.01" value={precioOferta} onChange={(e) => setPrecioOferta(e.target.value === "" ? "" : Number(e.target.value))} className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm" />
+              <span className="text-xs uppercase font-medium text-muted-foreground">
+                Precio de oferta (vacío = quitar oferta)
+              </span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={precioOferta}
+                onChange={(e) =>
+                  setPrecioOferta(e.target.value === "" ? "" : Number(e.target.value))
+                }
+                className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm"
+              />
             </label>
             <label className="block mb-4">
-              <span className="text-xs uppercase font-medium text-muted-foreground">Vence el (opcional)</span>
-              <input type="datetime-local" value={ofertaHasta} onChange={(e) => setOfertaHasta(e.target.value)} className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm" />
+              <span className="text-xs uppercase font-medium text-muted-foreground">
+                Vence el (opcional)
+              </span>
+              <input
+                type="datetime-local"
+                value={ofertaHasta}
+                onChange={(e) => setOfertaHasta(e.target.value)}
+                className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm"
+              />
             </label>
           </>
         )}
@@ -703,22 +1157,38 @@ function BulkDialog({ kind, count, categorias, grupos, onClose, onConfirm }: {
         )}
         {kind === "delete_photos" && (
           <div className="mb-4 p-3 border border-destructive/50 bg-destructive/10 text-sm">
-            Esta acción <strong>elimina todas las fotos</strong> de {count} productos y no se puede deshacer.
+            Esta acción <strong>elimina todas las fotos</strong> de {count} productos y no se puede
+            deshacer.
           </div>
         )}
 
         {(kind === "delete" || kind === "precio" || kind === "delete_photos") && (
           <label className="flex items-start gap-2 mb-4 text-xs">
-            <input type="checkbox" checked={acked} onChange={(e) => { setAcked(e.target.checked); setConfirm(e.target.checked); }} className="mt-0.5" />
-            <span>Confirmo aplicar este cambio a {count} producto{count === 1 ? "" : "s"}.</span>
+            <input
+              type="checkbox"
+              checked={acked}
+              onChange={(e) => {
+                setAcked(e.target.checked);
+                setConfirm(e.target.checked);
+              }}
+              className="mt-0.5"
+            />
+            <span>
+              Confirmo aplicar este cambio a {count} producto{count === 1 ? "" : "s"}.
+            </span>
           </label>
         )}
 
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm">Cancelar</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm">
+            Cancelar
+          </button>
           <button
             onClick={go}
-            disabled={busy || ((kind === "delete" || kind === "precio" || kind === "delete_photos") && !confirm)}
+            disabled={
+              busy ||
+              ((kind === "delete" || kind === "precio" || kind === "delete_photos") && !confirm)
+            }
             className={`px-4 py-2 text-sm font-medium ${kind === "delete" || kind === "delete_photos" ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"} disabled:opacity-50`}
           >
             {busy ? "Aplicando..." : "Aplicar"}
@@ -731,24 +1201,50 @@ function BulkDialog({ kind, count, categorias, grupos, onClose, onConfirm }: {
 
 // === EDIT MODAL ===
 
-function ProductoModal({ value, categorias, grupos, onClose, onSave }: {
-  value: ProductoForm; categorias: string[]; grupos: string[];
-  onClose: () => void; onSave: (v: ProductoForm) => Promise<void>;
+function ProductoModal({
+  value,
+  categorias,
+  grupos,
+  onClose,
+  onSave,
+}: {
+  value: ProductoForm;
+  categorias: string[];
+  grupos: string[];
+  onClose: () => void;
+  onSave: (v: ProductoForm) => Promise<void>;
 }) {
   const [v, setV] = useState(value);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<"info" | "galeria" | "oferta">("info");
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 grid place-items-end sm:place-items-center p-2 sm:p-4 overflow-auto" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div
+      className="fixed inset-0 z-50 bg-black/50 grid place-items-end sm:place-items-center p-2 sm:p-4 overflow-auto"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <form
-        onSubmit={async (e) => { e.preventDefault(); setBusy(true); try { await onSave(v); } finally { setBusy(false); } }}
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setBusy(true);
+          try {
+            await onSave(v);
+          } finally {
+            setBusy(false);
+          }
+        }}
         className="bg-background border border-border max-w-3xl w-full max-h-[92vh] overflow-auto p-4 sm:p-6 sm:my-8"
       >
         <div className="flex items-center justify-between mb-1">
           <h2 className="font-display text-xl">{v.id ? "Editar producto" : "Nuevo producto"}</h2>
           <label className="inline-flex items-center gap-2 text-xs">
-            <input type="checkbox" checked={v.activo} onChange={(e) => setV({ ...v, activo: e.target.checked })} />
+            <input
+              type="checkbox"
+              checked={v.activo}
+              onChange={(e) => setV({ ...v, activo: e.target.checked })}
+            />
             {v.activo ? "Activo (visible en catálogo)" : "Inactivo (oculto al público)"}
           </label>
         </div>
@@ -768,46 +1264,111 @@ function ProductoModal({ value, categorias, grupos, onClose, onSave }: {
 
         {tab === "info" && (
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Nombre" className="sm:col-span-2" value={v.nombre} onChange={(x) => setV({ ...v, nombre: x })} required />
+            <Field
+              label="Nombre"
+              className="sm:col-span-2"
+              value={v.nombre}
+              onChange={(x) => setV({ ...v, nombre: x })}
+              required
+            />
             <Field label="SKU" value={v.sku} onChange={(x) => setV({ ...v, sku: x })} />
-            <Field label="Código fabricante" value={v.codigo_fabricante} onChange={(x) => setV({ ...v, codigo_fabricante: x })} />
+            <Field
+              label="Código fabricante"
+              value={v.codigo_fabricante}
+              onChange={(x) => setV({ ...v, codigo_fabricante: x })}
+            />
             <label className="block">
-              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Categoría</span>
-              <input list="cats-edit" value={v.categoria} onChange={(e) => setV({ ...v, categoria: e.target.value })} className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
-              <datalist id="cats-edit">{categorias.map((c) => <option key={c} value={c} />)}</datalist>
-            </label>
-            <label className="block">
-              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Marca / Grupo</span>
-              <input list="grupos-edit" value={v.grupo} onChange={(e) => setV({ ...v, grupo: e.target.value })} className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
-              <datalist id="grupos-edit">{grupos.map((g) => <option key={g} value={g} />)}</datalist>
-            </label>
-            <Field label="Precio (ARS)" type="number" value={String(v.precio)} onChange={(x) => setV({ ...v, precio: Number(x) })} required />
-            <Field label="Precio sin IVA" type="number" value={v.precio_vta_sin_iva != null ? String(v.precio_vta_sin_iva) : ""} onChange={(x) => setV({ ...v, precio_vta_sin_iva: x === "" ? null : Number(x) })} />
-            <Field label="Stock" type="number" value={String(v.stock)} onChange={(x) => setV({ ...v, stock: Number(x) })} required />
-            <label className="block">
-              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Peso (kg) (Opcional)</span>
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Categoría
+              </span>
               <input
-                type="number" step="0.01" min={0}
-                value={v.peso_kg != null ? String(v.peso_kg) : ""}
-                onChange={(e) => setV({ ...v, peso_kg: e.target.value === "" ? null : Number(e.target.value) })}
+                list="cats-edit"
+                value={v.categoria}
+                onChange={(e) => setV({ ...v, categoria: e.target.value })}
                 className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
               />
-              <p className="text-[10px] text-muted-foreground mt-0.5">Dejar vacío para usar peso de la categoría</p>
+              <datalist id="cats-edit">
+                {categorias.map((c) => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Marca / Grupo
+              </span>
+              <input
+                list="grupos-edit"
+                value={v.grupo}
+                onChange={(e) => setV({ ...v, grupo: e.target.value })}
+                className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+              <datalist id="grupos-edit">
+                {grupos.map((g) => (
+                  <option key={g} value={g} />
+                ))}
+              </datalist>
+            </label>
+            <Field
+              label="Precio (ARS)"
+              type="number"
+              value={String(v.precio)}
+              onChange={(x) => setV({ ...v, precio: Number(x) })}
+              required
+            />
+            <Field
+              label="Precio sin IVA"
+              type="number"
+              value={v.precio_vta_sin_iva != null ? String(v.precio_vta_sin_iva) : ""}
+              onChange={(x) => setV({ ...v, precio_vta_sin_iva: x === "" ? null : Number(x) })}
+            />
+            <Field
+              label="Stock"
+              type="number"
+              value={String(v.stock)}
+              onChange={(x) => setV({ ...v, stock: Number(x) })}
+              required
+            />
+            <label className="block">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Peso (kg) (Opcional)
+              </span>
+              <input
+                type="number"
+                step="0.01"
+                min={0}
+                value={v.peso_kg != null ? String(v.peso_kg) : ""}
+                onChange={(e) =>
+                  setV({ ...v, peso_kg: e.target.value === "" ? null : Number(e.target.value) })
+                }
+                className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Dejar vacío para usar peso de la categoría
+              </p>
             </label>
             <label className="block sm:col-span-2">
-              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Descripción</span>
-              <textarea value={v.descripcion} onChange={(e) => setV({ ...v, descripcion: e.target.value })} rows={4} className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Descripción
+              </span>
+              <textarea
+                value={v.descripcion}
+                onChange={(e) => setV({ ...v, descripcion: e.target.value })}
+                rows={4}
+                className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              />
             </label>
           </div>
         )}
 
-        {tab === "galeria" && (
-          v.id
-            ? <ProductGalleryAdmin productoId={v.id} />
-            : <div className="text-sm text-muted-foreground p-6 border border-dashed border-border text-center">
-                Guardá primero el producto y volvé a esta pestaña para subir imágenes.
-              </div>
-        )}
+        {tab === "galeria" &&
+          (v.id ? (
+            <ProductGalleryAdmin productoId={v.id} />
+          ) : (
+            <div className="text-sm text-muted-foreground p-6 border border-dashed border-border text-center">
+              Guardá primero el producto y volvé a esta pestaña para subir imágenes.
+            </div>
+          ))}
 
         {tab === "oferta" && (
           <div className="grid gap-3 sm:grid-cols-2">
@@ -818,37 +1379,87 @@ function ProductoModal({ value, categorias, grupos, onClose, onSave }: {
               onChange={(x) => setV({ ...v, precio_oferta: x === "" ? null : Number(x) })}
             />
             <label className="block">
-              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Vence el</span>
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Vence el
+              </span>
               <input
                 type="datetime-local"
                 value={v.oferta_hasta ? new Date(v.oferta_hasta).toISOString().slice(0, 16) : ""}
-                onChange={(e) => setV({ ...v, oferta_hasta: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                onChange={(e) =>
+                  setV({
+                    ...v,
+                    oferta_hasta: e.target.value ? new Date(e.target.value).toISOString() : null,
+                  })
+                }
                 className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
               />
             </label>
-            <p className="sm:col-span-2 text-xs text-muted-foreground">Dejá ambos vacíos para quitar la oferta. Si no ponés fecha, la oferta queda activa indefinidamente.</p>
+            <p className="sm:col-span-2 text-xs text-muted-foreground">
+              Dejá ambos vacíos para quitar la oferta. Si no ponés fecha, la oferta queda activa
+              indefinidamente.
+            </p>
           </div>
         )}
 
         <div className="flex gap-2 mt-6 justify-end">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-sm">Cerrar</button>
-          <button disabled={busy} type="submit" className="bg-primary text-primary-foreground px-5 py-2 text-sm font-medium">{busy ? "..." : "Guardar"}</button>
+          <button type="button" onClick={onClose} className="px-4 py-2 text-sm">
+            Cerrar
+          </button>
+          <button
+            disabled={busy}
+            type="submit"
+            className="bg-primary text-primary-foreground px-5 py-2 text-sm font-medium"
+          >
+            {busy ? "..." : "Guardar"}
+          </button>
         </div>
       </form>
     </div>
   );
 }
 
-function Field({ label, value, onChange, required, type, className }: { label: string; value: string; onChange: (v: string) => void; required?: boolean; type?: string; className?: string }) {
+function Field({
+  label,
+  value,
+  onChange,
+  required,
+  type,
+  className,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  required?: boolean;
+  type?: string;
+  className?: string;
+}) {
   return (
     <label className={`block ${className ?? ""}`}>
-      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
-      <input type={type ?? "text"} value={value} onChange={(e) => onChange(e.target.value)} required={required} className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </span>
+      <input
+        type={type ?? "text"}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required={required}
+        className="w-full mt-1 border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+      />
     </label>
   );
 }
 
-function SearchSelect({ placeholder, options, value, onChange }: { placeholder: string; options: string[]; value: string; onChange: (v: string) => void }) {
+function SearchSelect({
+  placeholder,
+  options,
+  value,
+  onChange,
+}: {
+  placeholder: string;
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -865,9 +1476,7 @@ function SearchSelect({ placeholder, options, value, onChange }: { placeholder: 
     return () => document.removeEventListener("mousedown", onMouseDown);
   }, []);
 
-  const filtered = options.filter((o) =>
-    o.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = options.filter((o) => o.toLowerCase().includes(search.toLowerCase()));
 
   const handleSelect = (option: string) => {
     onChange(option === value ? "" : option);
@@ -893,14 +1502,20 @@ function SearchSelect({ placeholder, options, value, onChange }: { placeholder: 
         {value ? (
           <button
             type="button"
-            onClick={() => { onChange(""); setSearch(""); setOpen(false); }}
+            onClick={() => {
+              onChange("");
+              setSearch("");
+              setOpen(false);
+            }}
             className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground"
             aria-label="Limpiar filtro"
           >
             <X className="size-3.5" />
           </button>
         ) : (
-          <ChevronDown className={`size-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none transition-transform ${open ? "rotate-180" : ""}`} />
+          <ChevronDown
+            className={`size-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none transition-transform ${open ? "rotate-180" : ""}`}
+          />
         )}
       </div>
       {open && options && options.length > 0 && (
@@ -909,7 +1524,11 @@ function SearchSelect({ placeholder, options, value, onChange }: { placeholder: 
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => { onChange(""); setSearch(""); setOpen(false); }}
+              onClick={() => {
+                onChange("");
+                setSearch("");
+                setOpen(false);
+              }}
               className={`w-full text-left px-3 py-2 text-sm hover:bg-accent ${!value ? "bg-primary/10 text-primary font-medium" : ""}`}
             >
               {!value && <span className="mr-2">✓</span>}
@@ -945,7 +1564,7 @@ function PesosGruposModal({ grupos, onClose }: { grupos: string[]; onClose: () =
 
   const { data: currentWeights, isLoading } = useQuery({
     queryKey: ["group-weights"],
-    queryFn: () => getWeights()
+    queryFn: () => getWeights(),
   });
 
   const [search, setSearch] = useState("");
@@ -953,7 +1572,7 @@ function PesosGruposModal({ grupos, onClose }: { grupos: string[]; onClose: () =
   const [editVal, setEditVal] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const filtered = grupos.filter(g => g.toLowerCase().includes(search.toLowerCase()));
+  const filtered = grupos.filter((g) => g.toLowerCase().includes(search.toLowerCase()));
 
   async function handleSave(g: string) {
     if (!editVal || isNaN(Number(editVal))) return;
@@ -971,14 +1590,23 @@ function PesosGruposModal({ grupos, onClose }: { grupos: string[]; onClose: () =
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 grid place-items-end sm:place-items-center p-2 sm:p-4" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="bg-background border border-border max-w-lg w-full max-h-[92vh] flex flex-col p-4 sm:p-6">
+    <div
+      className="fixed inset-0 z-50 bg-black/50 grid place-items-end sm:place-items-center p-2 sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-background border border-border max-w-lg w-full max-h-[92vh] flex flex-col p-4 sm:p-6"
+      >
         <div className="flex justify-between items-center mb-4">
           <h2 className="font-display text-xl">Pesos por Grupo</h2>
-          <button onClick={onClose} className="p-1 hover:text-muted-foreground"><X className="size-5" /></button>
+          <button onClick={onClose} className="p-1 hover:text-muted-foreground">
+            <X className="size-5" />
+          </button>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          Definí el peso promedio (en Kg) que se asignará automáticamente a todos los productos de cada marca o grupo, a menos que un producto tenga un peso específico asignado.
+          Definí el peso promedio (en Kg) que se asignará automáticamente a todos los productos de
+          cada marca o grupo, a menos que un producto tenga un peso específico asignado.
         </p>
 
         <div className="relative mb-4 shrink-0">
@@ -987,7 +1615,7 @@ function PesosGruposModal({ grupos, onClose }: { grupos: string[]; onClose: () =
             type="text"
             placeholder="Buscar grupo..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-2 border border-border bg-background text-sm outline-none focus:border-primary"
           />
         </div>
@@ -1005,7 +1633,7 @@ function PesosGruposModal({ grupos, onClose }: { grupos: string[]; onClose: () =
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(g => {
+                {filtered.map((g) => {
                   const currentKg = currentWeights?.[g.toLowerCase()] ?? 1.0;
                   const isEditing = editingGrupo === g;
                   return (
@@ -1014,7 +1642,9 @@ function PesosGruposModal({ grupos, onClose }: { grupos: string[]; onClose: () =
                       <td className="px-3 py-2 text-right">
                         {isEditing ? (
                           <input
-                            type="number" step="0.1" min="0"
+                            type="number"
+                            step="0.1"
+                            min="0"
                             autoFocus
                             value={editVal}
                             onChange={(e) => setEditVal(e.target.value)}
@@ -1025,18 +1655,34 @@ function PesosGruposModal({ grupos, onClose }: { grupos: string[]; onClose: () =
                             className="w-20 text-right border border-border px-2 py-1 text-xs outline-none focus:border-primary"
                           />
                         ) : (
-                          <span className={currentWeights?.[g.toLowerCase()] == null ? "text-muted-foreground italic" : ""}>
+                          <span
+                            className={
+                              currentWeights?.[g.toLowerCase()] == null
+                                ? "text-muted-foreground italic"
+                                : ""
+                            }
+                          >
                             {currentKg}
                           </span>
                         )}
                       </td>
                       <td className="px-3 py-2 text-right">
                         {isEditing ? (
-                          <button disabled={busy} onClick={() => handleSave(g)} className="text-xs text-primary font-medium hover:underline">
+                          <button
+                            disabled={busy}
+                            onClick={() => handleSave(g)}
+                            className="text-xs text-primary font-medium hover:underline"
+                          >
                             Guardar
                           </button>
                         ) : (
-                          <button onClick={() => { setEditingGrupo(g); setEditVal(String(currentKg)); }} className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground">
+                          <button
+                            onClick={() => {
+                              setEditingGrupo(g);
+                              setEditVal(String(currentKg));
+                            }}
+                            className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground"
+                          >
                             Editar
                           </button>
                         )}
@@ -1046,7 +1692,9 @@ function PesosGruposModal({ grupos, onClose }: { grupos: string[]; onClose: () =
                 })}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="px-3 py-4 text-center text-muted-foreground text-sm">No se encontraron grupos</td>
+                    <td colSpan={3} className="px-3 py-4 text-center text-muted-foreground text-sm">
+                      No se encontraron grupos
+                    </td>
                   </tr>
                 )}
               </tbody>

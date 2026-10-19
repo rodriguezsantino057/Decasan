@@ -74,7 +74,13 @@ export const getShippingOptions = createServerFn({ method: "GET" })
     if (cadete) options.push(cadete);
 
     if (data.codigoPostal) {
-      const zipnovaQuote = await getZipnovaQuote(data.codigoPostal, data.pesoTotalKg ?? 1, 1000, data.provincia, data.ciudad);
+      const zipnovaQuote = await getZipnovaQuote(
+        data.codigoPostal,
+        data.pesoTotalKg ?? 1,
+        1000,
+        data.provincia,
+        data.ciudad,
+      );
       if (zipnovaQuote) {
         options.push({
           id: zipnovaQuote.id,
@@ -133,7 +139,17 @@ export function normalizeProvince(value: string): string {
 
 // --- Cadete (envío local La Falda y alrededores) ---
 
-const CADETE_ZONE_CPS = new Set(["5172", "5168", "5176", "5178", "5166", "5153", "5164", "5182", "5184"]);
+const CADETE_ZONE_CPS = new Set([
+  "5172",
+  "5168",
+  "5176",
+  "5178",
+  "5166",
+  "5153",
+  "5164",
+  "5182",
+  "5184",
+]);
 const CADETE_ZONE_CITIES = [
   "la falda",
   "valle hermoso",
@@ -189,13 +205,15 @@ export function mapShippingOptionRow(row: ShippingOptionRow): ShippingOption {
 
 async function getCadeteOption(
   codigoPostal?: string | null,
-  ciudad?: string | null
+  ciudad?: string | null,
 ): Promise<ShippingOption | null> {
   if (!isCadeteZone(codigoPostal, ciudad)) return null;
   try {
     const { data } = await supabaseAdmin
       .from("shipping_options")
-      .select("id, transportista, provincia, costo, label, activo, dias_estimados_min, dias_estimados_max")
+      .select(
+        "id, transportista, provincia, costo, label, activo, dias_estimados_min, dias_estimados_max",
+      )
       .eq("transportista", "cadete")
       .eq("activo", true)
       .limit(1)
@@ -215,7 +233,9 @@ export const getGroupWeights = createServerFn({ method: "GET" })
     if (!userId) throw new Error("No autenticado");
 
     try {
-      const { data, error } = await (supabaseAdmin as any).from("grupo_pesos").select("grupo, peso_kg");
+      const { data, error } = await (supabaseAdmin as any)
+        .from("grupo_pesos")
+        .select("grupo, peso_kg");
       if (error) {
         console.error("Error al obtener pesos de grupos:", error);
         return CATEGORY_WEIGHTS;

@@ -61,7 +61,9 @@ export function ProductGallery({ imagenes, fallbackWebp, fallbackSrc, alt }: Pro
               key={i}
               onClick={() => setIdx(i)}
               className={`aspect-square overflow-hidden border bg-white transition ${
-                i === idx ? "border-primary ring-1 ring-primary" : "border-border hover:border-foreground/40"
+                i === idx
+                  ? "border-primary ring-1 ring-primary"
+                  : "border-border hover:border-foreground/40"
               }`}
               aria-label={`Ver imagen ${i + 1}`}
             >
