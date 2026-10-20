@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
-import { Camera, X, RefreshCw, Power, CheckCircle, AlertCircle, Search, ExternalLink } from "lucide-react";
+import { Html5Qrcode } from "html5-qrcode";
+import { createWorker } from "tesseract.js";
+import { Camera, X, RefreshCw, Power, CheckCircle, AlertCircle, Search, ScanBarcode, Type } from "lucide-react";
 import { toast } from "sonner";
 import { formatARS } from "@/lib/format";
 import { ProductImage } from "./ProductImage";
@@ -18,18 +19,21 @@ export function BarcodeScannerModal({
   onToggleActivo,
   onEditProduct,
 }: BarcodeScannerModalProps) {
+  const [mode, setMode] = useState<"barcode" | "ocr">("barcode");
   const [scanning, setScanning] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [isOcrReading, setIsOcrReading] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
   const [foundProducts, setFoundProducts] = useState<any[]>([]);
   const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>("");
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isProcessingRef = useRef(false);
+  const ocrWorkerRef = useRef<any>(null);
 
-  // Iniciar cámaras disponibles
+  // Inicializar cámaras
   useEffect(() => {
     let isMounted = true;
     Html5Qrcode.getCameras()
@@ -37,7 +41,6 @@ export function BarcodeScannerModal({
         if (!isMounted) return;
         if (devices && devices.length > 0) {
           setCameras(devices);
-          // Preferir cámara trasera si existe
           const backCam = devices.find((d) =>
             d.label.toLowerCase().includes("back") ||
             d.label.toLowerCase().includes("trasera") ||
@@ -59,7 +62,7 @@ export function BarcodeScannerModal({
     };
   }, []);
 
-  // Iniciar scanner cuando haya cámara seleccionada
+  // Iniciar scanner de cámara
   useEffect(() => {
     if (!selectedCameraId) return;
 
@@ -71,11 +74,9 @@ export function BarcodeScannerModal({
     });
     scannerRef.current = html5QrCode;
 
-    // Configuración optimizada para códigos de barra horizontales
     const config = {
-      fps: 20, // Mayor frecuencia de cuadros para que no se pierda el escaneo
+      fps: 20,
       qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-        // En celular, los códigos de barra son alargados horizontalmente
         const width = Math.min(viewfinderWidth * 0.9, 360);
         const height = Math.min(viewfinderHeight * 0.5, 180);
         return { width: Math.floor(width), height: Math.floor(height) };
@@ -92,11 +93,11 @@ export function BarcodeScannerModal({
         selectedCameraId,
         config,
         (decodedText) => {
-          handleCodeDetected(decodedText);
+          if (mode === "barcode") {
+            handleCodeDetected(decodedText);
+          }
         },
-        () => {
-          // Frame sin código detectado, continuar
-        }
+        () => {}
       )
       .then(() => {
         setScanning(true);
@@ -117,16 +118,24 @@ export function BarcodeScannerModal({
     };
   }, [selectedCameraId]);
 
+  // Limpiar worker de OCR al desmontar
+  useEffect(() => {
+    return () => {
+      if (ocrWorkerRef.current) {
+        ocrWorkerRef.current.terminate();
+      }
+    };
+  }, []);
+
   async function handleCodeDetected(rawCode: string) {
     const code = rawCode.trim();
     if (!code || isProcessingRef.current) return;
-    if (code === lastScannedCode && foundProducts.length > 0) return; // Evitar re-escanear el mismo inmediatamente
+    if (code === lastScannedCode && foundProducts.length > 0) return;
 
     isProcessingRef.current = true;
     setIsSearching(true);
     setLastScannedCode(code);
 
-    // Pequeño feedback háptico si el celular lo soporta
     if (navigator.vibrate) {
       navigator.vibrate(80);
     }
@@ -147,6 +156,82 @@ export function BarcodeScannerModal({
       setTimeout(() => {
         isProcessingRef.current = false;
       }, 1200);
+    }
+  }
+
+  // Capturar foto del video y leer números (OCR)
+  async function captureAndReadNumbers() {
+    const video = document.querySelector("#barcode-scanner-viewport video") as HTMLVideoElement | null;
+    if (!video || isOcrReading) return;
+
+    setIsOcrReading(true);
+    toast.info("Leyendo números de la imagen...");
+
+    try {
+      // Capturar frame en canvas
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("No se pudo iniciar el canvas");
+
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Cargar worker tesseract si no está cargado
+      if (!ocrWorkerRef.current) {
+        const worker = await createWorker("eng");
+        await worker.setParameters({
+          tessedit_char_whitelist: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-",
+        });
+        ocrWorkerRef.current = worker;
+      }
+
+      const ret = await ocrWorkerRef.current.recognize(canvas);
+      const text = ret.data.text || "";
+      console.log("OCR leído:", text);
+
+      // Extraer secuencias alfanuméricas de 3 o más dígitos (ej: 6224, AA237)
+      const matches = text.match(/[A-Z0-9-]{3,12}/g) || [];
+      const cleanMatches = [...new Set(matches.filter((m: string) => /\d/.test(m)))];
+
+      if (cleanMatches.length === 0) {
+        toast.error("No se detectaron números claros. Acercá la cámara o enfoca mejor.");
+        setIsOcrReading(false);
+        return;
+      }
+
+      toast.info(`Probando códigos: ${cleanMatches.join(", ")}`);
+
+      // Probar los códigos detectados con prioridad a los que coincidan
+      let found: any[] = [];
+      let matchedCode = "";
+
+      for (const candidate of cleanMatches) {
+        const res = await onFindProduct(candidate);
+        if (res.matches && res.matches.length > 0) {
+          found = res.matches;
+          matchedCode = candidate;
+          break;
+        }
+      }
+
+      if (found.length > 0) {
+        setLastScannedCode(matchedCode);
+        setFoundProducts(found);
+        setManualCode(matchedCode);
+        if (navigator.vibrate) navigator.vibrate(100);
+        toast.success(`¡Encontrado código ${matchedCode}!`);
+      } else {
+        setLastScannedCode(cleanMatches[0]);
+        setManualCode(cleanMatches[0]);
+        setFoundProducts([]);
+        toast.error(`Códigos leídos (${cleanMatches.join(", ")}), pero no coinciden en la base.`);
+      }
+    } catch (err: any) {
+      console.error("Error en OCR:", err);
+      toast.error(err?.message || "Error al leer imagen");
+    } finally {
+      setIsOcrReading(false);
     }
   }
 
@@ -190,6 +275,34 @@ export function BarcodeScannerModal({
         </div>
 
         <div className="p-4 space-y-4 overflow-y-auto flex-1">
+          {/* Selector de modo: Código de Barras vs Números (OCR) */}
+          <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setMode("barcode")}
+              className={`py-2 rounded-md flex items-center justify-center gap-1.5 transition-all ${
+                mode === "barcode"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <ScanBarcode className="size-4 text-primary" />
+              <span>Código de Barras</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("ocr")}
+              className={`py-2 rounded-md flex items-center justify-center gap-1.5 transition-all ${
+                mode === "ocr"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Type className="size-4 text-emerald-500" />
+              <span>Leer Números / Texto</span>
+            </button>
+          </div>
+
           {/* Selector de cámara si hay más de 1 */}
           {cameras.length > 1 && (
             <div className="flex items-center gap-2 text-xs">
@@ -213,11 +326,9 @@ export function BarcodeScannerModal({
             <div id="barcode-scanner-viewport" className="w-full h-full [&_video]:object-cover [&_video]:w-full [&_video]:min-h-[300px] [&_video]:max-h-[380px]" />
             
             {/* Guía visual con puntitos verdes indicadores y marco */}
-            {scanning && !cameraError && !isSearching && (
+            {scanning && !cameraError && !isSearching && !isOcrReading && (
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center p-6">
-                {/* Cuadro central con esquinas y puntos verdes */}
                 <div className="relative w-full max-w-[320px] h-36 border border-emerald-500/40 rounded-lg flex items-center justify-center bg-emerald-500/5">
-                  {/* Puntos verdes indicadores en las 4 esquinas */}
                   <span className="absolute -top-1.5 -left-1.5 size-3 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-ping" />
                   <span className="absolute -top-1.5 -left-1.5 size-3 rounded-full bg-emerald-500" />
 
@@ -230,26 +341,24 @@ export function BarcodeScannerModal({
                   <span className="absolute -bottom-1.5 -right-1.5 size-3 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-ping" />
                   <span className="absolute -bottom-1.5 -right-1.5 size-3 rounded-full bg-emerald-500" />
 
-                  {/* Puntos de foco guía intermedios */}
                   <span className="absolute left-1/4 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-emerald-400/80" />
                   <span className="absolute left-1/2 top-1/2 -translate-y-1/2 size-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
                   <span className="absolute right-1/4 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-emerald-400/80" />
 
-                  {/* Línea horizontal central */}
                   <div className="w-full h-0.5 bg-emerald-400 shadow-[0_0_8px_#34d399] opacity-90 animate-pulse" />
                 </div>
 
                 <div className="mt-3 flex items-center gap-1.5 bg-black/75 px-3 py-1 rounded-full text-emerald-400 text-xs font-mono border border-emerald-500/30 backdrop-blur-sm">
                   <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Enfocá el código dentro de los puntos verdes</span>
+                  <span>{mode === "barcode" ? "Enfocá el código de barras" : "Apuntá al número impreso"}</span>
                 </div>
               </div>
             )}
 
-            {isSearching && (
+            {(isSearching || isOcrReading) && (
               <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white text-xs gap-2 backdrop-blur-sm z-10">
                 <RefreshCw className="size-6 animate-spin text-emerald-400" />
-                <span>Buscando producto...</span>
+                <span>{isOcrReading ? "Leyendo número de la etiqueta..." : "Buscando en la base de datos..."}</span>
               </div>
             )}
             {cameraError && (
@@ -261,11 +370,24 @@ export function BarcodeScannerModal({
             )}
           </div>
 
+          {/* Botón de Captura para modo OCR (Números impresos) */}
+          {mode === "ocr" && (
+            <button
+              type="button"
+              onClick={captureAndReadNumbers}
+              disabled={isOcrReading || isSearching}
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg shadow-md flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+            >
+              <Camera className="size-4" />
+              <span>{isOcrReading ? "Analizando imagen..." : "📸 Capturar y Leer Número (OCR)"}</span>
+            </button>
+          )}
+
           {/* Input manual alternativo */}
           <form onSubmit={handleManualSearch} className="flex gap-2">
             <input
               type="text"
-              placeholder="Escribir SKU o código fabricante..."
+              placeholder="O escribir código / número a mano (ej: 6224)..."
               value={manualCode}
               onChange={(e) => setManualCode(e.target.value)}
               className="flex-1 px-3 py-2 border border-border bg-background text-sm rounded-md outline-none focus:border-primary"
@@ -283,7 +405,7 @@ export function BarcodeScannerModal({
           {lastScannedCode && (
             <div className="pt-2 border-t border-border">
               <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                <span>Último código escaneado: <strong className="font-mono text-foreground">{lastScannedCode}</strong></span>
+                <span>Código detectado: <strong className="font-mono text-foreground">{lastScannedCode}</strong></span>
                 {foundProducts.length > 0 && (
                   <span className="text-emerald-600 font-semibold flex items-center gap-1">
                     <CheckCircle className="size-3.5" /> {foundProducts.length} coincidencia{foundProducts.length > 1 ? "s" : ""}
@@ -291,7 +413,7 @@ export function BarcodeScannerModal({
                 )}
               </div>
 
-              {foundProducts.length === 0 && !isSearching && (
+              {foundProducts.length === 0 && !isSearching && !isOcrReading && (
                 <div className="p-3 bg-muted/40 rounded-lg text-center text-xs text-muted-foreground">
                   No se encontró ningún producto con el código <span className="font-mono">{lastScannedCode}</span>.
                 </div>
@@ -364,7 +486,7 @@ export function BarcodeScannerModal({
 
         {/* Footer */}
         <div className="p-3 border-t border-border bg-muted/20 flex justify-between items-center text-xs text-muted-foreground">
-          <span>Alineá el código con la guía de la cámara</span>
+          <span>{mode === "barcode" ? "Escaneo automático de barras" : "Capturá el número con la cámara"}</span>
           <button
             onClick={onClose}
             className="px-4 py-1.5 bg-secondary text-secondary-foreground rounded font-medium hover:bg-secondary/80"

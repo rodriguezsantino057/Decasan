@@ -286,11 +286,11 @@ export const adminFindProductoByBarcode = createServerFn({ method: "POST" })
       return { matches: exactMatches };
     }
 
-    // 2. Si no hubo coincidencia exacta, buscar parcial (ilike)
+    // 2. Si no hubo coincidencia exacta, buscar parcial en código o nombre
     const { data: partialMatches, error: partialErr } = await context.supabase
       .from("productos")
       .select("id, nombre, sku, codigo_fabricante, precio, stock, activo, categoria, grupo, image_url, image_webp")
-      .or(`sku.ilike.%${cleanCode}%,codigo_fabricante.ilike.%${cleanCode}%`)
+      .or(`sku.ilike.%${cleanCode}%,codigo_fabricante.ilike.%${cleanCode}%,nombre.ilike.%${cleanCode}%`)
       .limit(5);
 
     if (partialErr) throw new Error(partialErr.message);
