@@ -271,9 +271,39 @@ export function BarcodeScannerModal({
       const text = ret.data.text || "";
       console.log("OCR leído:", text);
 
-      // Extraer secuencias alfanuméricas de 3 o más dígitos (ej: 6224, AA237)
-      const matches = text.match(/[A-Z0-9-]{3,12}/g) || [];
-      const cleanMatches = [...new Set(matches.filter((m: string) => /\d/.test(m)))];
+      // 1. Extraer palabras y secuencias alfanuméricas
+      const rawMatches = text.match(/[A-Z0-9-]{2,14}/gi) || [];
+      const candidatesSet = new Set<string>();
+
+      for (const token of rawMatches) {
+        const clean = token.trim().toUpperCase();
+        if (clean.length >= 2 && /\d/.test(clean)) {
+          candidatesSet.add(clean);
+          // Si tiene guión (ej: 00-10101 o AA-237), probar también el bloque numérico después del guión
+          if (clean.includes("-")) {
+            const parts = clean.split("-");
+            for (const part of parts) {
+              if (part.length >= 2 && /\d/.test(part)) {
+                candidatesSet.add(part);
+              }
+            }
+          }
+        }
+      }
+
+      // Ordenar candidatos dando prioridad a códigos típicos de fabricante (4 a 6 dígitos numéricos o alfanuméricos cortos)
+      const cleanMatches = Array.from(candidatesSet).sort((a, b) => {
+        const score = (str: string) => {
+          // 4 dígitos exactos numéricos (ej: 6224, 3687, 6415) = máxima prioridad en Bremen / Wembley
+          if (/^\d{4}$/.test(str)) return 0;
+          // 3 a 5 dígitos numéricos
+          if (/^\d{3,5}$/.test(str)) return 1;
+          // Alfanumérico con número
+          if (/^[A-Z0-9-]{3,8}$/.test(str)) return 2;
+          return 3;
+        };
+        return score(a) - score(b);
+      });
 
       if (cleanMatches.length === 0) {
         toast.error("No se detectaron números claros. Acercá la cámara o enfoca mejor.");
@@ -281,7 +311,7 @@ export function BarcodeScannerModal({
         return;
       }
 
-      toast.info(`Probando códigos: ${cleanMatches.join(", ")}`);
+      toast.info(`Probando códigos de fabricante: ${cleanMatches.slice(0, 4).join(", ")}`);
 
       // Probar los códigos detectados con prioridad a los que coincidan
       let found: any[] = [];

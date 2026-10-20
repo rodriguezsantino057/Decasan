@@ -274,23 +274,47 @@ export const adminFindProductoByBarcode = createServerFn({ method: "POST" })
     const code = data.code.trim();
     const cleanCode = code.replace(/[%_,]/g, "\\$&");
     
-    // 1. Coincidencia exacta con SKU o Código de Fabricante
-    const { data: exactMatches, error: exactErr } = await context.supabase
+    // 1. Coincidencia EXACTA con Código de Fabricante (máxima prioridad)
+    const { data: mFab, error: errFab } = await context.supabase
       .from("productos")
       .select("id, nombre, sku, codigo_fabricante, precio, stock, activo, categoria, grupo, image_url, image_webp")
-      .or(`sku.eq.${code},codigo_fabricante.eq.${code}`)
+      .eq("codigo_fabricante", code)
       .limit(5);
 
-    if (exactErr) throw new Error(exactErr.message);
-    if (exactMatches && exactMatches.length > 0) {
-      return { matches: exactMatches };
+    if (errFab) throw new Error(errFab.message);
+    if (mFab && mFab.length > 0) {
+      return { matches: mFab };
     }
 
-    // 2. Si no hubo coincidencia exacta, buscar parcial en código o nombre
+    // 2. Coincidencia exacta con SKU o código de barras
+    const { data: mSku, error: errSku } = await context.supabase
+      .from("productos")
+      .select("id, nombre, sku, codigo_fabricante, precio, stock, activo, categoria, grupo, image_url, image_webp")
+      .eq("sku", code)
+      .limit(5);
+
+    if (errSku) throw new Error(errSku.message);
+    if (mSku && mSku.length > 0) {
+      return { matches: mSku };
+    }
+
+    // 3. Coincidencia parcial con código de fabricante
+    const { data: partFab, error: errPartFab } = await context.supabase
+      .from("productos")
+      .select("id, nombre, sku, codigo_fabricante, precio, stock, activo, categoria, grupo, image_url, image_webp")
+      .ilike("codigo_fabricante", `%${cleanCode}%`)
+      .limit(5);
+
+    if (errPartFab) throw new Error(errPartFab.message);
+    if (partFab && partFab.length > 0) {
+      return { matches: partFab };
+    }
+
+    // 4. Si no hubo coincidencia en código de fabricante, buscar parcial en SKU o Nombre
     const { data: partialMatches, error: partialErr } = await context.supabase
       .from("productos")
       .select("id, nombre, sku, codigo_fabricante, precio, stock, activo, categoria, grupo, image_url, image_webp")
-      .or(`sku.ilike.%${cleanCode}%,codigo_fabricante.ilike.%${cleanCode}%,nombre.ilike.%${cleanCode}%`)
+      .or(`sku.ilike.%${cleanCode}%,nombre.ilike.%${cleanCode}%`)
       .limit(5);
 
     if (partialErr) throw new Error(partialErr.message);
