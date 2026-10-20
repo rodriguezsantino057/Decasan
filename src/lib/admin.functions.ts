@@ -976,3 +976,171 @@ export const adminMetrics = createServerFn({ method: "GET" })
       ticketPromedio,
     };
   });
+
+export const adminSearchProductImages = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    productoId: z.number().int(),
+    customQuery: z.string().optional()
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context.supabase, context.userId);
+    const apiKey = process.env.SERPER_API_KEY;
+    if (!apiKey) {
+      throw new Error("SERPER_API_KEY no está configurada en el servidor.");
+    }
+
+    const { data: producto, error: prodErr } = await context.supabase
+      .from("productos")
+      .select("id, nombre, sku, codigo_fabricante, categoria, grupo, image_url, image_webp")
+      .eq("id", data.productoId)
+      .single();
+
+    if (prodErr || !producto) {
+      throw new Error(prodErr?.message || "Producto no encontrado.");
+    }
+
+    // Si el nombre no incluye explícitamente bremen ni wembley, agregar sugerencia de marca
+    let defaultBrand = "";
+    const lowerName = producto.nombre.toLowerCase();
+    if (!lowerName.includes("bremen") && !lowerName.includes("wembley")) {
+      defaultBrand = "bremen wembley";
+    }
+
+    const query = data.customQuery?.trim() || `${producto.nombre} ${producto.codigo_fabricante || ""} ${defaultBrand} herramientas`.trim();
+
+    const response = await fetch("https://google.serper.dev/images", {
+      method: "POST",
+      headers: {
+        "X-API-KEY": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ q: query }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Error en el buscador de imágenes: ${response.status} - ${errText}`);
+    }
+
+    const result = await response.json();
+    const images: any[] = result.images || [];
+
+    if (images.length === 0) {
+      return { ok: false, images: [], query, message: "No se encontraron imágenes para este producto." };
+    }
+
+    // Filtrar válidas
+    let validImages = images.filter((img: any) => img.imageUrl && img.imageUrl.startsWith("http"));
+
+    // Priorizar: Bremen & Wembley (Nivel 1) > Otros oficiales (Nivel 2) > Mercado Libre (Nivel 3) > Resto
+    validImages.sort((a: any, b: any) => {
+      const getScore = (img: any) => {
+        const str = `${img.link || ""} ${img.source || ""} ${img.imageUrl || ""} ${img.title || ""}`.toLowerCase();
+
+        // Nivel 0 / Máxima Prioridad: Bremen y Wembley (sitios oficiales o títulos específicos de la marca)
+        if (
+          str.includes("brementools") ||
+          str.includes("bremen") ||
+          str.includes("wembley")
+        ) {
+          return 0;
+        }
+
+        // Nivel 1: Otros sitios oficiales
+        if (
+          str.includes("totalbusiness") ||
+          str.includes("hamilton") ||
+          str.includes("lusqtoff") ||
+          str.includes("milwaukeetool") ||
+          str.includes("dewalt") ||
+          str.includes("bosch")
+        ) {
+          return 1;
+        }
+
+        // Nivel 2: Mercado Libre
+        if (str.includes("mercadolibre") || str.includes("mlstatic")) {
+          return 2;
+        }
+
+        // Nivel 3: Otros
+        return 3;
+      };
+      return getScore(a) - getScore(b);
+    });
+
+    // Retornar hasta 10 candidatos para que el usuario elija
+    const candidates = validImages.slice(0, 10).map((img: any, idx: number) => ({
+      id: idx,
+      imageUrl: img.imageUrl,
+      title: img.title || "",
+      source: img.source || img.domain || "",
+      link: img.link || "",
+    }));
+
+    return {
+      ok: true,
+      query,
+      images: candidates,
+    };
+  });
+
+export const adminAssignProductImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    productoId: z.number().int(),
+    selectedImageUrl: z.string().url(),
+    additionalImages: z.array(z.string().url()).optional(),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context.supabase, context.userId);
+
+    const { data: producto, error: prodErr } = await context.supabase
+      .from("productos")
+      .select("id, nombre")
+      .eq("id", data.productoId)
+      .single();
+
+    if (prodErr || !producto) {
+      throw new Error(prodErr?.message || "Producto no encontrado.");
+    }
+
+    // 1. Actualizar foto principal del producto
+    const { error: updateErr } = await context.supabase
+      .from("productos")
+      .update({
+        image_url: data.selectedImageUrl,
+        image_webp: data.selectedImageUrl,
+        erp_updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.productoId);
+
+    if (updateErr) throw new Error(updateErr.message);
+
+    // 2. Si se mandaron imágenes adicionales o la principal, guardar en product_images
+    const allImages = [data.selectedImageUrl, ...(data.additionalImages || [])];
+    const uniqueImages = [...new Set(allImages)];
+
+    const galleryInserts = uniqueImages.map((url, idx) => ({
+      producto_id: data.productoId,
+      url,
+      url_webp: url,
+      alt: producto.nombre,
+      orden: idx,
+    }));
+
+    // Opcional: limpiar anteriores o agregar
+    await context.supabase.from("product_images").insert(galleryInserts);
+
+    return {
+      ok: true,
+      imageUrl: data.selectedImageUrl,
+      message: "¡Foto aprobada y guardada con éxito!",
+    };
+  });
+
+// Retrocompatibilidad
+export const adminAutoFetchProductImage = adminSearchProductImages;
+
+

@@ -1,16 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { createWorker } from "tesseract.js";
-import { Camera, X, RefreshCw, Power, CheckCircle, AlertCircle, Search, ScanBarcode, Type } from "lucide-react";
+import { Camera, X, RefreshCw, Power, CheckCircle, AlertCircle, Search, ScanBarcode, Type, Sparkles, Loader2, Check, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { formatARS } from "@/lib/format";
 import { ProductImage } from "./ProductImage";
+
+interface ImageCandidate {
+  id: number;
+  imageUrl: string;
+  title: string;
+  source: string;
+  link: string;
+}
 
 interface BarcodeScannerModalProps {
   onClose: () => void;
   onFindProduct: (code: string) => Promise<{ matches: any[] }>;
   onToggleActivo: (p: any) => Promise<void>;
   onEditProduct?: (p: any) => void;
+  onSearchImages?: (productoId: number, customQuery?: string) => Promise<{ ok: boolean; images: ImageCandidate[]; query?: string; message?: string }>;
+  onAssignImage?: (productoId: number, selectedImageUrl: string, additionalImages?: string[]) => Promise<{ ok: boolean; imageUrl?: string; message?: string }>;
 }
 
 export function BarcodeScannerModal({
@@ -18,6 +28,8 @@ export function BarcodeScannerModal({
   onFindProduct,
   onToggleActivo,
   onEditProduct,
+  onSearchImages,
+  onAssignImage,
 }: BarcodeScannerModalProps) {
   const [mode, setMode] = useState<"barcode" | "ocr">("barcode");
   const [scanning, setScanning] = useState(false);
@@ -26,6 +38,17 @@ export function BarcodeScannerModal({
   const [isSearching, setIsSearching] = useState(false);
   const [isOcrReading, setIsOcrReading] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
+
+  // Estado del modal de aprobación de fotos
+  const [approvalProduct, setApprovalProduct] = useState<any | null>(null);
+  const [imageCandidates, setImageCandidates] = useState<ImageCandidate[]>([]);
+  const [selectedMainImg, setSelectedMainImg] = useState<string>("");
+  const [selectedGalleryImgs, setSelectedGalleryImgs] = useState<string[]>([]);
+  const [isSearchingImages, setIsSearchingImages] = useState(false);
+  const [isSavingImage, setIsSavingImage] = useState(false);
+  const [customSearchQuery, setCustomSearchQuery] = useState("");
+
+
   const [foundProducts, setFoundProducts] = useState<any[]>([]);
   const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>("");
@@ -127,6 +150,58 @@ export function BarcodeScannerModal({
     };
   }, []);
 
+  async function openImageApproval(p: any, customQuery?: string) {
+    if (!onSearchImages || !p?.id) return;
+    setApprovalProduct(p);
+    setIsSearchingImages(true);
+    setImageCandidates([]);
+    setSelectedMainImg("");
+    setSelectedGalleryImgs([]);
+    setCustomSearchQuery(customQuery || "");
+
+    try {
+      const res = await onSearchImages(p.id, customQuery);
+      if (res.ok && res.images && res.images.length > 0) {
+        setImageCandidates(res.images);
+        // Pre-seleccionar la primera imagen (la de mejor ranking)
+        setSelectedMainImg(res.images[0].imageUrl);
+        setCustomSearchQuery(res.query || "");
+        toast.info(`Se encontraron ${res.images.length} opciones de fotos.`);
+      } else {
+        toast.error(res.message || "No se encontraron fotos para este producto.");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Error al buscar imágenes");
+    } finally {
+      setIsSearchingImages(false);
+    }
+  }
+
+  async function handleSaveApproval() {
+    if (!approvalProduct || !selectedMainImg || !onAssignImage) return;
+    setIsSavingImage(true);
+    try {
+      const res = await onAssignImage(approvalProduct.id, selectedMainImg, selectedGalleryImgs);
+      if (res.ok) {
+        toast.success("¡Foto guardada correctamente!");
+        setFoundProducts((prev) =>
+          prev.map((item) =>
+            item.id === approvalProduct.id
+              ? { ...item, image_url: selectedMainImg, image_webp: selectedMainImg }
+              : item
+          )
+        );
+        setApprovalProduct(null);
+      } else {
+        toast.error(res.message || "Error al asignar foto.");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Error al guardar imagen");
+    } finally {
+      setIsSavingImage(false);
+    }
+  }
+
   async function handleCodeDetected(rawCode: string) {
     const code = rawCode.trim();
     if (!code || isProcessingRef.current) return;
@@ -145,6 +220,12 @@ export function BarcodeScannerModal({
       if (res.matches && res.matches.length > 0) {
         setFoundProducts(res.matches);
         toast.success(`Producto encontrado: ${res.matches[0].nombre}`);
+
+        // Si el producto no tiene imagen, abrir automáticamente el selector de aprobación
+        const matchSinFoto = res.matches.find((m: any) => !m.image_url);
+        if (matchSinFoto && onSearchImages) {
+          openImageApproval(matchSinFoto);
+        }
       } else {
         setFoundProducts([]);
         toast.error(`No se encontró producto con código: ${code}`);
@@ -221,6 +302,12 @@ export function BarcodeScannerModal({
         setManualCode(matchedCode);
         if (navigator.vibrate) navigator.vibrate(100);
         toast.success(`¡Encontrado código ${matchedCode}!`);
+
+        // Si el producto no tiene foto, abrir selector de aprobación
+        const matchSinFoto = found.find((m: any) => !m.image_url);
+        if (matchSinFoto && onSearchImages) {
+          openImageApproval(matchSinFoto);
+        }
       } else {
         setLastScannedCode(cleanMatches[0]);
         setManualCode(cleanMatches[0]);
@@ -448,6 +535,25 @@ export function BarcodeScannerModal({
                             Stock: {p.stock}
                           </span>
                         </div>
+                        {onSearchImages && (
+                          <div className="mt-1.5">
+                            <button
+                              type="button"
+                              onClick={() => openImageApproval(p)}
+                              className="text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:text-amber-500 flex items-center gap-1"
+                            >
+                              {!p.image_url ? (
+                                <>
+                                  <Sparkles className="size-3" /> Buscar y Aprobar Foto
+                                </>
+                              ) : (
+                                <>
+                                  <RefreshCw className="size-3" /> Cambiar foto
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
@@ -495,6 +601,171 @@ export function BarcodeScannerModal({
           </button>
         </div>
       </div>
+
+      {/* MODAL DE APROBACIÓN DE FOTOS */}
+      {approvalProduct && (
+        <div className="fixed inset-0 z-60 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 animate-in fade-in duration-150">
+          <div className="bg-background border border-border rounded-xl shadow-2xl max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Header del modal de aprobación */}
+            <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
+              <div className="min-w-0 pr-2">
+                <span className="text-[11px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1">
+                  <Sparkles className="size-3" /> Aprobación de Fotos
+                </span>
+                <h3 className="text-sm font-semibold truncate text-foreground">{approvalProduct.nombre}</h3>
+              </div>
+              <button
+                onClick={() => setApprovalProduct(null)}
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            {/* Contenido con buscador y grilla de fotos candidatas */}
+            <div className="p-4 overflow-y-auto space-y-4 flex-1">
+              {/* Buscador personalizado si los resultados no conformaron */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (customSearchQuery.trim()) {
+                    openImageApproval(approvalProduct, customSearchQuery.trim());
+                  }
+                }}
+                className="flex gap-2"
+              >
+                <input
+                  type="text"
+                  placeholder="Ajustar término de búsqueda en Google..."
+                  value={customSearchQuery}
+                  onChange={(e) => setCustomSearchQuery(e.target.value)}
+                  className="flex-1 px-3 py-1.5 text-xs border border-border rounded-md bg-background focus:border-primary outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={isSearchingImages}
+                  className="px-3 py-1.5 bg-muted hover:bg-muted/80 text-foreground text-xs font-medium rounded-md flex items-center gap-1 border border-border"
+                >
+                  {isSearchingImages ? <Loader2 className="size-3 animate-spin" /> : <Search className="size-3" />}
+                  <span>Buscar</span>
+                </button>
+              </form>
+
+              {isSearchingImages ? (
+                <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
+                  <Loader2 className="size-8 text-primary animate-spin" />
+                  <p className="text-xs text-muted-foreground">Buscando las mejores imágenes en Google y sitios oficiales...</p>
+                </div>
+              ) : imageCandidates.length === 0 ? (
+                <div className="py-10 text-center text-xs text-muted-foreground space-y-2">
+                  <AlertCircle className="size-8 mx-auto text-amber-500 opacity-80" />
+                  <p>No se encontraron fotos. Probá ajustar el nombre en la barra de búsqueda de arriba.</p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2.5">
+                    Hacé clic en la foto que querés como <strong>Principal</strong> (borde verde). También podés tildar fotos adicionales para la galería:
+                  </p>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {imageCandidates.map((img) => {
+                      const isMain = selectedMainImg === img.imageUrl;
+                      const inGallery = selectedGalleryImgs.includes(img.imageUrl);
+
+                      return (
+                        <div
+                          key={img.id}
+                          onClick={() => {
+                            setSelectedMainImg(img.imageUrl);
+                            // Si estaba en secundaria, la quitamos de secundaria
+                            setSelectedGalleryImgs((prev) => prev.filter((u) => u !== img.imageUrl));
+                          }}
+                          className={`relative group rounded-lg border-2 p-1.5 flex flex-col items-center justify-between cursor-pointer transition-all ${
+                            isMain
+                              ? "border-emerald-600 bg-emerald-500/10 shadow-sm"
+                              : inGallery
+                              ? "border-primary bg-primary/10"
+                              : "border-border hover:border-primary/50 bg-surface-elevated"
+                          }`}
+                        >
+                          <div className="w-full aspect-square bg-muted rounded overflow-hidden flex items-center justify-center">
+                            <img
+                              src={img.imageUrl}
+                              alt={img.title}
+                              className="size-full object-contain"
+                              loading="lazy"
+                            />
+                          </div>
+
+                          <div className="w-full mt-1.5 text-[10px] text-muted-foreground text-center truncate">
+                            {img.source || "Web"}
+                          </div>
+
+                          {/* Badge de Principal */}
+                          {isMain && (
+                            <div className="absolute top-2 left-2 bg-emerald-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow flex items-center gap-0.5">
+                              <Check className="size-3" /> Principal
+                            </div>
+                          )}
+
+                          {/* Checkbox secundaria */}
+                          {!isMain && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedGalleryImgs((prev) =>
+                                  inGallery
+                                    ? prev.filter((u) => u !== img.imageUrl)
+                                    : [...prev, img.imageUrl]
+                                );
+                              }}
+                              className={`absolute top-2 right-2 p-1 rounded text-[10px] font-medium shadow transition-colors ${
+                                inGallery
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-background/90 text-foreground border border-border hover:bg-muted"
+                              }`}
+                            >
+                              {inGallery ? "✓ En galería" : "+ Galería"}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer de acción del modal de aprobación */}
+            <div className="p-3 border-t border-border bg-muted/30 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setApprovalProduct(null)}
+                className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground font-medium rounded"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={!selectedMainImg || isSavingImage}
+                onClick={handleSaveApproval}
+                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+              >
+                {isSavingImage ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" /> Guardando...
+                  </>
+                ) : (
+                  <>
+                    <Check className="size-3.5" /> Aprobar y Guardar Foto
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -7,7 +7,8 @@ import { Plus, Edit, Trash2, Search, X, Tag, Layers, Power, Percent, Package, Al
 import {
   adminListProductos, adminUpsertProducto, adminDeleteProducto, adminToggleProductoActivo,
   adminListCategorias, adminListGrupos, adminBulkProductos,
-  adminExportProductos, adminUpsertGroupWeight, adminFindProductoByBarcode
+  adminExportProductos, adminUpsertGroupWeight, adminFindProductoByBarcode,
+  adminSearchProductImages, adminAssignProductImage
 } from "@/lib/admin.functions";
 import { getGroupWeights } from "@/lib/shipping.functions";
 import { formatARS } from "@/lib/format";
@@ -46,6 +47,8 @@ function AdminProductos() {
   const listCategorias = useServerFn(adminListCategorias);
   const listGrupos = useServerFn(adminListGrupos);
   const findByBarcode = useServerFn(adminFindProductoByBarcode);
+  const searchImages = useServerFn(adminSearchProductImages);
+  const assignImage = useServerFn(adminAssignProductImage);
 
   const [exporting, setExporting] = useState(false);
 
@@ -505,6 +508,17 @@ function AdminProductos() {
           }}
           onToggleActivo={async (p) => {
             await toggleEstado(p);
+          }}
+          onSearchImages={async (productoId, customQuery) => {
+            const res = await searchImages({ data: { productoId, customQuery } });
+            return res;
+          }}
+          onAssignImage={async (productoId, selectedImageUrl, additionalImages) => {
+            const res = await assignImage({ data: { productoId, selectedImageUrl, additionalImages } });
+            if (res.ok) {
+              qc.invalidateQueries({ queryKey: ["admin", "productos"] });
+            }
+            return res;
           }}
           onEditProduct={(p) => {
             setEditing({
