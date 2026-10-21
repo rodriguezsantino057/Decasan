@@ -6,6 +6,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { Brands } from "@/components/Brands";
 import { InstagramReels } from "@/components/InstagramReels";
 import { LocationSection } from "@/components/LocationSection";
+import { Hero3DProductConfigurator } from "@/components/Hero3DProductConfigurator";
 import { fetchProductos, fetchCategorias } from "@/lib/products";
 import { isNumericCategory } from "@/lib/categories";
 import { useSession, useIsAdmin } from "@/lib/auth";
@@ -90,50 +91,8 @@ function Index() {
 
   return (
     <Layout>
-      {/* HERO CAROUSEL */}
-      <section id="inicio" className="relative bg-secondary text-secondary-foreground overflow-hidden scroll-mt-28">
-        <div className="overflow-hidden" ref={emblaRef}>
-          <div className="flex">
-            {slides.map((slide, index) => (
-              <div className="relative flex-[0_0_100%] min-w-0" key={index}>
-                <img
-                  src={slide.src}
-                  alt={slide.title}
-                  className="absolute inset-0 size-full object-cover opacity-40 object-center"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-secondary/90 via-secondary/70 to-transparent" />
-                <div className="container-x relative py-20 md:py-32 max-w-3xl">
-                  <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-primary font-medium mb-6 animate-fade-in-down">
-                    <span className="size-1.5 bg-primary" /> Decasan Home Center
-                  </div>
-                  <h1 className="font-display text-4xl md:text-6xl lg:text-7xl leading-[0.95] animate-fade-in-up animate-delay-100">
-                    <span className="text-primary">{slide.title}.</span>
-                  </h1>
-                  <p className="mt-6 text-base md:text-lg text-secondary-foreground/90 max-w-xl animate-fade-in-up animate-delay-200">
-                    {slide.desc}
-                  </p>
-                  <div className="mt-8 flex flex-wrap gap-3 animate-fade-in-up animate-delay-300">
-                    <Link
-                      to="/productos"
-                      search={{ cat: slide.btn1.cat } as never}
-                      className="inline-flex items-center gap-2 bg-primary text-foreground font-display tracking-wide px-6 py-3 hover:bg-primary/90 transition"
-                    >
-                      {slide.btn1.text} <ArrowRight className="size-4" />
-                    </Link>
-                    <Link
-                      to="/productos"
-                      search={{ cat: slide.btn2.cat } as never}
-                      className="inline-flex items-center gap-2 border border-white/20 px-6 py-3 font-display tracking-wide hover:border-primary hover:text-primary transition"
-                    >
-                      {slide.btn2.text}
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* HERO 3D PRODUCT CONFIGURATOR & SWITCHER */}
+      <Hero3DProductConfigurator />
 
 
       {/* trust strip */}
