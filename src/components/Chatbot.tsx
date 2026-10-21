@@ -47,6 +47,8 @@ export function Chatbot() {
   const sendFn = useServerFn(chatWithBot);
   const location = useLocation();
   const isExcluded = location.pathname.startsWith("/carrito") || location.pathname.startsWith("/checkout");
+  // Si estamos en la ficha de un producto (/productos/$id), la barra sticky móvil ocupa la parte inferior
+  const isProductDetail = location.pathname.startsWith("/productos/") && location.pathname !== "/productos/";
 
   useEffect(() => {
     if (open) {
@@ -103,7 +105,9 @@ export function Chatbot() {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Cerrar chat" : "Abrir chat"}
-        className="fixed bottom-5 right-5 z-50 group"
+        className={`fixed right-5 z-50 group transition-all duration-300 ${
+          isProductDetail ? "bottom-20 lg:bottom-5" : "bottom-5"
+        }`}
       >
         <span className="relative flex items-center justify-center">
           <span className="absolute inset-0 rounded-full bg-primary/40 animate-ping opacity-60" />
