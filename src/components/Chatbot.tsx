@@ -46,7 +46,9 @@ export function Chatbot() {
   const inputRef = useRef<HTMLInputElement>(null);
   const sendFn = useServerFn(chatWithBot);
   const location = useLocation();
-  const isHome = location.pathname === "/";
+  const isExcluded = location.pathname.startsWith("/carrito") || location.pathname.startsWith("/checkout");
+  // Si estamos en la ficha de un producto (/productos/$id), la barra sticky móvil ocupa la parte inferior
+  const isProductDetail = location.pathname.startsWith("/productos/") && location.pathname !== "/productos/";
 
   useEffect(() => {
     if (open) {
@@ -58,6 +60,8 @@ export function Chatbot() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
+
+  if (isExcluded) return null;
 
   async function send(text: string) {
     const trimmed = text.trim();
@@ -101,7 +105,9 @@ export function Chatbot() {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Cerrar chat" : "Abrir chat"}
-        className={`fixed bottom-5 right-5 z-50 group ${!isHome ? "hidden sm:block" : ""}`}
+        className={`fixed right-5 z-50 group transition-all duration-300 ${
+          isProductDetail ? "bottom-20 lg:bottom-5" : "bottom-5"
+        }`}
       >
         <span className="relative flex items-center justify-center">
           <span className="absolute inset-0 rounded-full bg-primary/40 animate-ping opacity-60" />
