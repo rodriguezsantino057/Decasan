@@ -40,6 +40,17 @@ const CATEGORY_IMAGES: Record<string, string> = {
   "materiales electricos": catElectricos,
 };
 export const Route = createFileRoute("/")({
+  head: () => ({
+    links: [
+      {
+        rel: "preload",
+        as: "image",
+        type: "image/webp",
+        href: "/images/hero-tools/taladro.webp",
+        fetchPriority: "high",
+      },
+    ],
+  }),
   component: Index,
 });
 

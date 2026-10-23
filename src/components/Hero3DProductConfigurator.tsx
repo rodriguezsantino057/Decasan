@@ -27,7 +27,7 @@ const GROUPS: HeroGroup[] = [
     titleMain: "Potencia para cada obra.",
     shortDesc: "Inalámbricos, percutores y de banco. Desde 12V hasta motores industriales con maletín y accesorios completos.",
     buttonText: "Ver todos los taladros",
-    image: "/images/hero-tools/taladro.png",
+    image: "/images/hero-tools/taladro.webp",
     itemCount: 109,
     startingPrice: "Desde $ 2.969",
     quote: "Herramientas de perforación que responden en cada desafío.",
@@ -41,7 +41,7 @@ const GROUPS: HeroGroup[] = [
     titleMain: "Corte limpio y seguro.",
     shortDesc: "Líneas de 4½'', 7'' y 9'' para metal, chapa y mampostería. Arranque progresivo y máxima durabilidad de motor.",
     buttonText: "Ver todas las amoladoras",
-    image: "/images/hero-tools/amoladora.png",
+    image: "/images/hero-tools/amoladora.webp",
     itemCount: 92,
     startingPrice: "Desde $ 1.233",
     quote: "La fuerza necesaria para los trabajos de herrería y taller.",
@@ -55,7 +55,7 @@ const GROUPS: HeroGroup[] = [
     titleMain: "Fuerza de impacto sin límite.",
     shortDesc: "Encastre SDS-Plus y SDS-Max para demolición y perforación pesada. Sistemas antivibración para jornadas intensas.",
     buttonText: "Ver todos los rotomartillos",
-    image: "/images/hero-tools/rotomartillo.png",
+    image: "/images/hero-tools/rotomartillo.webp",
     itemCount: 30,
     startingPrice: "Desde $ 12.922",
     quote: "Impacto neumático calibrado para la exigencia de obra.",
@@ -69,7 +69,7 @@ const GROUPS: HeroGroup[] = [
     titleMain: "Presión constante y caudal.",
     shortDesc: "Equipos monofásicos y trifásicos desde 24L hasta 200L. Ideales para gomerías, pintura soplete y herramientas neumáticas.",
     buttonText: "Ver todos los compresores",
-    image: "/images/hero-tools/compresor.png",
+    image: "/images/hero-tools/compresor.webp",
     itemCount: 55,
     startingPrice: "Desde $ 11.658",
     quote: "Rendimiento neumático continuo para tu taller o industria.",
@@ -83,7 +83,7 @@ const GROUPS: HeroGroup[] = [
     titleMain: "Precisión y resistencia en mano.",
     shortDesc: "Llaves, pinzas, destornilladores, martillos, sets de tubos y accesorios esenciales para todo tipo de reparación y taller.",
     buttonText: "Ver todas las herramientas manuales",
-    image: "/images/hero-tools/caja-herramientas.png",
+    image: "/images/hero-tools/caja-herramientas.webp",
     itemCount: 84,
     startingPrice: "Desde $ 8.900",
     quote: "La base de cualquier trabajo bien hecho empieza en tus manos.",
@@ -107,6 +107,14 @@ export function Hero3DProductConfigurator() {
   useEffect(() => {
     setTilt({ x: 0, y: 0 });
   }, [activeIndex]);
+
+  // Precachear todas las imágenes WebP del carrusel en background para que el cambio de slide sea instantáneo
+  useEffect(() => {
+    GROUPS.forEach((g) => {
+      const img = new Image();
+      img.src = g.image;
+    });
+  }, []);
 
   // Autoplay cada 10 segundos
   useEffect(() => {
@@ -227,6 +235,11 @@ export function Hero3DProductConfigurator() {
                 <img
                   src={group.image}
                   alt={group.titleTop}
+                  width={600}
+                  height={460}
+                  loading={activeIndex === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  fetchPriority={activeIndex === 0 ? "high" : "auto"}
                   className="max-h-[220px] sm:max-h-[320px] md:max-h-[420px] lg:max-h-[460px] w-auto object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.45)] pointer-events-none"
                 />
               </div>
