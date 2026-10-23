@@ -18,6 +18,10 @@ export default defineConfig({
     tailwindcss(),
     tsConfigPaths(),
   ],
+  server: {
+    host: true,
+    port: 3000,
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
